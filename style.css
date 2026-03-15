@@ -1,0 +1,88 @@
+body {
+  font-family: Arial, sans-serif;
+  background: #e6f2ff;
+  margin: 0;
+  padding: 0;
+}
+#top-bar {
+  background: #333;
+  color: #fff;
+  padding: 10px;
+  display: flex;
+  justify-content: flex-start;
+  gap: 10px;
+}
+#top-bar button {
+  background: #fff;
+  color: #333;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+}
+#top-bar button:hover {
+  background: #ffd700;
+}
+#game-container {
+  margin: 20px;
+}
+.camp-cage {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 120px;
+  height: 120px;
+  background: #ccc;
+  border: 3px solid #333;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2em;
+}
+.holes-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 80px);
+  grid-template-rows: repeat(3, 80px);
+  gap: 15px;
+  justify-content: center;
+  margin-top: 40px;
+}
+.hole {
+  width: 80px;
+  height: 80px;
+  background: #654321;
+  border-radius: 50%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5em;
+  color: #fff;
+  cursor: pointer;
+  border: 2px solid #222;
+}
+.weasel {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: #f5deb3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1em;
+  border: 2px solid #333;
+  z-index: 2;
+}
+.weasel.normal { background: #f5deb3; }
+.weasel.bronze { background: #cd7f32; }
+.weasel.silver { background: #c0c0c0; }
+.weasel.three-eyed { background: #a9a9a9; border: 2px dashed #333; }
+.weasel.gold { background: #ffd700; }
+.weasel.rainbow { background: linear-gradient(45deg, red, orange, yellow, green, blue, indigo, violet); color: #fff; }
+.weasel.mythic { background: #8e44ad; color: #ffd700; border: 3px solid #ffd700; }
