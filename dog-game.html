@@ -2712,163 +2712,145 @@
       pushBox(tunnelQuads, lp.x, lp.y+.22+r*.44, lp.z, .40, .04, .05, 0x6a4018); // rungs
   }
 
-  // Render a pack member as their real character model (not a generic NPC dog).
-  // Uses per-character colour palettes that match buildDog(). Called when squad
-  // members appear in the village standing where the player left them.
+  // Render a pack member at their exact character colours/markings.
+  // Used when they appear as village NPCs standing around the clearing.
   function drawPackMemberNpc(list, charId, wx, wz, yaw) {
-    const fl = 0.21;
-    const s  = 1.0;
+    const fl = 0.21, s = 1.0;
     const fwdX = sin(yaw), fwdZ = cos(yaw);
     const rtX  = cos(yaw), rtZ  = -sin(yaw);
-    const hx = wx + fwdX*s*0.78, hz = wz + fwdZ*s*0.78;
-    const snx = wx + fwdX*s*1.22, snz = wz + fwdZ*s*1.22;
-    const tlx = wx - fwdX*s*0.72, tlz = wz - fwdZ*s*0.72;
+    const hx   = wx + fwdX*s*0.78, hz  = wz + fwdZ*s*0.78;
+    const snx  = wx + fwdX*s*1.22, snz = wz + fwdZ*s*1.22;
+    const tlx  = wx - fwdX*s*0.72, tlz = wz - fwdZ*s*0.72;
+    const pb   = (bx,by,bz,bw,bh,bd,col) => pushBox(list,bx,by,bz,bw,bh,bd,col,yaw);
 
-    // Helper to push a box at a world position
-    const pb = (bx,by,bz, bw,bh,bd, col) => pushBox(list, bx, by, bz, bw,bh,bd, col, yaw);
-
-    if (charId === 'scratch') {
-      buildScratch(list, wx, wz, yaw, 0, 0, false); return;
-    }
-    if (charId === 'ruff') {
-      buildRuffNpc(list, wx, wz, s, yaw, 0, false); return;
-    }
+    if (charId === 'scratch') { buildScratch(list, wx, wz, yaw, 0, 0, false); return; }
+    if (charId === 'ruff')    { buildRuffNpc(list, wx, wz, s, yaw, 0, false); return; }
 
     if (charId === 'newmoon') {
-      const C = { body:0x1a1a2e, dark:0x0d0d1a, silver:0x8a9bb5, eye:0x5ab4f5, nose:0x111122 };
-      pb(wx,   fl+s*0.54, wz,           s*0.46,s*0.28,s*0.72, C.body);
-      pb(wx+fwdX*s*0.14, fl+s*0.50, wz+fwdZ*s*0.14, s*0.30,s*0.22,s*0.20, C.silver);// chest
-      pb(wx,   fl+s*0.62, wz+s*0.06,    s*0.50,s*0.22,s*0.52, C.dark);
-      pb(hx,   fl+s*0.96, hz,           s*0.34,s*0.32,s*0.32, C.body);
-      pb(hx+rtX*s*0.16, fl+s*0.98, hz+rtZ*s*0.16, s*0.10,s*0.10,s*0.06, C.silver);// L eye patch
-      pb(hx-rtX*s*0.16, fl+s*0.98, hz-rtZ*s*0.16, s*0.10,s*0.10,s*0.06, C.silver);// R eye patch
-      pb(snx,  fl+s*0.85, snz,          s*0.15,s*0.09,s*0.14, C.silver);// muzzle
-      pb(snx,  fl+s*0.92, snz, s*0.06,s*0.05,s*0.04, C.nose);
-      pb(hx+rtX*s*0.15+fwdX*s*0.06, fl+s*1.00, hz+rtZ*s*0.15+fwdZ*s*0.06, s*0.07,s*0.07,s*0.04, C.eye);
-      pb(hx-rtX*s*0.15+fwdX*s*0.06, fl+s*1.00, hz-rtZ*s*0.15+fwdZ*s*0.06, s*0.07,s*0.07,s*0.04, C.eye);
-      // Wolf ears (erect)
-      pb(hx+rtX*s*0.28, fl+s*1.26, hz+rtZ*s*0.28, s*0.09,s*0.24,s*0.07, C.body);
-      pb(hx-rtX*s*0.28, fl+s*1.26, hz-rtZ*s*0.28, s*0.09,s*0.24,s*0.07, C.body);
-      pb(hx+rtX*s*0.28, fl+s*1.24, hz+rtZ*s*0.28, s*0.04,s*0.15,s*0.04, C.silver);
-      pb(hx-rtX*s*0.28, fl+s*1.24, hz-rtZ*s*0.28, s*0.04,s*0.15,s*0.04, C.silver);
-      // Tail
-      pb(tlx, fl+s*0.84, tlz, s*0.08,s*0.08,s*0.20, C.body);
-      pb(tlx-fwdX*s*0.14, fl+s*0.84, tlz-fwdZ*s*0.14, s*0.07,s*0.07,s*0.10, C.silver);
-      [[s*0.28,s*0.40],[-s*0.28,s*0.40],[s*0.28,-s*0.40],[-s*0.28,-s*0.40]].forEach(([lt,ln])=>{
-        const hpx=wx+rtX*lt+fwdX*ln, hpz=wz+rtZ*lt+fwdZ*ln;
-        pb(hpx,fl+s*0.20,hpz, s*0.10,s*0.21,s*0.10,C.body);
-        pb(hpx,fl+s*0.05,hpz, s*0.12,s*0.05,s*0.12,C.dark);
+      const C = {bo:0x1a1a2e,dk:0x0d0d1a,si:0x8a9bb5,ey:0x5ab4f5,no:0x111122};
+      pb(wx,fl+s*.54,wz,s*.46,s*.28,s*.72,C.bo);
+      pb(wx+fwdX*s*.14,fl+s*.50,wz+fwdZ*s*.14,s*.30,s*.22,s*.20,C.si);
+      pb(wx,fl+s*.62,wz+s*.06,s*.50,s*.22,s*.52,C.dk);
+      pb(hx,fl+s*.96,hz,s*.34,s*.32,s*.32,C.bo);
+      pb(hx+rtX*s*.16,fl+s*.98,hz+rtZ*s*.16,s*.10,s*.10,s*.06,C.si);
+      pb(hx-rtX*s*.16,fl+s*.98,hz-rtZ*s*.16,s*.10,s*.10,s*.06,C.si);
+      pb(snx,fl+s*.85,snz,s*.15,s*.09,s*.14,C.si);
+      pb(snx,fl+s*.92,snz,s*.06,s*.05,s*.04,C.no);
+      pb(hx+rtX*s*.15+fwdX*s*.06,fl+s*1.00,hz+rtZ*s*.15+fwdZ*s*.06,s*.07,s*.07,s*.04,C.ey);
+      pb(hx-rtX*s*.15+fwdX*s*.06,fl+s*1.00,hz-rtZ*s*.15+fwdZ*s*.06,s*.07,s*.07,s*.04,C.ey);
+      pb(hx+rtX*s*.28,fl+s*1.26,hz+rtZ*s*.28,s*.09,s*.24,s*.07,C.bo);
+      pb(hx-rtX*s*.28,fl+s*1.26,hz-rtZ*s*.28,s*.09,s*.24,s*.07,C.bo);
+      pb(hx+rtX*s*.28,fl+s*1.24,hz+rtZ*s*.28,s*.04,s*.15,s*.04,C.si);
+      pb(hx-rtX*s*.28,fl+s*1.24,hz-rtZ*s*.28,s*.04,s*.15,s*.04,C.si);
+      pb(tlx,fl+s*.84,tlz,s*.08,s*.08,s*.20,C.bo);
+      pb(tlx-fwdX*s*.14,fl+s*.84,tlz-fwdZ*s*.14,s*.07,s*.07,s*.10,C.si);
+      [[s*.28,s*.40],[-s*.28,s*.40],[s*.28,-s*.40],[-s*.28,-s*.40]].forEach(([lt,ln])=>{
+        const hpx=wx+rtX*lt+fwdX*ln,hpz=wz+rtZ*lt+fwdZ*ln;
+        pb(hpx,fl+s*.20,hpz,s*.10,s*.21,s*.10,C.bo); pb(hpx,fl+s*.05,hpz,s*.12,s*.05,s*.12,C.dk);
       }); return;
     }
 
     if (charId === 'wark') {
-      const C = { body:0xc8853a, dark:0xa06830, white:0xe0d0b8, eye:0x5ab8a8, nose:0x111108, spot:0x1a1208, ear:0x7a4820 };
-      pb(wx,   fl+s*0.54, wz,           s*0.48,s*0.28,s*0.74, C.body);
-      pb(wx+fwdX*s*0.14, fl+s*0.50, wz+fwdZ*s*0.14, s*0.32,s*0.22,s*0.18, C.white);
-      pb(wx,   fl+s*0.62, wz+s*0.06,   s*0.52,s*0.22,s*0.54, C.dark);
-      pb(wx+rtX*s*0.20, fl+s*0.54, wz+rtZ*s*0.20, s*0.12,s*0.18,s*0.30, C.spot);
-      pb(wx-rtX*s*0.18, fl+s*0.56, wz-rtZ*s*0.18, s*0.10,s*0.16,s*0.26, C.spot);
-      pb(hx,   fl+s*0.96, hz,           s*0.34,s*0.32,s*0.32, C.body);
-      pb(snx,  fl+s*0.85, snz,          s*0.15,s*0.09,s*0.14, C.white);
-      pb(snx,  fl+s*0.92, snz, s*0.06,s*0.05,s*0.04, C.nose);
-      pb(hx+rtX*s*0.15+fwdX*s*0.06, fl+s*1.00, hz+rtZ*s*0.15+fwdZ*s*0.06, s*0.07,s*0.07,s*0.04, C.eye);
-      pb(hx-rtX*s*0.15+fwdX*s*0.06, fl+s*1.00, hz-rtZ*s*0.15+fwdZ*s*0.06, s*0.07,s*0.07,s*0.04, C.eye);
-      pb(hx+rtX*s*0.28, fl+s*0.88, hz+rtZ*s*0.28, s*0.06,s*0.20,s*0.10, C.body);// floppy L
-      pb(hx-rtX*s*0.28, fl+s*0.88, hz-rtZ*s*0.28, s*0.06,s*0.20,s*0.10, C.body);// floppy R
-      pb(hx+rtX*s*0.26, fl+s*0.86, hz+rtZ*s*0.26, s*0.03,s*0.12,s*0.07, C.ear);
-      pb(hx-rtX*s*0.26, fl+s*0.86, hz-rtZ*s*0.26, s*0.03,s*0.12,s*0.07, C.ear);
-      pb(tlx, fl+s*0.84, tlz, s*0.08,s*0.08,s*0.22, C.dark);
-      pb(tlx-fwdX*s*0.16, fl+s*0.84, tlz-fwdZ*s*0.16, s*0.07,s*0.07,s*0.10, C.white);
-      [[s*0.28,s*0.40],[-s*0.28,s*0.40],[s*0.28,-s*0.40],[-s*0.28,-s*0.40]].forEach(([lt,ln])=>{
-        const hpx=wx+rtX*lt+fwdX*ln, hpz=wz+rtZ*lt+fwdZ*ln;
-        pb(hpx,fl+s*0.20,hpz, s*0.10,s*0.21,s*0.10,C.body);
-        pb(hpx,fl+s*0.05,hpz, s*0.12,s*0.05,s*0.12,C.white);
+      const C = {bo:0xc8853a,dk:0xa06830,wh:0xe0d0b8,ey:0x5ab8a8,no:0x111108,sp:0x1a1208,er:0x7a4820};
+      pb(wx,fl+s*.54,wz,s*.48,s*.28,s*.74,C.bo);
+      pb(wx+fwdX*s*.14,fl+s*.50,wz+fwdZ*s*.14,s*.32,s*.22,s*.18,C.wh);
+      pb(wx,fl+s*.62,wz+s*.06,s*.52,s*.22,s*.54,C.dk);
+      pb(wx+rtX*s*.20,fl+s*.54,wz+rtZ*s*.20,s*.12,s*.18,s*.30,C.sp);
+      pb(wx-rtX*s*.18,fl+s*.56,wz-rtZ*s*.18,s*.10,s*.16,s*.26,C.sp);
+      pb(hx,fl+s*.96,hz,s*.34,s*.32,s*.32,C.bo);
+      pb(snx,fl+s*.85,snz,s*.15,s*.09,s*.14,C.wh);
+      pb(snx,fl+s*.92,snz,s*.06,s*.05,s*.04,C.no);
+      pb(hx+rtX*s*.15+fwdX*s*.06,fl+s*1.00,hz+rtZ*s*.15+fwdZ*s*.06,s*.07,s*.07,s*.04,C.ey);
+      pb(hx-rtX*s*.15+fwdX*s*.06,fl+s*1.00,hz-rtZ*s*.15+fwdZ*s*.06,s*.07,s*.07,s*.04,C.ey);
+      pb(hx+rtX*s*.28,fl+s*.88,hz+rtZ*s*.28,s*.06,s*.20,s*.10,C.bo);
+      pb(hx-rtX*s*.28,fl+s*.88,hz-rtZ*s*.28,s*.06,s*.20,s*.10,C.bo);
+      pb(hx+rtX*s*.26,fl+s*.86,hz+rtZ*s*.26,s*.03,s*.12,s*.07,C.er);
+      pb(hx-rtX*s*.26,fl+s*.86,hz-rtZ*s*.26,s*.03,s*.12,s*.07,C.er);
+      pb(tlx,fl+s*.84,tlz,s*.08,s*.08,s*.22,C.dk);
+      pb(tlx-fwdX*s*.16,fl+s*.84,tlz-fwdZ*s*.16,s*.07,s*.07,s*.10,C.wh);
+      [[s*.28,s*.40],[-s*.28,s*.40],[s*.28,-s*.40],[-s*.28,-s*.40]].forEach(([lt,ln])=>{
+        const hpx=wx+rtX*lt+fwdX*ln,hpz=wz+rtZ*lt+fwdZ*ln;
+        pb(hpx,fl+s*.20,hpz,s*.10,s*.21,s*.10,C.bo); pb(hpx,fl+s*.05,hpz,s*.12,s*.05,s*.12,C.wh);
       }); return;
     }
 
     if (charId === 'cheeseball') {
-      const C = { body:0xd06018, deep:0xa04010, cream:0xe8d4b8, eye:0x5888d8, nose:0x100e0c, ear:0x3a1e08 };
-      pb(wx,   fl+s*0.52, wz,           s*0.50,s*0.28,s*0.70, C.body);
-      pb(wx+fwdX*s*0.14, fl+s*0.48, wz+fwdZ*s*0.14, s*0.28,s*0.22,s*0.20, C.cream);
-      pb(wx,   fl+s*0.60, wz+s*0.08,   s*0.54,s*0.22,s*0.52, C.deep);
-      pb(wx+rtX*s*0.44, fl+s*0.52, wz+rtZ*s*0.44, s*0.14,s*0.24,s*0.48, C.deep);
-      pb(wx-rtX*s*0.44, fl+s*0.52, wz-rtZ*s*0.44, s*0.14,s*0.24,s*0.48, C.deep);
-      pb(hx,   fl+s*0.94, hz,           s*0.35,s*0.30,s*0.30, C.body);
-      pb(hx,   fl+s*1.04, hz-s*0.04,   s*0.38,s*0.14,s*0.22, C.deep);
-      pb(snx-fwdX*s*0.06,  fl+s*0.84, snz-fwdZ*s*0.06,  s*0.16,s*0.09,s*0.16, C.cream);
-      pb(snx, fl+s*0.91, snz, s*0.06,s*0.05,s*0.04, C.nose);
-      pb(hx+rtX*s*0.15+fwdX*s*0.06, fl+s*0.97, hz+rtZ*s*0.15+fwdZ*s*0.06, s*0.07,s*0.07,s*0.04, C.eye);
-      pb(hx-rtX*s*0.15+fwdX*s*0.06, fl+s*0.97, hz-rtZ*s*0.15+fwdZ*s*0.06, s*0.07,s*0.07,s*0.04, C.eye);
-      // Pointed ears
-      pb(hx+rtX*s*0.26, fl+s*1.24, hz+rtZ*s*0.26, s*0.10,s*0.22,s*0.08, C.body);
-      pb(hx-rtX*s*0.26, fl+s*1.24, hz-rtZ*s*0.26, s*0.10,s*0.22,s*0.08, C.body);
-      pb(hx+rtX*s*0.26, fl+s*1.22, hz+rtZ*s*0.26, s*0.05,s*0.14,s*0.04, C.ear);
-      pb(hx-rtX*s*0.26, fl+s*1.22, hz-rtZ*s*0.26, s*0.05,s*0.14,s*0.04, C.ear);
-      // Fluffy curled tail
-      pb(tlx, fl+s*0.84, tlz, s*0.10,s*0.10,s*0.22, C.body);
-      pb(tlx+rtX*s*0.10, fl+s*0.96, tlz+rtZ*s*0.10, s*0.09,s*0.09,s*0.16, C.deep);
-      [[s*0.28,s*0.40],[-s*0.28,s*0.40],[s*0.28,-s*0.40],[-s*0.28,-s*0.40]].forEach(([lt,ln])=>{
-        const hpx=wx+rtX*lt+fwdX*ln, hpz=wz+rtZ*lt+fwdZ*ln;
-        pb(hpx,fl+s*0.20,hpz, s*0.10,s*0.19,s*0.10,C.body);
-        pb(hpx,fl+s*0.05,hpz, s*0.12,s*0.05,s*0.12,C.cream);
+      const C = {bo:0xd06018,dp:0xa04010,cr:0xe8d4b8,ey:0x5888d8,no:0x100e0c,er:0x3a1e08};
+      pb(wx,fl+s*.52,wz,s*.50,s*.28,s*.70,C.bo);
+      pb(wx+fwdX*s*.14,fl+s*.48,wz+fwdZ*s*.14,s*.28,s*.22,s*.20,C.cr);
+      pb(wx,fl+s*.60,wz+s*.08,s*.54,s*.22,s*.52,C.dp);
+      pb(wx+rtX*s*.44,fl+s*.52,wz+rtZ*s*.44,s*.14,s*.24,s*.48,C.dp);
+      pb(wx-rtX*s*.44,fl+s*.52,wz-rtZ*s*.44,s*.14,s*.24,s*.48,C.dp);
+      pb(hx,fl+s*.94,hz,s*.35,s*.30,s*.30,C.bo);
+      pb(hx,fl+s*1.04,hz-s*.04,s*.38,s*.14,s*.22,C.dp);
+      pb(snx-fwdX*s*.06,fl+s*.84,snz-fwdZ*s*.06,s*.16,s*.09,s*.16,C.cr);
+      pb(snx,fl+s*.91,snz,s*.06,s*.05,s*.04,C.no);
+      pb(hx+rtX*s*.15+fwdX*s*.06,fl+s*.97,hz+rtZ*s*.15+fwdZ*s*.06,s*.07,s*.07,s*.04,C.ey);
+      pb(hx-rtX*s*.15+fwdX*s*.06,fl+s*.97,hz-rtZ*s*.15+fwdZ*s*.06,s*.07,s*.07,s*.04,C.ey);
+      pb(hx+rtX*s*.26,fl+s*1.24,hz+rtZ*s*.26,s*.10,s*.22,s*.08,C.bo);
+      pb(hx-rtX*s*.26,fl+s*1.24,hz-rtZ*s*.26,s*.10,s*.22,s*.08,C.bo);
+      pb(hx+rtX*s*.26,fl+s*1.22,hz+rtZ*s*.26,s*.05,s*.14,s*.04,C.er);
+      pb(hx-rtX*s*.26,fl+s*1.22,hz-rtZ*s*.26,s*.05,s*.14,s*.04,C.er);
+      pb(tlx,fl+s*.84,tlz,s*.10,s*.10,s*.22,C.bo);
+      pb(tlx+rtX*s*.10,fl+s*.96,tlz+rtZ*s*.10,s*.09,s*.09,s*.16,C.dp);
+      [[s*.28,s*.40],[-s*.28,s*.40],[s*.28,-s*.40],[-s*.28,-s*.40]].forEach(([lt,ln])=>{
+        const hpx=wx+rtX*lt+fwdX*ln,hpz=wz+rtZ*lt+fwdZ*ln;
+        pb(hpx,fl+s*.20,hpz,s*.10,s*.19,s*.10,C.bo); pb(hpx,fl+s*.05,hpz,s*.12,s*.05,s*.12,C.cr);
       }); return;
     }
 
     if (charId === 'obsidian') {
-      const C = { body:0x3a2010, mid:0x5a3418, light:0x7a5028, cream:0xc4a070, eye:0xc87830, nose:0x0e0806, ear:0x2a1408 };
-      pb(wx,   fl+s*0.54, wz,           s*0.46,s*0.28,s*0.72, C.body);
-      pb(wx+fwdX*s*0.14, fl+s*0.50, wz+fwdZ*s*0.14, s*0.30,s*0.22,s*0.20, C.light);
-      pb(wx,   fl+s*0.62, wz+s*0.06,   s*0.50,s*0.22,s*0.54, C.mid);
-      pb(wx+rtX*s*0.48, fl+s*0.52, wz+rtZ*s*0.48, s*0.14,s*0.26,s*0.52, C.mid);
-      pb(wx-rtX*s*0.48, fl+s*0.52, wz-rtZ*s*0.48, s*0.14,s*0.26,s*0.52, C.mid);
-      pb(hx,   fl+s*0.96, hz,           s*0.34,s*0.32,s*0.32, C.body);
-      pb(hx,   fl+s*1.06, hz-s*0.04,   s*0.38,s*0.14,s*0.22, C.mid);
-      pb(snx-fwdX*s*0.06,  fl+s*0.85, snz-fwdZ*s*0.06,  s*0.15,s*0.09,s*0.16, C.cream);
-      pb(snx, fl+s*0.92, snz, s*0.06,s*0.05,s*0.04, C.nose);
-      pb(hx+rtX*s*0.15+fwdX*s*0.06, fl+s*1.00, hz+rtZ*s*0.15+fwdZ*s*0.06, s*0.07,s*0.07,s*0.04, C.eye);
-      pb(hx-rtX*s*0.15+fwdX*s*0.06, fl+s*1.00, hz-rtZ*s*0.15+fwdZ*s*0.06, s*0.07,s*0.07,s*0.04, C.eye);
-      // Shaggy erect ears
-      pb(hx+rtX*s*0.30, fl+s*1.26, hz+rtZ*s*0.30, s*0.10,s*0.24,s*0.07, C.mid);
-      pb(hx-rtX*s*0.30, fl+s*1.26, hz-rtZ*s*0.30, s*0.10,s*0.24,s*0.07, C.mid);
-      pb(hx+rtX*s*0.30, fl+s*1.24, hz+rtZ*s*0.30, s*0.04,s*0.16,s*0.04, C.ear);
-      pb(hx-rtX*s*0.30, fl+s*1.24, hz-rtZ*s*0.30, s*0.04,s*0.16,s*0.04, C.ear);
-      pb(tlx, fl+s*0.84, tlz, s*0.08,s*0.08,s*0.20, C.body);
-      pb(tlx-fwdX*s*0.14, fl+s*0.86, tlz-fwdZ*s*0.14, s*0.07,s*0.07,s*0.10, C.light);
-      [[s*0.28,s*0.40],[-s*0.28,s*0.40],[s*0.28,-s*0.40],[-s*0.28,-s*0.40]].forEach(([lt,ln])=>{
-        const hpx=wx+rtX*lt+fwdX*ln, hpz=wz+rtZ*lt+fwdZ*ln;
-        pb(hpx,fl+s*0.20,hpz, s*0.10,s*0.21,s*0.10,C.body);
-        pb(hpx,fl+s*0.05,hpz, s*0.12,s*0.05,s*0.12,C.light);
+      const C = {bo:0x3a2010,mi:0x5a3418,li:0x7a5028,cr:0xc4a070,ey:0xc87830,no:0x0e0806,er:0x2a1408};
+      pb(wx,fl+s*.54,wz,s*.46,s*.28,s*.72,C.bo);
+      pb(wx+fwdX*s*.14,fl+s*.50,wz+fwdZ*s*.14,s*.30,s*.22,s*.20,C.li);
+      pb(wx,fl+s*.62,wz+s*.06,s*.50,s*.22,s*.54,C.mi);
+      pb(wx+rtX*s*.48,fl+s*.52,wz+rtZ*s*.48,s*.14,s*.26,s*.52,C.mi);
+      pb(wx-rtX*s*.48,fl+s*.52,wz-rtZ*s*.48,s*.14,s*.26,s*.52,C.mi);
+      pb(hx,fl+s*.96,hz,s*.34,s*.32,s*.32,C.bo);
+      pb(hx,fl+s*1.06,hz-s*.04,s*.38,s*.14,s*.22,C.mi);
+      pb(snx-fwdX*s*.06,fl+s*.85,snz-fwdZ*s*.06,s*.15,s*.09,s*.16,C.cr);
+      pb(snx,fl+s*.92,snz,s*.06,s*.05,s*.04,C.no);
+      pb(hx+rtX*s*.15+fwdX*s*.06,fl+s*1.00,hz+rtZ*s*.15+fwdZ*s*.06,s*.07,s*.07,s*.04,C.ey);
+      pb(hx-rtX*s*.15+fwdX*s*.06,fl+s*1.00,hz-rtZ*s*.15+fwdZ*s*.06,s*.07,s*.07,s*.04,C.ey);
+      pb(hx+rtX*s*.30,fl+s*1.26,hz+rtZ*s*.30,s*.10,s*.24,s*.07,C.mi);
+      pb(hx-rtX*s*.30,fl+s*1.26,hz-rtZ*s*.30,s*.10,s*.24,s*.07,C.mi);
+      pb(hx+rtX*s*.30,fl+s*1.24,hz+rtZ*s*.30,s*.04,s*.16,s*.04,C.er);
+      pb(hx-rtX*s*.30,fl+s*1.24,hz-rtZ*s*.30,s*.04,s*.16,s*.04,C.er);
+      pb(tlx,fl+s*.84,tlz,s*.08,s*.08,s*.20,C.bo);
+      pb(tlx-fwdX*s*.14,fl+s*.86,tlz-fwdZ*s*.14,s*.07,s*.07,s*.10,C.li);
+      [[s*.28,s*.40],[-s*.28,s*.40],[s*.28,-s*.40],[-s*.28,-s*.40]].forEach(([lt,ln])=>{
+        const hpx=wx+rtX*lt+fwdX*ln,hpz=wz+rtZ*lt+fwdZ*ln;
+        pb(hpx,fl+s*.20,hpz,s*.10,s*.21,s*.10,C.bo); pb(hpx,fl+s*.05,hpz,s*.12,s*.05,s*.12,C.li);
       }); return;
     }
 
     if (charId === 'bark') {
-      const C = { dark:0x1c0e06, mid:0x361808, tan:0xc87828, cream:0xeac880, nose:0x0e0806, ear:0x703a18 };
-      pb(wx,   fl+s*0.54, wz,           s*0.44,s*0.27,s*0.68, C.dark);
-      pb(wx+fwdX*s*0.14, fl+s*0.50, wz+fwdZ*s*0.14, s*0.28,s*0.24,s*0.22, C.cream);
-      pb(wx,   fl+s*0.62, wz+s*0.06,   s*0.48,s*0.20,s*0.50, C.mid);
-      pb(hx,   fl+s*0.96, hz,           s*0.34,s*0.32,s*0.32, C.dark);
-      pb(hx+rtX*s*0.20, fl+s*1.11, hz+rtZ*s*0.20, s*0.08,s*0.05,s*0.07, C.tan);// eyebrow L
-      pb(hx-rtX*s*0.20, fl+s*1.11, hz-rtZ*s*0.20, s*0.08,s*0.05,s*0.07, C.tan);// eyebrow R
-      pb(snx-fwdX*s*0.04,  fl+s*0.84, snz-fwdZ*s*0.04,  s*0.18,s*0.10,s*0.17, C.tan);// amber muzzle
-      pb(snx, fl+s*0.92, snz, s*0.06,s*0.05,s*0.04, C.nose);
-      pb(hx+rtX*s*0.15+fwdX*s*0.06, fl+s*1.00, hz+rtZ*s*0.15+fwdZ*s*0.06, s*0.07,s*0.07,s*0.04, C.tan);
-      pb(hx-rtX*s*0.15+fwdX*s*0.06, fl+s*1.00, hz-rtZ*s*0.15+fwdZ*s*0.06, s*0.07,s*0.07,s*0.04, C.tan);
-      // Erect ears wide-set
-      pb(hx+rtX*s*0.33, fl+s*1.22, hz+rtZ*s*0.33, s*0.11,s*0.22,s*0.08, C.dark);
-      pb(hx-rtX*s*0.33, fl+s*1.22, hz-rtZ*s*0.33, s*0.11,s*0.22,s*0.08, C.dark);
-      pb(hx+rtX*s*0.33, fl+s*1.20, hz+rtZ*s*0.33, s*0.06,s*0.14,s*0.04, C.ear);
-      pb(hx-rtX*s*0.33, fl+s*1.20, hz-rtZ*s*0.33, s*0.06,s*0.14,s*0.04, C.ear);
-      pb(tlx, fl+s*0.84, tlz, s*0.10,s*0.10,s*0.20, C.mid);
-      pb(tlx+rtX*s*0.10, fl+s*0.96, tlz+rtZ*s*0.10, s*0.09,s*0.09,s*0.15, C.dark);
-      [[s*0.28,s*0.40],[-s*0.28,s*0.40],[s*0.28,-s*0.40],[-s*0.28,-s*0.40]].forEach(([lt,ln])=>{
-        const hpx=wx+rtX*lt+fwdX*ln, hpz=wz+rtZ*lt+fwdZ*ln;
-        pb(hpx,fl+s*0.20,hpz, s*0.11,s*0.12,s*0.11,C.dark);
-        pb(hpx,fl+s*0.08,hpz, s*0.10,s*0.10,s*0.10,C.tan);
-        pb(hpx,fl+s*0.03,hpz, s*0.13,s*0.06,s*0.13,C.mid);
+      const C = {dk:0x1c0e06,mi:0x361808,tn:0xc87828,cr:0xeac880,no:0x0e0806,er:0x703a18};
+      pb(wx,fl+s*.54,wz,s*.44,s*.27,s*.68,C.dk);
+      pb(wx+fwdX*s*.14,fl+s*.50,wz+fwdZ*s*.14,s*.28,s*.24,s*.22,C.cr);
+      pb(wx,fl+s*.62,wz+s*.06,s*.48,s*.20,s*.50,C.mi);
+      pb(hx,fl+s*.96,hz,s*.34,s*.32,s*.32,C.dk);
+      pb(hx+rtX*s*.20,fl+s*1.11,hz+rtZ*s*.20,s*.08,s*.05,s*.07,C.tn);
+      pb(hx-rtX*s*.20,fl+s*1.11,hz-rtZ*s*.20,s*.08,s*.05,s*.07,C.tn);
+      pb(snx-fwdX*s*.04,fl+s*.84,snz-fwdZ*s*.04,s*.18,s*.10,s*.17,C.tn);
+      pb(snx,fl+s*.92,snz,s*.06,s*.05,s*.04,C.no);
+      pb(hx+rtX*s*.15+fwdX*s*.06,fl+s*1.00,hz+rtZ*s*.15+fwdZ*s*.06,s*.07,s*.07,s*.04,C.tn);
+      pb(hx-rtX*s*.15+fwdX*s*.06,fl+s*1.00,hz-rtZ*s*.15+fwdZ*s*.06,s*.07,s*.07,s*.04,C.tn);
+      pb(hx+rtX*s*.33,fl+s*1.22,hz+rtZ*s*.33,s*.11,s*.22,s*.08,C.dk);
+      pb(hx-rtX*s*.33,fl+s*1.22,hz-rtZ*s*.33,s*.11,s*.22,s*.08,C.dk);
+      pb(hx+rtX*s*.33,fl+s*1.20,hz+rtZ*s*.33,s*.06,s*.14,s*.04,C.er);
+      pb(hx-rtX*s*.33,fl+s*1.20,hz-rtZ*s*.33,s*.06,s*.14,s*.04,C.er);
+      pb(tlx,fl+s*.84,tlz,s*.10,s*.10,s*.20,C.mi);
+      pb(tlx+rtX*s*.10,fl+s*.96,tlz+rtZ*s*.10,s*.09,s*.09,s*.15,C.dk);
+      [[s*.28,s*.40],[-s*.28,s*.40],[s*.28,-s*.40],[-s*.28,-s*.40]].forEach(([lt,ln])=>{
+        const hpx=wx+rtX*lt+fwdX*ln,hpz=wz+rtZ*lt+fwdZ*ln;
+        pb(hpx,fl+s*.20,hpz,s*.11,s*.12,s*.11,C.dk);
+        pb(hpx,fl+s*.08,hpz,s*.10,s*.10,s*.10,C.tn);
+        pb(hpx,fl+s*.03,hpz,s*.13,s*.06,s*.13,C.mi);
       }); return;
     }
 
-    // Fallback — generic NPC
+    // Fallback — generic NPC for any unrecognised id
     addNpcDog(list, wx, wz, s, 0xaa8850, yaw, 'triangle');
   }
 
@@ -3264,8 +3246,7 @@
     // When playing as Scratch herself she IS the player — no companion to draw
     if (activeCharacter === 'scratch') return;
     // Once Obsidian reaches the village, Scratch is independent — stop following
-    if (activeCharacter !== 'obsidian' || obsidianArea !== 'village') return;
-    if (!obsidianPupFollowing || obsidianArea === 'village') return;
+    if (activeCharacter !== 'obsidian' || obsidianArea === 'village' || !obsidianPupFollowing) return;
     const FOLLOW_DIST = 2.2;
     const tx = dogState.x - sin(dogState.yaw) * FOLLOW_DIST;
     const tz = dogState.z - cos(dogState.yaw) * FOLLOW_DIST;
@@ -3643,24 +3624,17 @@
       scratch:    { x:  2, z: 36  }, ruff:       { x:  6, z: -20 },
       bark:       { x:  6, z:  22 },
     };
-    const PACK_LABELS = {
-      wark: 'Wark 🐾', newmoon: 'New Moon 🌙', cheeseball: 'Cheeseball 🧡',
-      obsidian: 'Obsidian 🌑', scratch: 'Scratch 🐕', ruff: 'Ruff 🍂', bark: 'Bark 🐶',
-    };
     for (const npc of PACK_GATHER_NPC) {
       if (npc.id === activeCharacter) continue;              // don't render self
       if (!getVillageDogs().includes(npc.id)) continue;     // not in village yet
       const pos = _cvp[npc.id] || PACK_DEFAULT_POS[npc.id] || { x: 0, z: 30 };
-      const niceName = npc.id.charAt(0).toUpperCase() + npc.id.slice(1);
-      // Store in clearingNPCs with pack-member flag so drawNpcBubbles can label them
+      // addNpcDog label so proximity chat works
       clearingNPCs.push({
         wx: pos.x, wz: pos.z, s: 1.0, fur: npc.fur, yaw: pos.yaw ?? 0,
-        label: PACK_LABELS[npc.id],                   // floating name-tag pill
-        text: niceName + ' is hanging out here.',     // proximity speech bubble
-        type: 'packMember', ears: npc.ears,
-        packId: npc.id,
+        text: npc.id.charAt(0).toUpperCase() + npc.id.slice(1) + ' is here!',
+        type: 'adult', ears: npc.ears,
       });
-      addNpcDog(npcQuads, pos.x, pos.z, 1.0, npc.fur, pos.yaw ?? 0, npc.ears);
+      drawPackMemberNpc(npcQuads, npc.id, pos.x, pos.z, pos.yaw ?? 0);
     }
 
     // Generate (or restore) today's NPC quests
@@ -5199,14 +5173,10 @@
                 if (itemIdx !== -1) {
                   inventory[itemIdx].count = (inventory[itemIdx].count || 1) - 1;
                   if (inventory[itemIdx].count <= 0) inventory.splice(itemIdx, 1);
-                  const charmBonus = hasCheeseballCharmNecklace() ? Math.ceil(q.reward * 0.5) : 0;
-                  const totalReward = q.reward + charmBonus;
-                  wobCoins += totalReward;
+                  wobCoins += q.reward;
                   q.status = 'done';
                   document.getElementById('wob-count').textContent = wobCoins;
-                  toastMsg   = charmBonus > 0
-                    ? `🎉 They adore you! ${def.name} delivered! +${totalReward} 🪙 (+${charmBonus} charm bonus!)`
-                    : `🎉 Quest complete! ${def.name} delivered! +${totalReward} 🪙`;
+                  toastMsg   = `🎉 Quest complete! ${def.name} delivered! +${q.reward} 🪙`;
                   toastTimer = 320;
                   saveProgress();
                 }
@@ -5228,15 +5198,12 @@
               ctx.globalAlpha = 1;
               if (keysJustPressed.has('KeyE')) {
                 keysJustPressed.delete('KeyE');
-                const charmBonusL = hasCheeseballCharmNecklace() ? Math.ceil(q.reward * 0.5) : 0;
-                wobCoins += q.reward + charmBonusL;
+                wobCoins += q.reward;
                 q.status = 'done';
                 document.getElementById('wob-count').textContent = wobCoins;
                 const doneLabel = q.locateType === 'toy' ? 'Toy returned!' :
                                   q.locateType === 'sister' ? 'Sister found!' : 'Quest complete!';
-                toastMsg   = charmBonusL > 0
-                  ? `🎉 ${doneLabel} +${q.reward + charmBonusL} 🪙 (+${charmBonusL} charm bonus!)`
-                  : `🎉 ${doneLabel} +${q.reward} 🪙`;
+                toastMsg   = `🎉 ${doneLabel} +${q.reward} 🪙`;
                 toastTimer = 320;
                 saveProgress();
               }
@@ -5276,8 +5243,7 @@
       if (dialogueCooldown > 0) dialogueCooldown--;
       // Meet Biscuit at the back fence (Biscuit is at x=0, z=36)
       if (dialogueCooldown === 0 && cbNpcPhase === 0 && Math.hypot(ds.x, ds.z - 30) < 5.5) {
-        // Charm necklace: Biscuit is immediately won over and extra enthusiastic
-        activeDialogueArr = hasCheeseballCharmNecklace() ? CB_NEIGHBOR_CHARM_DLG : CB_NEIGHBOR_DLG;
+        activeDialogueArr = CB_NEIGHBOR_DLG;
         dialogueIndex = 0; gameState = 'cutscene'; showDialogue(0);
       }
       // Pick up squeaky toy (at x=8.5, z=50.5)
@@ -5569,11 +5535,11 @@
     // collect all quads
     buildDog();
     if (_moon) dogQuads.forEach(q => { q._isDog = true; });
-    buildLostPupQuads();
+    if (isInVillage()) buildLostPupQuads();
     if (isInVillage()) buildVillageKidQuads();
     if (isInVillage()) buildQuestObjQuads();
     if (isInVillage() && arrivalNpcsActive) buildArrivalNpcQuads();
-    buildVillageScratchQuads();
+    if (isInVillage()) buildVillageScratchQuads();
     const allQuads = [
       // worldQuads (forest clearing) hidden for Cheeseball, Ruff, Bark, and when in the village
       ...(activeCharacter === 'cheeseball' || activeCharacter === 'ruff' || activeCharacter === 'bark' || isInVillage() ? [] : worldQuads),
@@ -5584,7 +5550,14 @@
       ...(activeCharacter === 'ruff' && !ruffInVillage ? (ruffScene === 'battle' ? ruffBattleQuads : ruffScene === 'river' ? ruffRiverQuads : ruffQuads) : []),
       ...(activeCharacter === 'bark' && !barkInVillage ? (barkInUpstairs ? barkUpstairsQuads : barkQuads) : []),
       ...(isInVillage() ? villageQuads : []),
-      ...npcQuads, ...arrivalNpcQuads, ...villageScratchQuads, ...squirrelQuads, ...lostPupQuads, ...villageKidQuads, ...questObjQuads, ...dogQuads,
+      ...(isInVillage() ? npcQuads : []),
+      ...arrivalNpcQuads,
+      ...(isInVillage() ? villageScratchQuads : []),
+      ...(isInVillage() ? squirrelQuads : []),
+      ...(isInVillage() ? lostPupQuads : []),
+      ...(isInVillage() ? villageKidQuads : []),
+      ...(isInVillage() ? questObjQuads : []),
+      ...dogQuads,
     ];
 
     // compute depth (average z in camera space) for each quad for painter's sort
@@ -5780,33 +5753,6 @@
       const sp = project(v3(npc.wx, DOG_FLOOR + 1.60 * npc.s, npc.wz), cam);
       if (!sp) return;
       const dist = Math.sqrt((npc.wx - dogState.x) ** 2 + (npc.wz - dogState.z) ** 2);
-
-      // ── Pack-member floating name tag — always visible up to 30 units ──
-      if (npc.type === 'packMember' && dist < 30) {
-        const tagAlpha = Math.max(0, Math.min(1, (28 - dist) / 10));
-        const tagSp = project(v3(npc.wx, DOG_FLOOR + 2.10 * npc.s, npc.wz), cam);
-        if (tagSp && tagAlpha > 0) {
-          ctx.save();
-          ctx.globalAlpha = tagAlpha;
-          ctx.font = 'bold 13px Arial';
-          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-          const label = npc.label || npc.text;
-          const tw = ctx.measureText(label).width;
-          const pw = tw + 14, ph = 18, px = tagSp.x - pw / 2, py = tagSp.y - ph / 2;
-          // pill background
-          ctx.fillStyle = 'rgba(10,8,20,0.82)';
-          ctx.beginPath();
-          ctx.roundRect(px, py, pw, ph, 8);
-          ctx.fill();
-          ctx.strokeStyle = 'rgba(200,180,255,0.55)';
-          ctx.lineWidth = 1;
-          ctx.stroke();
-          ctx.fillStyle = '#e8d8ff';
-          ctx.fillText(label, tagSp.x, tagSp.y);
-          ctx.restore();
-        }
-      }
-
       if (dist > 13) return;
       const alpha = Math.max(0, Math.min(1, (11 - dist) / 3.5));
       const isAdult = npc.type === 'adult';
@@ -6052,8 +5998,7 @@
     { id:'bark',       x: 1.8, z:-18, s:1.0, fur:0xd4a860, ears:'triangle' },
   ];
 
-  // Pack-gather cutscene: Prof. Maple greets the final arriving pup.
-  // No pup introductions — just Maple (with Bramble + Sage flanking her).
+  // Pack-gather cutscene: only Prof. Maple speaks — no pup introductions.
   function buildPackGatherDlg(activeChar) {
     return [
       { speaker: 'Prof. Maple 🍁', text: '…And there you are.' },
@@ -7433,12 +7378,6 @@
     { speaker: 'Cheeseball 🐩', text: "I would love to help you, except... there is a fence here!" },
     { speaker: 'Biscuit 🐕', text: "Oh! Sorry — here, let me fix that!" },
   ];
-  const CB_NEIGHBOR_CHARM_DLG = [
-    { speaker: 'Biscuit 🐕', text: "Cheeseball! You look absolutely adorable today! 💕" },
-    { speaker: 'Biscuit 🐕', text: "Oh wait — I lost my squeaky toy! But YOU would know where it is, wouldn't you?" },
-    { speaker: 'Cheeseball 🐩', text: "I would love to help! But the fence..." },
-    { speaker: 'Biscuit 🐕', text: "Say no more! I'll dig a hole right now just for you! 💛" },
-  ];
   const CB_RETURN_DLG = [
     { speaker: 'Cheeseball 🐩', text: "I found it, Biscuit! Here’s your squeaky toy!" },
     { speaker: 'Biscuit 🐕', text: "My squeaky toy!! You found it! Thank you SO much, Cheeseball!! 💛" },
@@ -7679,12 +7618,10 @@
         updateSwitcherBar();
         return;
       }
-      if (activeDialogueArr === CB_NEIGHBOR_DLG || activeDialogueArr === CB_NEIGHBOR_CHARM_DLG) {
+      if (activeDialogueArr === CB_NEIGHBOR_DLG) {
         cbNpcPhase = 1;
         buildCbHole();
-        toastMsg   = hasCheeseballCharmNecklace()
-          ? 'Biscuit dug a hole in record time! She just adores you! 💕🐾'
-          : 'Biscuit dug a hole under the fence! Go explore the neighborhood! 🐾';
+        toastMsg   = 'Biscuit dug a hole under the fence! Go explore the neighborhood! 🐾';
         toastTimer = 320;
         saveProgress();
       } else if (activeDialogueArr === CB_RETURN_DLG) {
@@ -8310,12 +8247,7 @@
       const r = 3 + seedRng() * 22;
       const mx = Math.cos(a) * r, mz = Math.sin(a) * r - 5;
       if (isInRiver(mx, mz)) continue;  // mushrooms don't grow in the river
-      let def = weightedPick(MUSHROOMS, getTimeOfDay());
-      // Wark's Platinum/Quartz necklace: dramatically boosts mushroom rarity
-      if (hasWarkEnhancedNecklace() && def && RARITY_RANK[def.rarity] <= 1 && Math.random() < 0.72) {
-        const luckyPool = MUSHROOMS.filter(d => RARITY_RANK[d.rarity] >= 2);
-        if (luckyPool.length) def = weightedPick(luckyPool, getTimeOfDay()) || def;
-      }
+      const def = weightedPick(MUSHROOMS, getTimeOfDay());
       const defIdx = MUSHROOMS.indexOf(def);
       const sc = 0.18 + seedRng() * 0.14;
       const qStart = forestQuads.length;
@@ -8336,13 +8268,8 @@
       const r = 5 + seedRng() * 18;
       const ax = Math.cos(a) * r, az = Math.sin(a) * r - 5;
       if (isInRiver(ax, az)) continue;  // land animals stay dry
-      let def = weightedPick(ANIMALS.filter(an => !an.water), getTimeOfDay());
+      const def = weightedPick(ANIMALS.filter(an => !an.water), getTimeOfDay());
       if (!def) continue;
-      // Wark's Platinum/Quartz necklace: dramatically boosts animal rarity
-      if (hasWarkEnhancedNecklace() && RARITY_RANK[def.rarity] <= 1 && Math.random() < 0.72) {
-        const luckyAnimal = ANIMALS.filter(an => !an.water && RARITY_RANK[an.rarity] >= 2);
-        if (luckyAnimal.length) def = weightedPick(luckyAnimal, getTimeOfDay()) || def;
-      }
       const defIdx = ANIMALS.indexOf(def);
       const sc = 0.22 + seedRng() * 0.10;
       // Simple animal silhouette: body + head + 4 legs
@@ -11188,16 +11115,13 @@
       // White coat panel on his chest (the -x-facing side)
       pushBox(drStoneQ, 1.70, DOG_FLOOR + 0.60, -21.5, 0.04, 0.24, 0.32, 0xe6e8e2);
     }
-    // Pack gathering cutscene: show Prof. Maple (centre), Bramble (left), Sage (right)
+    // Pack gathering cutscene: Prof. Maple (centre), Chef Bramble (left), Dr. Sage (right)
     const packNpcQ = [];
     const _gsRender = getGlobalSave();
     if (!_gsRender.packGatherDone && getVillageDogs().length >= 7 && activeDialogueArr === packGatherDlg && packGatherDlg.length > 0) {
-      // Prof. Maple — centre, facing entrance (south = Math.PI)
-      addNpcDog(packNpcQ,  0,   -25.5, 1.55, 0xc07840, Math.PI, 'triangle');
-      // Chef Bramble — left of Maple
-      addNpcDog(packNpcQ, -2.5, -25.0, 1.55, 0x9a5028, Math.PI, 'floppy');
-      // Dr. Sage — right of Maple
-      addNpcDog(packNpcQ,  2.5, -25.0, 1.50, 0x508868, Math.PI, 'floppy');
+      addNpcDog(packNpcQ,  0,   -25.5, 1.55, 0xc07840, Math.PI, 'triangle'); // Prof. Maple — centre
+      addNpcDog(packNpcQ, -2.5, -25.0, 1.55, 0x9a5028, Math.PI, 'floppy');   // Chef Bramble — left
+      addNpcDog(packNpcQ,  2.5, -25.0, 1.50, 0x508868, Math.PI, 'floppy');   // Dr. Sage — right
     }
     const allQ = [...caveQuads, ...dogQuads, ...drStoneQ, ...packNpcQ];
     const fogHex = 0x100c08;
@@ -13463,58 +13387,6 @@
       if (isPlatinum && isQuartz) {
         setTimeout(() => {
           toastMsg   = '💙 "That\'s weird… I feel enhanced."';
-          toastTimer = 480;
-        }, 200);
-      }
-    }
-    // Scratch special reaction to Sandstone + Tin Ore necklace
-    if (activeCharacter === 'scratch' && j.type === 'necklace') {
-      const mDef = j.metalIdx >= 0 ? METALS[j.metalIdx] : null;
-      const rDef = j.rockIdx  >= 0 ? ROCKS[j.rockIdx]   : null;
-      if (mDef?.name === 'Tin Ore' && rDef?.name === 'Sandstone') {
-        setTimeout(() => {
-          toastMsg   = '🛡️ "Whoa… I feel like nothing can hurt me!"';
-          toastTimer = 480;
-        }, 200);
-      }
-    }
-    // Cheeseball special reaction to Ruby + Gold Ore necklace
-    if (activeCharacter === 'cheeseball' && j.type === 'necklace') {
-      const mDef = j.metalIdx >= 0 ? METALS[j.metalIdx] : null;
-      const rDef = j.rockIdx  >= 0 ? ROCKS[j.rockIdx]   : null;
-      const isGold = mDef?.name === 'Gold Ore';
-      const isRuby = rDef && (rDef.name === 'Ruby' || rDef.name === 'Fine Ruby' || rDef.name === 'Star Ruby');
-      if (isGold && isRuby) {
-        setTimeout(() => {
-          toastMsg   = '💕 "Ooh, I feel irresistibly charming right now!"';
-          toastTimer = 480;
-        }, 200);
-      }
-    }
-    // Ruff special reaction to Opal + Copper Ore necklace
-    if (activeCharacter === 'ruff' && j.type === 'necklace') {
-      const mDef = j.metalIdx >= 0 ? METALS[j.metalIdx] : null;
-      const rDef = j.rockIdx  >= 0 ? ROCKS[j.rockIdx]   : null;
-      const isCopper = mDef?.name === 'Copper Ore';
-      const isOpal   = rDef && (rDef.name === 'Opal' || rDef.name === 'Fire Opal' ||
-                                  rDef.name === 'Black Opal' || rDef.name === 'Chocolate Opal');
-      if (isCopper && isOpal) {
-        setTimeout(() => {
-          toastMsg   = '⚡ "Whoa — I feel SO fast all of a sudden!"';
-          toastTimer = 480;
-        }, 200);
-      }
-    }
-    // Bark special reaction to Opal + Bronze Ore necklace
-    if (activeCharacter === 'bark' && j.type === 'necklace') {
-      const mDef = j.metalIdx >= 0 ? METALS[j.metalIdx] : null;
-      const rDef = j.rockIdx  >= 0 ? ROCKS[j.rockIdx]   : null;
-      const isBronze = mDef?.name === 'Bronze Ore';
-      const isOpal   = rDef && (rDef.name === 'Opal' || rDef.name === 'Fire Opal' ||
-                                  rDef.name === 'Black Opal' || rDef.name === 'Chocolate Opal');
-      if (isBronze && isOpal) {
-        setTimeout(() => {
-          toastMsg   = '🌈 "I can… feel their feelings? This is incredible."';
           toastTimer = 480;
         }, 200);
       }
