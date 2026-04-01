@@ -526,6 +526,68 @@
       cursor: pointer; transition: background 0.2s;
     }
     #missions-card-btn:hover { background: rgba(200,170,50,0.40); }
+    /* ── Mission HQ overlay ─────────────────────────────────────────── */
+    #mhq-overlay {
+      position: fixed; inset: 0; z-index: 180;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      background: rgba(2,6,16,0.97); gap: 14px; overflow: hidden;
+    }
+    #mhq-overlay.hidden { display: none; }
+    #mhq-title {
+      font: bold 26px Arial, sans-serif; color: #f0b840;
+      letter-spacing: 3px; text-transform: uppercase;
+      text-shadow: 0 0 28px rgba(240,180,40,0.55); margin-bottom: 2px;
+    }
+    #mhq-sub { font: 13px Arial; color: #806848; margin-top: -8px; }
+    #mhq-prof-row {
+      display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;
+      max-width: 700px; margin-bottom: 4px;
+    }
+    .mhq-prof-btn {
+      background: rgba(20,14,6,0.82); border: 1.5px solid rgba(160,120,40,0.40);
+      border-radius: 12px; padding: 9px 14px; cursor: pointer;
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      transition: background 0.14s, border-color 0.14s; min-width: 80px;
+    }
+    .mhq-prof-btn:hover, .mhq-prof-btn.active {
+      background: rgba(50,36,8,0.90); border-color: rgba(220,170,60,0.75);
+    }
+    .mhq-prof-btn.done { opacity: 0.45; }
+    .mhq-prof-icon { font-size: 22px; }
+    .mhq-prof-name { font: bold 11px Arial; color: #d0a040; letter-spacing: 0.5px; }
+    .mhq-prof-done { font: 10px Arial; color: #60a060; }
+    #mhq-mission-panel {
+      background: rgba(12,8,2,0.95); border: 1.5px solid rgba(160,120,40,0.35);
+      border-radius: 16px; padding: 18px 22px 14px; max-width: 600px; width: 90%;
+      display: flex; flex-direction: column; gap: 10px; max-height: 360px; overflow-y: auto;
+    }
+    #mhq-panel-speaker { font: bold 14px Arial; color: #e8c060; margin-bottom: 2px; }
+    #mhq-panel-brief { font: 13px/1.6 Arial; color: #c0a870; margin-bottom: 6px; }
+    .mhq-mission-btn {
+      background: rgba(20,14,4,0.85); border: 1.5px solid rgba(120,90,30,0.45);
+      border-radius: 10px; padding: 10px 14px; cursor: pointer; text-align: left;
+      color: #d8b860; font: 13px Arial; transition: background 0.12s, border-color 0.12s;
+    }
+    .mhq-mission-btn:hover { background: rgba(50,36,8,0.92); border-color: rgba(200,160,50,0.70); }
+    .mhq-mission-btn.completed { color: #60a860; border-color: rgba(60,140,60,0.35);
+      background: rgba(6,20,6,0.80); cursor: default; }
+    .mhq-mission-btn.active-mission { border-color: rgba(80,160,255,0.70); color: #80c8ff;
+      background: rgba(6,16,30,0.90); }
+    #mhq-close-btn {
+      background: rgba(20,12,4,0.80); border: 1.5px solid rgba(120,90,30,0.45);
+      border-radius: 10px; color: #806840; font: 13px Arial;
+      padding: 8px 26px; cursor: pointer; margin-top: 2px;
+    }
+    #mhq-close-btn:hover { background: rgba(40,28,8,0.90); color: #d0a040; }
+    /* Mission active HUD banner */
+    #mission-hud {
+      position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%);
+      background: rgba(8,4,0,0.88); border: 1.5px solid rgba(180,140,40,0.55);
+      border-radius: 10px; padding: 7px 20px; z-index: 90; pointer-events: none;
+      color: #e0c060; font: bold 13px Arial; letter-spacing: 0.5px;
+      text-shadow: 0 0 10px rgba(220,180,40,0.45); display: none;
+    }
+    #mission-hud.visible { display: block; }
     /* Obsidian game-over overlay */
     #obsidian-gameover {
       position: fixed; inset: 0; z-index: 400;
@@ -1035,10 +1097,24 @@
   <!-- Missions unlocked card -->
   <div id="missions-card" class="hidden">
     <div id="missions-card-title">🎯 Missions Unlocked!</div>
-    <div id="missions-card-body">Go to the <strong>East Path</strong> to see available missions!</div>
-    <div id="missions-card-sub">Missions are tasks given by the seven professors — collect materials, scout locations, or bring back information. Head east to get started.</div>
+    <div id="missions-card-body">Go to the <strong>West Path</strong> to find the Mission HQ!</div>
+    <div id="missions-card-sub">Missions are tasks given by the seven professors — infiltrate wolf camps, steal DNA testers, and rescue hostages. Head west to get briefed.</div>
     <button id="missions-card-btn" onclick="closeMissionsCard()">Let's go! 🐾</button>
   </div>
+
+  <!-- Mission HQ overlay -->
+  <div id="mhq-overlay" class="hidden">
+    <div id="mhq-title">🎯 Mission HQ</div>
+    <div id="mhq-sub">Warbark Village Operations Centre</div>
+    <div id="mhq-prof-row"></div>
+    <div id="mhq-mission-panel">
+      <div id="mhq-panel-speaker">Select a professor above</div>
+      <div id="mhq-panel-brief">Seven professors are waiting to brief you. Each has three urgent missions.</div>
+    </div>
+    <button id="mhq-close-btn" onclick="closeMHQ()">← Leave HQ</button>
+  </div>
+  <!-- Active mission HUD -->
+  <div id="mission-hud"></div>
 
   <!-- Obsidian game-over overlay -->
   <div id="obsidian-gameover" class="hidden">
@@ -1747,199 +1823,73 @@
   }
 
   // ── Bark's House ─────────────────────────────────────────────────────────
-  function buildBarkHouse() {
+  function buildBarkHouse() {   // name kept — called by CHAR_CONFIG
     barkQuads.length = 0;
     barkColliders.length = 0;
-    const WALL  = 0x5c4030, CEIL  = 0xe8e0d0, TRIM  = 0x7a5438;
-    const WOOD  = 0x8c5c2a, DOOR  = 0x6a3c18, WNDW  = 0x90b8d0;
-    const IRON  = 0x2c2a22, GRNL  = 0x2c4c1a, GRND  = 0x243e14;
+    clearingNPCs.length = 0;
+    npcQuads.length = 0;
 
-    // ── Ground floor tiles (two tone) ──────────────────────────────────────
-    for (let fx = -8; fx < 8; fx += 1.5) {
-      for (let fz = -11; fz < 5; fz += 1.5) {
-        const even = ((Math.floor(fx/1.5) + Math.floor(fz/1.5)) & 1);
-        const inKitchen = fz >= 0;
-        barkQuads.push({ verts:[v3(fx,0,fz),v3(fx+1.5,0,fz),v3(fx+1.5,0,fz+1.5),v3(fx,0,fz+1.5)],
-          color: inKitchen ? (even ? 0xd4c0a0 : 0xc8b490) : (even ? 0xd8c8a8 : 0xeadec0),
-          normal: v3(0,1,0), isGround: true });
-      }
-    }
-    // ── Back yard grass ────────────────────────────────────────────────────
-    for (let fx = -11; fx < 11; fx += 2) {
-      for (let fz = 5; fz < 27; fz += 2) {
-        const even = (((fx/2|0)+(fz/2|0))&1);
-        barkQuads.push({ verts:[v3(fx,0,fz),v3(fx+2,0,fz),v3(fx+2,0,fz+2),v3(fx,0,fz+2)],
-          color: even ? GRNL : GRND, normal: v3(0,1,0), isGround: true });
-      }
-    }
-    // Wooden patio deck (z 5–10, x -5 to 5)
+    const ROCK  = 0x4a4438, ROCK2 = 0x3c3830, ROCK3 = 0x5a5448;
+    const DIRT  = 0x3c3028, DIRT2 = 0x342a22;
+    const MOSS  = 0x2a4818, MOSS2 = 0x1e3c10;
+    const LEAF  = 0x5a4018, LEAF2 = 0x4a3410;
+    const WARM  = 0xd06820;
+
+    // ── Cave floor (dark dirt/stone tiles) ────────────────────────────────
     for (let fx = -5; fx < 5; fx += 1.2) {
-      for (let fz = 5; fz < 10; fz += 1.2) {
-        barkQuads.push({ verts:[v3(fx,0.04,fz),v3(fx+1.2,0.04,fz),v3(fx+1.2,0.04,fz+1.2),v3(fx,0.04,fz+1.2)],
-          color: ((Math.floor(fx/1.2)+Math.floor(fz/1.2))&1) ? 0xa07040 : 0xb87c48,
-          normal: v3(0,1,0), isGround: true });
+      for (let fz = -7; fz < 4; fz += 1.2) {
+        const even = ((Math.floor(fx/1.2) + Math.floor(fz/1.2)) & 1);
+        barkQuads.push({ verts:[v3(fx,0,fz),v3(fx+1.2,0,fz),v3(fx+1.2,0,fz+1.2),v3(fx,0,fz+1.2)],
+          color: even ? DIRT : DIRT2, normal: v3(0,1,0), isGround: true });
       }
     }
+    // Moss patches
+    barkQuads.push({ verts:[v3(-3,0.02,-5),v3(0,0.02,-5),v3(0,0.02,-3),v3(-3,0.02,-3)],
+      color: MOSS, normal: v3(0,1,0), isGround: true });
+    barkQuads.push({ verts:[v3(1,0.02,-4),v3(3,0.02,-4),v3(3,0.02,-2),v3(1,0.02,-2)],
+      color: MOSS2, normal: v3(0,1,0), isGround: true });
 
-    // ── Ceiling ────────────────────────────────────────────────────────────
-    barkQuads.push({ verts:[v3(-8,6,-11),v3(8,6,-11),v3(8,6,5),v3(-8,6,5)],
-      color: CEIL, normal: v3(0,-1,0), isGround: false });
+    // ── Low cave ceiling ──────────────────────────────────────────────────
+    barkQuads.push({ verts:[v3(-5,3.5,-7),v3(5,3.5,-7),v3(5,3.5,4),v3(-5,3.5,4)],
+      color: ROCK2, normal: v3(0,-1,0), isGround: false });
 
-    // ── Outer walls ────────────────────────────────────────────────────────
-    pushBox(barkQuads,  0,  3,  -11.1, 8, 3, 0.15, WALL);   // back
-    pushBox(barkQuads, -8.1, 3,  -3,  0.15, 3, 8,  WALL);   // left
-    pushBox(barkQuads,  8.1, 3,  -3,  0.15, 3, 8,  WALL);   // right
-    // Front wall — two panels with back-door gap (|x| < 1.1)
-    pushBox(barkQuads, -4.55, 3, 5.1, 3.45, 3, 0.15, WALL);  // front-left panel
-    pushBox(barkQuads,  4.55, 3, 5.1, 3.45, 3, 0.15, WALL);  // front-right panel
-    pushBox(barkQuads,  0, 4.4, 5.1, 1.1, 1.6, 0.15, WALL);  // above door
-    // Interior partial wall at z=0 (separates living from kitchen) — gap at x 0 to 3
-    pushBox(barkQuads, -4.5, 3,  0.1, 3.5, 3, 0.10, TRIM);   // left section
+    // ── Cave walls ────────────────────────────────────────────────────────
+    pushBox(barkQuads,  0,   1.75, -7.1, 5,   1.75, 0.2,  ROCK);   // back
+    pushBox(barkQuads, -5.1, 1.75, -1.5, 0.2, 1.75, 5.5,  ROCK);   // left
+    pushBox(barkQuads,  5.1, 1.75, -1.5, 0.2, 1.75, 5.5,  ROCK);   // right
+    // Front: two panels flanking the den opening (|x| > 1.5)
+    pushBox(barkQuads, -3.25,1.75,  4.1, 1.75,1.75, 0.2,  ROCK);   // front-left
+    pushBox(barkQuads,  3.25,1.75,  4.1, 1.75,1.75, 0.2,  ROCK);   // front-right
 
-    // ── Trim rails ────────────────────────────────────────────────────────
-    pushBox(barkQuads,  0,  0.9, -10.9, 8, 0.08, 0.06, TRIM); // back baseboard
-    pushBox(barkQuads, -7.9, 0.9, -3, 0.06, 0.08, 8,   TRIM); // left baseboard
-    pushBox(barkQuads,  7.9, 0.9, -3, 0.06, 0.08, 8,   TRIM); // right baseboard
+    // ── Rock outcroppings ─────────────────────────────────────────────────
+    pushBox(barkQuads, -4.5, 0.5, -6,   0.6, 0.5, 0.8, ROCK3);
+    pushBox(barkQuads,  4.2, 0.4, -3,   0.5, 0.4, 0.6, ROCK3);
+    pushBox(barkQuads, -3.5, 0.3,  1,   0.4, 0.3, 0.5, ROCK3);
+    barkColliders.push({ x: -4.5, z: -6, r: 0.55 });
+    barkColliders.push({ x:  4.2, z: -3, r: 0.45 });
 
-    // ── Back door frame + dog door ─────────────────────────────────────────
-    pushBox(barkQuads, -1.3, 2.0, 5.18, 0.12, 2.0, 0.14, TRIM);  // frame left
-    pushBox(barkQuads,  1.3, 2.0, 5.18, 0.12, 2.0, 0.14, TRIM);  // frame right
-    pushBox(barkQuads,  0,   3.8, 5.18, 1.5,  0.12, 0.14, TRIM); // frame top
-    // door panels (split by dog door gap at bottom-centre)
-    pushBox(barkQuads,  0, 2.1, 5.12, 1.0, 1.5, 0.10, DOOR);    // upper panel
-    pushBox(barkQuads, -0.7, 0.22, 5.12, 0.4, 0.22, 0.10, DOOR); // bottom-left
-    pushBox(barkQuads,  0.7, 0.22, 5.12, 0.4, 0.22, 0.10, DOOR); // bottom-right
-    // Dog door flap
-    pushBox(barkQuads, 0, 0.20, 5.16, 0.26, 0.20, 0.05, 0x5a3010);
+    // ── Leaf nest (Bark's starting spot) ──────────────────────────────────
+    barkQuads.push({ verts:[v3(-1.2,0.05,-2.5),v3(1.2,0.05,-2.5),v3(1.2,0.05,-0.5),v3(-1.2,0.05,-0.5)],
+      color: LEAF, normal: v3(0,1,0), isGround: true });
+    barkQuads.push({ verts:[v3(-0.9,0.08,-2.2),v3(0.9,0.08,-2.2),v3(0.9,0.08,-0.8),v3(-0.9,0.08,-0.8)],
+      color: LEAF2, normal: v3(0,1,0), isGround: true });
+    // Nest rim
+    pushBox(barkQuads,  0,    0.18, -2.5,  1.2, 0.12, 0.10, 0x6a4818);
+    pushBox(barkQuads,  0,    0.18, -0.5,  1.2, 0.12, 0.10, 0x6a4818);
+    pushBox(barkQuads, -1.2,  0.18, -1.5,  0.10,0.12, 1.0,  0x6a4818);
+    pushBox(barkQuads,  1.2,  0.18, -1.5,  0.10,0.12, 1.0,  0x6a4818);
 
-    // ── Windows ────────────────────────────────────────────────────────────
-    pushBox(barkQuads, -8,  2.8, -7,  0.08, 1.0, 1.6, WNDW);  // left window
-    pushBox(barkQuads, -8,  2.8, -3,  0.08, 1.0, 1.2, WNDW);  // left window 2
-    pushBox(barkQuads,  8,  2.8, -7,  0.08, 1.0, 1.6, WNDW);  // right window
-    pushBox(barkQuads,  8,  2.8, -2,  0.08, 1.0, 1.2, WNDW);  // right window 2
-    // Window frames
-    pushBox(barkQuads, -8.1,2.8,-7,  0.10,1.1,1.8,TRIM);
-    pushBox(barkQuads, -8.1,2.8,-3,  0.10,1.1,1.4,TRIM);
-    pushBox(barkQuads,  8.1,2.8,-7,  0.10,1.1,1.8,TRIM);
-    pushBox(barkQuads,  8.1,2.8,-2,  0.10,1.1,1.4,TRIM);
+    // ── Mother dog: large warm golden-brown adult, facing the nest ─────────
+    addNpcDog(barkQuads, -2.5, -3.5, 1.3, 0xc8883a, 0.45, 'triangle');
+    barkColliders.push({ x: -2.5, z: -3.5, r: 1.1 });
 
-    // ── Fireplace (left side of back wall) ────────────────────────────────
-    pushBox(barkQuads, -5.5, 1.8, -10.85, 2.2, 1.8, 0.28, 0x584838); // stone body
-    pushBox(barkQuads, -5.5, 0.9, -10.65, 1.4, 0.8, 0.18, 0x100808); // opening
-    pushBox(barkQuads, -5.5, 0.65,-10.6,  1.0, 0.35,0.10, 0xe04010); // fire
-    pushBox(barkQuads, -5.5, 1.05,-10.6,  0.5, 0.25,0.10, 0xf0a000); // flame tip
-    pushBox(barkQuads, -5.5, 3.5, -10.7,  3.0, 0.2, 0.45, TRIM);     // mantle
-    pushBox(barkQuads, -4.2, 3.8, -10.5,  0.22,0.22,0.22, 0xd09818); // candle L
-    pushBox(barkQuads, -6.8, 3.8, -10.5,  0.22,0.22,0.22, 0xd09818); // candle R
+    // ── Ruff: tiny newborn sibling, sleeping on nest ───────────────────────
+    buildAnimKidDog(barkQuads, 1.0, -1.5, 0.38, 0x9a6030, Math.PI * 0.8, 'floppy', 0, 0.12, true);
+    barkColliders.push({ x: 1.0, z: -1.5, r: 0.28 });
 
-    // ── Sofa (living room, against east wall facing fireplace) ─────────────
-    pushBox(barkQuads,  4.5, 0.46, -6,   1.0, 0.46, 2.5, 0x7050a8); // seat
-    pushBox(barkQuads,  4.5, 1.08, -6,   0.22,0.60, 2.5, 0x6040a0); // backrest
-    pushBox(barkQuads,  3.7, 0.74, -8.3, 0.22,0.72, 0.22, 0x6040a0); // armrest front
-    pushBox(barkQuads,  3.7, 0.74, -3.7, 0.22,0.72, 0.22, 0x6040a0); // armrest back
-    // cushions
-    pushBox(barkQuads,  4.5, 0.72, -6.8, 0.88,0.18, 0.85, 0x9060d0);
-    pushBox(barkQuads,  4.5, 0.72, -5.2, 0.88,0.18, 0.85, 0x9060d0);
-    barkColliders.push({ x: 4.5, z: -6, r: 1.2 }); // sofa solid
-
-    // ── Coffee table ────────────────────────────────────────────────────────
-    pushBox(barkQuads,  1.0, 0.40, -6,   1.0, 0.06, 1.4, WOOD);  // top
-    pushBox(barkQuads,  0.2, 0.20, -6.6, 0.06,0.20, 0.06, WOOD); // leg
-    pushBox(barkQuads,  1.8, 0.20, -6.6, 0.06,0.20, 0.06, WOOD);
-    pushBox(barkQuads,  0.2, 0.20, -5.4, 0.06,0.20, 0.06, WOOD);
-    pushBox(barkQuads,  1.8, 0.20, -5.4, 0.06,0.20, 0.06, WOOD);
-    // A bone on the table
-    pushBox(barkQuads,  1.0, 0.50, -6.1, 0.40, 0.06, 0.10, 0xe8e0c8);
-    barkColliders.push({ x: 1.0, z: -6, r: 0.65 }); // coffee table
-
-    // ── TV unit (centre of back wall) ──────────────────────────────────────
-    pushBox(barkQuads,  1.5, 0.58, -10.85, 2.5, 0.58, 0.25, WOOD);    // cabinet
-    pushBox(barkQuads,  1.5, 1.38, -10.82, 2.1, 0.72, 0.10, 0x101010); // screen
-    pushBox(barkQuads,  1.5, 1.38, -10.80, 2.0, 0.68, 0.06, 0x181820); // screen glass
-    pushBox(barkQuads,  1.5, 1.14, -10.83, 0.60,0.06, 0.10, TRIM);     // stand
-    barkColliders.push({ x: 1.5, z: -10.85, r: 1.0 }); // TV unit
-
-    // ── Rug (living room centre) ───────────────────────────────────────────
-    barkQuads.push({ verts:[v3(-3,0.06,-9.5),v3(4,0.06,-9.5),v3(4,0.06,-3.5),v3(-3,0.06,-3.5)],
-      color: 0x8040a0, normal: v3(0,1,0), isGround: true });  // purple rug
-    barkQuads.push({ verts:[v3(-2.7,0.08,-9.2),v3(3.7,0.08,-9.2),v3(3.7,0.08,-3.8),v3(-2.7,0.08,-3.8)],
-      color: 0xa060c8, normal: v3(0,1,0), isGround: true });  // rug inner
-
-    // ── Dog bed (left side of living room — same as portrait) ──────────────
-    pushBox(barkQuads, -5.5, 0.22, -5.0, 1.1, 0.22, 1.5, 0x8a8078);  // bolster
-    pushBox(barkQuads, -5.5, 0.44, -5.0, 0.95,0.14, 1.28,0xc0b8b0);  // pad
-    barkColliders.push({ x: -5.5, z: -5.0, r: 0.85 }); // dog bed
-
-    // ── Staircase (northwest corner, going from z=-8 deeper to -10.5) ───────
-    for (let s = 0; s < 5; s++) {
-      pushBox(barkQuads, -6, 0.18*(s+1), -8 - s*0.55, 1.4, 0.12, 0.5, 0x6a4020);
-    }
-    // Stair railing (right side of stairs — east rail)
-    pushBox(barkQuads, -5.2, 1.2, -9.8, 0.06, 1.0, 1.8, TRIM); // vertical post top
-    pushBox(barkQuads, -5.2, 0.4, -8.2, 0.06, 0.4, 0.10, TRIM); // vertical post bot
-    pushBox(barkQuads, -5.2, 1.0, -9.0, 0.06, 0.08, 1.8, TRIM); // handrail
-    // Wall landing indicator
-    pushBox(barkQuads, -7,   3.8, -10.85, 1.5,  0.1,  0.1, 0xc89828); // gold trim marker
-
-    // ── Kitchen counter (right side, z 0 to 5) ─────────────────────────────
-    pushBox(barkQuads,  7.1, 0.8,  2.5,  0.18, 0.8, 2.5, WOOD);   // counter body
-    pushBox(barkQuads,  7.1, 1.22, 2.5,  0.22, 0.06,2.6, TRIM);   // counter top
-    // Cabinet above counter
-    pushBox(barkQuads,  7.1, 3.4,  2.5,  0.18, 0.8, 2.5, WOOD);
-    // Sink
-    pushBox(barkQuads,  7.15,1.22, 3.5,  0.20, 0.08,0.7, 0xa0a0b0);
-    barkColliders.push({ x: 7.1, z: 2.5, r: 0.6 }); // counter
-
-    // ── Dining table (left of kitchen) ─────────────────────────────────────
-    pushBox(barkQuads, -3.5, 0.72, 2.5,  1.5, 0.08, 1.2, WOOD);  // table top
-    [[-4.0,1.8],[-3.0,1.8],[-4.0,3.2],[-3.0,3.2]].forEach(([tx,tz]) => {
-      pushBox(barkQuads, tx, 0.36, tz, 0.06, 0.36, 0.06, WOOD);
-    });
-    // Chairs around table (simple)
-    [[-3.5,0.8],[-3.5,4.2]].forEach(([cx,cz]) => {
-      pushBox(barkQuads, cx, 0.38, cz, 0.8, 0.06, 0.5, WOOD);
-      pushBox(barkQuads, cx, 0.78, cz+0.3*Math.sign(cz-2.5), 0.7, 0.44, 0.06, WOOD);
-    });
-    barkColliders.push({ x: -3.5, z: 2.5, r: 0.9 }); // dining table
-
-    // ── Back yard fence (iron) ──────────────────────────────────────────────
-    for (let fz = 5; fz <= 27; fz += 3) {
-      pushBox(barkQuads,-11,1.2,fz, 0.12,1.2,0.12, IRON);
-      pushBox(barkQuads, 11,1.2,fz, 0.12,1.2,0.12, IRON);
-    }
-    pushBox(barkQuads,-11,2.0,16, 0.06,0.1,11, IRON);  // side rail top
-    pushBox(barkQuads,-11,0.8,16, 0.06,0.1,11, IRON);  // side rail bot
-    pushBox(barkQuads, 11,2.0,16, 0.06,0.1,11, IRON);
-    pushBox(barkQuads, 11,0.8,16, 0.06,0.1,11, IRON);
-    for (let fx = -11; fx <= 11; fx += 3)
-      pushBox(barkQuads,fx,1.2,27.2, 0.12,1.2,0.12, IRON);
-    pushBox(barkQuads, 0,2.0,27.2, 11,0.1,0.06, IRON);
-    pushBox(barkQuads, 0,0.8,27.2, 11,0.1,0.06, IRON);
-
-    // ── Garden shed (back right corner) ───────────────────────────────────
-    pushBox(barkQuads,  8.0, 1.8, 20, 2.2, 1.8, 1.8, 0x6a4820);  // shed walls
-    pushBox(barkQuads,  8.0, 3.8, 20, 2.6, 0.25,2.2, 0x4a2c10); // shed roof
-    pushBox(barkQuads,  6.8, 1.0, 20, 0.18,1.0, 0.7, DOOR);      // shed door
-    barkColliders.push({ x: 8.0, z: 20, r: 1.6 }); // shed solid
-
-    // ── Dog kennel (back left corner) ─────────────────────────────────────
-    pushBox(barkQuads, -7.0, 1.0, 18, 1.4, 1.0, 1.4, 0x8c5c2a);  // kennel walls
-    pushBox(barkQuads, -7.0, 2.0, 18, 1.8, 0.2, 1.8, 0x7a4a1e);  // kennel roof
-    pushBox(barkQuads, -7.0, 0.5, 16.55,0.55,0.5,0.08,DOOR);      // kennel opening top
-    barkColliders.push({ x: -7.0, z: 18, r: 0.9 }); // kennel solid
-
-    // ── Garden beds ────────────────────────────────────────────────────────
-    pushBox(barkQuads, -2,  0.3, 22,  2.4, 0.3, 0.9, 0x6a4020);
-    pushBox(barkQuads, -2,  0.8, 22,  1.4, 0.5, 0.7, 0xf06080);
-    pushBox(barkQuads,  0.5,0.78,22.5,0.7, 0.4, 0.5, 0xffa8c0);
-    pushBox(barkQuads,  4.0, 0.3, 24,  2.0, 0.3, 0.9, 0x6a4020);
-    pushBox(barkQuads,  4.0, 0.8, 24,  1.2, 0.5, 0.7, 0x60d060);
-    pushBox(barkQuads,  5.5, 0.78,24.3,0.6, 0.4, 0.5, 0x80e880);
-
-    // ── Small tree (back left) ─────────────────────────────────────────────
-    pushBox(barkQuads, -4, 1.3, 23, 0.22,1.3,0.22, 0x2c1a0c);
-    pushBox(barkQuads, -4, 3.4, 23, 2.2, 1.2,2.2,  0x1a5020);
-    pushBox(barkQuads, -4, 5.0, 23, 1.6, 1.0,1.6,  0x1e5c24);
+    // ── Torch on wall ─────────────────────────────────────────────────────
+    pushBox(barkQuads, -4.7, 2.1, -5,   0.08, 0.28, 0.08, 0x6a3818);  // stick
+    pushBox(barkQuads, -4.7, 2.55,-5,   0.15, 0.12, 0.15, WARM);      // flame
   }
 
   // ── Bark Upstairs ─────────────────────────────────────────────────────────
@@ -2358,16 +2308,14 @@
   let   obsWildNpcs   = [];      // {x,z,type:'animal'|'scratch', animalIdx, name, emoji, collected}
   let   obsWildCollected  = 0;   // how many animals collected (0–2)
   let   obsWildDelivered  = false; // true once animals handed to Scratch
-  // ── Agility course (west path) ───────────────────────────────────────────
-  let   inAgility        = false;
-  const agilityQuads     = [];
-  let   agilityExitX     = -34, agilityExitZ = 0, agilityExitYaw = 0;
-  let   agilityObstacles = []; // { id, type, cleared, x, z }
-  let   agilityRunning   = false;
-  let   agilityFinished  = false;
-  let   agilityTimer     = 0;  // frames elapsed since run started
-  let   agilityScore     = 0;  // obstacles cleared
-  let   agilityNextObs   = 0;  // index of next obstacle to clear (in-order)
+  // ── Mission HQ (west path — replaces agility course) ────────────────────
+  let   inMissionHQ      = false;
+  const missionHQQuads   = [];
+  let   mhqExitX         = -34, mhqExitZ = 0, mhqExitYaw = 0;
+  // Active mission tracking
+  let   activeMission    = null;  // { profIdx, mIdx } or null
+  let   missionCompleted = [];    // array of "profIdx-mIdx" strings marking done missions
+  let   missionNpcWalkTs = [0,0,0,0,0,0,0]; // walk animation timers per professor
   // ── Rock Scrubland (east village path) ──────────────────────────────────────
   let   inRockScrub      = false;
   const rockScrubQuads   = [];
@@ -3436,6 +3384,30 @@
       pushBox(villageQuads, tx, bs*4.0, tz, bs*1.3,  bs*0.75,bs*1.3, 0x0e2412);
     });
 
+    // ── Pack member NPCs — show other characters at their last village position ──
+    // Uses charVillagePos from the global save so every game sees where each pup
+    // was standing when they last saved. Falls back to default cave-side positions.
+    const _gvp = getGlobalSave();
+    const _cvp = (_gvp && _gvp.charVillagePos) ? _gvp.charVillagePos : {};
+    const PACK_DEFAULT_POS = {
+      wark:       { x: -3, z: -22 }, newmoon:    { x:  0, z: -24 },
+      cheeseball: { x:  3, z: -22 }, obsidian:   { x: -6, z: -20 },
+      scratch:    { x:  2, z: 36  }, ruff:       { x:  6, z: -20 },
+      bark:       { x:  6, z:  22 },
+    };
+    for (const npc of PACK_GATHER_NPC) {
+      if (npc.id === activeCharacter) continue;              // don't render self
+      if (!getVillageDogs().includes(npc.id)) continue;     // not in village yet
+      const pos = _cvp[npc.id] || PACK_DEFAULT_POS[npc.id] || { x: 0, z: 30 };
+      // addNpcDog label so proximity chat works
+      clearingNPCs.push({
+        wx: pos.x, wz: pos.z, s: 1.0, fur: npc.fur, yaw: pos.yaw ?? 0,
+        text: npc.id.charAt(0).toUpperCase() + npc.id.slice(1) + ' is here!',
+        type: 'adult', ears: npc.ears,
+      });
+      addNpcDog(npcQuads, pos.x, pos.z, 1.0, npc.fur, pos.yaw ?? 0, npc.ears);
+    }
+
     // Generate (or restore) today's NPC quests
     initDailyQuests();
   }
@@ -3457,9 +3429,11 @@
     dogQuads = [];
     const { x, y, z, yaw, walkT, wagT, frontLegAngle, backLegAngle } = dogState;
 
-    // Growth scale: Obsidian slowly grows bigger after completing necklace quest
+    // Growth scale: Obsidian slowly grows; Bark starts as a tiny newborn pup
     const dogGrowScale = (activeCharacter === 'obsidian' && obsidianShardPhase >= 3)
       ? 1.0 + Math.min(obsidianDaysPostNecklace * 0.14, 0.42)
+      : (activeCharacter === 'bark' && !barkInVillage)
+      ? 0.38
       : 1.0;
 
     // helper: push a box in dog-local space, then translate to world
@@ -4427,9 +4401,9 @@
     if (inAcademy && gameState === 'academy') {
       if (e.code === 'Escape') { exitAcademy(); return; }
     }
-    // Inside agility course: Escape exits
-    if (inAgility && gameState === 'agility') {
-      if (e.code === 'Escape') { exitAgility(); return; }
+    // Inside Mission HQ: Escape exits
+    if (inMissionHQ && gameState === 'missionHQ') {
+      if (e.code === 'Escape') { exitMissionHQ(); return; }
     }
     // Inside rock scrubland: Escape exits
     if (inRockScrub && gameState === 'rockScrub') {
@@ -4491,7 +4465,7 @@
     if (canSwitchDogs() && !dialogueActive && !bedClaimPromptOpen && !sleepMenuOpen &&
         !inventoryOpen && !jewelryBoxOpen && !sciMenuOpen && !sciDonateOpen && !sciCollectionOpen &&
         (gameState === 'playing' || gameState === 'city' || gameState === 'forest' ||
-         gameState === 'rockScrub' || gameState === 'cave' || gameState === 'agility' ||
+         gameState === 'rockScrub' || gameState === 'cave' || gameState === 'missionHQ' ||
          gameState === 'sciCenter' || gameState === 'factory' || gameState === 'academy' ||
          gameState === 'obsidianWild' || gameState === 'foodcenter')) {
       const _si = { 'Digit1':0, 'Digit2':1, 'Digit3':2, 'Digit4':3, 'Digit5':4, 'Digit6':5 };
@@ -4733,44 +4707,34 @@
       }
     }
 
-    // Bark: house + back yard boundary clamping
+    // Bark: den boundary clamping — opening at front (|x| < 1.4 at z=3.8)
     if (activeCharacter === 'bark' && !barkInVillage) {
-      if (!barkInUpstairs) {
-        // Ground floor side walls
-        if (ds.z < 5) ds.x = Math.max(-7.8, Math.min(7.8, ds.x));
-        // Back wall (north)
-        ds.z = Math.max(-10.8, ds.z);
-        // Front wall (south) — allow back-door gap (|x| < 1.1)
-        if (Math.abs(ds.x) >= 1.1 && ds.z > 4.85 && ds.z < 5.25) {
-          ds.z = ds.z < 5.05 ? 4.85 : 5.25;
-        }
-        // Interior dividing wall at z=0 — blocks x < -1.0 passage
-        if (ds.x < -1.0 && ds.z > -0.15 && ds.z < 0.25) {
-          ds.z = ds.z < 0.05 ? -0.15 : 0.25;
-        }
-        // Back yard bounds
-        if (ds.z >= 5) {
-          ds.x = Math.max(-10.8, Math.min(10.8, ds.x));
-          ds.z = Math.min(26.8, ds.z);
-        }
-        // Staircase trigger: walk into northwest corner
-        if (ds.x < -4.2 && ds.z < -9.5 && gameState === 'playing') {
-          enterBarkUpstairs();
-          return;
-        }
-      } else {
-        // Upstairs: same footprint but only bedroom/bathroom area
-        ds.x = Math.max(-7.8, Math.min(7.8, ds.x));
-        ds.z = Math.max(-10.8, Math.min(-0.2, ds.z));
-        // Bathroom divider wall at x=2: blocks passage when z > -4.5
-        if (ds.x > 1.85 && ds.x < 2.25 && ds.z > -4.5) {
-          ds.x = ds.x < 2.05 ? 1.85 : 2.25;
-        }
-        // Staircase landing exit trigger: walk into NW corner
-        if (ds.x < -4.2 && ds.z > -4.0 && gameState === 'playing') {
-          exitBarkUpstairs();
-          return;
-        }
+      ds.x = Math.max(-4.8, Math.min(4.8, ds.x));
+      ds.z = Math.max(-6.8, ds.z);
+      // Block the front wall except for the opening gap
+      if (ds.z > 3.8 && Math.abs(ds.x) >= 1.4) ds.z = 3.8;
+      // Trigger village arrival when Bark walks out through the gap
+      if (ds.z > 4.4 && Math.abs(ds.x) < 1.4 && gameState === 'playing') {
+        barkInVillage = true;
+        showEnterScreen('Venturing into the Village\u2026', () => {
+          buildVillage();
+          dogState.x = 0; dogState.z = 34; dogState.y = DOG_FLOOR;
+          dogState.yaw = Math.PI; dogState.velY = 0; dogState.grounded = true;
+          cam.yaw = Math.PI;
+          cam.pos.x = 0; cam.pos.y = DOG_FLOOR + 3.5; cam.pos.z = 34 + 6.5;
+          saveProgress();
+          const _gs = getGlobalSave();
+          _gs.warkArrivalCount = (_gs.warkArrivalCount || 0) + 1;
+          setGlobalSave(_gs);
+          BARK_ARRIVE_DLG = buildArrivalDlg('Bark', '\uD83D\uDC36', _gs.warkArrivalCount);
+          arrivalNpcsActive = true;
+          arrivalNpcWalking = false;
+          arrivalNpcWalkT   = 0;
+          gameState = 'cutscene';
+          activeDialogueArr = BARK_ARRIVE_DLG;
+          dialogueIndex = 0;
+          showDialogue(0);
+        });
       }
     }
 
@@ -4796,9 +4760,9 @@
         enterForest();
         return;
       }
-      // West path agility course entrance — walk to x=-44 along the east-west path
+      // West path Mission HQ entrance — walk to x=-44 along the east-west path
       if (!(activeCharacter === 'ruff' && !ruffInVillage) && ds.x < -43 && Math.abs(ds.z) < 3.5 && gameState === 'playing') {
-        enterAgility();
+        enterMissionHQ();
         return;
       }
       // East path rock scrubland entrance — walk to x=44 along the east-west path
@@ -4883,14 +4847,14 @@
         ctx.fillText('🔬  E  ·  Enter Science Center', W/2, H - 120);
         ctx.globalAlpha = 1;
       }
-      // West path agility course approach hint (sign at x≈-34.5)
-      if (ds.x < -30 && Math.abs(ds.z) < 4 && !inAgility && gameState === 'playing' && !(activeCharacter === 'ruff' && !ruffInVillage)) {
+      // West path Mission HQ approach hint (sign at x≈-34.5)
+      if (ds.x < -30 && Math.abs(ds.z) < 4 && !inMissionHQ && gameState === 'playing' && !(activeCharacter === 'ruff' && !ruffInVillage)) {
         const W = canvas.width, H = canvas.height;
-        const agilityHintT = Math.max(0, Math.min(1, (-30 - ds.x) / 6));
-        ctx.globalAlpha = agilityHintT;
+        const mhqHintT = Math.max(0, Math.min(1, (-30 - ds.x) / 6));
+        ctx.globalAlpha = mhqHintT;
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.font = 'bold 14px Arial'; ctx.fillStyle = 'rgba(160,240,160,0.92)';
-        ctx.fillText('🏃 Walk west → Agility Course', W/2, H - 120);
+        ctx.font = 'bold 14px Arial'; ctx.fillStyle = 'rgba(240,200,80,0.92)';
+        ctx.fillText('🎯 Walk west → Mission HQ', W/2, H - 120);
         ctx.globalAlpha = 1;
       }
       // East path rock scrubland approach hint (sign at x≈34.5)
@@ -5160,7 +5124,8 @@
     // camera follows behind dog
     camYawTarget = ds.yaw;
     cam.yaw = lerp(cam.yaw, camYawTarget, 0.08);
-    const CAM_DIST = 6.5, CAM_H = 3.5;
+    const CAM_DIST = (activeCharacter === 'bark' && !barkInVillage) ? 2.0 : 6.5;
+    const CAM_H    = (activeCharacter === 'bark' && !barkInVillage) ? 1.2 : 3.5;
     const targetPos = v3(
       ds.x - sin(cam.yaw) * CAM_DIST,
       ds.y + CAM_H,
@@ -5667,7 +5632,7 @@
       { x:  3.8,  z:-41.0, line1:'↑ North',  line2:'Forest Entrance 🌲', color:'#9ae0a8' },
       { x: -3.8,  z: 37.5, line1:'↓ South',  line2:'Village Exit 🏡',    color:'#e8c870' },
       { x:  34.5, z:  1.5, line1:'→ East',   line2:'Rock Scrubland 🪨',    color:'#d8b870' },
-      { x: -34.5, z: -1.5, line1:'← West',   line2:'Agility Course 🏃',  color:'#a0e090' },
+      { x: -34.5, z: -1.5, line1:'← West',   line2:'Mission HQ 🎯',       color:'#f0c840' },
     ];
     const savedTA = ctx.textAlign, savedTB = ctx.textBaseline;
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -5736,18 +5701,16 @@
     try { return JSON.parse(localStorage.getItem(SAVE_KEY_GLOBAL) || '{}'); } catch(e) { return {}; }
   }
   function setGlobalSave(obj) { localStorage.setItem(SAVE_KEY_GLOBAL, JSON.stringify(obj)); }
-  // Read packGatherDone from global save on startup
-  (function() { const _gs = JSON.parse(localStorage.getItem(SAVE_KEY_GLOBAL)||'{}'); packGatherDone = !!_gs.packGatherDone; })();
-  let ruffPhase        = 0;   // 0 = hiding by bush (intro)
-  let ruffInVillage    = false; // true after river sweep — Ruff wakes up in the village forest
   let barkInVillage    = false; // true after Bark finds the village
   let barkInUpstairs   = false; // true while upstairs in Bark's house
   let BARK_ARRIVE_DLG  = [];
-  let packGatherDone   = false;  // true after all-7 cave intro cutscene has played
-  let packGatherDlg    = [];     // built fresh each time
+  let ruffPhase        = 0;     // 0 = hiding by bush (intro)
+  let ruffInVillage    = false; // true after river sweep — Ruff wakes up in the village forest
+  // Initialised from global save so the scene never re-fires after reload
+  let packGatherDone   = !!(JSON.parse(localStorage.getItem(SAVE_KEY_GLOBAL)||'{}').packGatherDone);
+  let packGatherDlg    = [];  // built fresh each time
 
   // Visual definitions for the 6 "waiting pups" shown in the gathering cutscene.
-  // Each pup is placed along the back of the cave facing south (toward the entrance).
   // Position, fur, ear-type and scale match each character's buildDog palette.
   const PACK_GATHER_NPC = [
     { id:'wark',       x:-5.5, z:-20, s:1.0, fur:0xc8853a, ears:'triangle' },
@@ -6111,9 +6074,25 @@
       save.villageQuestsFull = JSON.stringify(villageQuests);
     }
     localStorage.setItem(getSaveKey(), JSON.stringify(save));
-    // Sync shared coin pool to global save so all characters see the same balance
+    // Sync shared coin pool, mission state, research and jewelry to global save
     const _gcur = getGlobalSave();
     _gcur.wobCoins = wobCoins;
+    _gcur.missionCompleted = missionCompleted;
+    if (activeMission) _gcur.activeMission = activeMission;
+    else delete _gcur.activeMission;
+    // Research is shared across all games
+    _gcur.donateCount = { mushroom:{...donateCount.mushroom}, animal:{...donateCount.animal},
+                          rock:{...donateCount.rock},     metal:{...donateCount.metal} };
+    _gcur.collectionLog = { mushroom:[...collectionLog.mushroom], animal:[...collectionLog.animal],
+                            rock:[...collectionLog.rock],     metal:[...collectionLog.metal] };
+    // Jewelry/necklaces are shared across all games
+    _gcur.jewelryBox       = JSON.stringify(jewelryBox);
+    _gcur.equippedNecklace = equippedNecklace;
+    // Village position — so other characters can see where we left off
+    if (isInVillage()) {
+      if (!_gcur.charVillagePos) _gcur.charVillagePos = {};
+      _gcur.charVillagePos[activeCharacter] = { x: dogState.x, z: dogState.z, yaw: dogState.yaw };
+    }
     setGlobalSave(_gcur);
   }
 
@@ -6382,6 +6361,32 @@
       // Shared coin pool: always restore from global save so all characters share coins
       const _gcoins = getGlobalSave();
       if (_gcoins.wobCoins != null) wobCoins = _gcoins.wobCoins;
+      // Restore shared mission state from global save
+      if (Array.isArray(_gcoins.missionCompleted)) missionCompleted = _gcoins.missionCompleted;
+      activeMission = _gcoins.activeMission || null;
+      // Research: merge global donateCount (take max count per entry so no data lost)
+      const _gdc = _gcoins.donateCount;
+      if (_gdc) {
+        ['mushroom','animal','rock','metal'].forEach(cat => {
+          const gc = _gdc[cat] || {};
+          Object.keys(gc).forEach(k => {
+            donateCount[cat][k] = Math.max(donateCount[cat][k] || 0, gc[k] || 0);
+          });
+        });
+      }
+      // collectionLog: union of global + local
+      const _gcl = _gcoins.collectionLog;
+      if (_gcl) {
+        ['mushroom','animal','rock','metal'].forEach(cat => {
+          (_gcl[cat] || []).forEach(v => collectionLog[cat].add(v));
+        });
+      }
+      // Jewelry: always load from global save (shared)
+      if (_gcoins.jewelryBox) {
+        try { jewelryBox = JSON.parse(_gcoins.jewelryBox); } catch(e) {}
+      }
+      if (_gcoins.equippedNecklace != null) equippedNecklace = _gcoins.equippedNecklace;
+      renderMissionHUD();
       return true;
     } catch(e) { return false; }
   }
@@ -7198,13 +7203,15 @@
     { speaker: 'Ruff 🐕', text: "I must have washed up here. I wonder if anyone lives around here." },
   ];
   const BARK_INTRO_DLG = [
-    { speaker: 'Bark 🐶', text: "Ooh! What's all this...?" },
-    { speaker: 'Bark 🐶', text: "It smells like a whole new adventure!" },
+    { speaker: 'Bark 🐶', text: "Mm... mmph..." },
+    { speaker: 'Bark 🐶', text: "...so warm in here..." },
   ];
   let WARK_ARRIVE_DLG = [];
   let OBS_ARRIVE_DLG  = [];
   let CB_ARRIVE_DLG   = [];
   let RUFF_ARRIVE_DLG = [];
+  let NM_ARRIVE_DLG   = [];
+  let SCRATCH_ARRIVE_DLG = [];
   function buildArrivalDlg(charName, charEmoji, count) {
     const ch = charName + ' ' + charEmoji;
     const fromLine = charName === 'Obsidian'
@@ -7311,6 +7318,14 @@
       if (activeCharacter === 'newmoon' && activeDialogueArr === DIALOGUE && nmPhase === 0) {
         if (nmWanderTimer) clearTimeout(nmWanderTimer);
         nmWanderTimer = setTimeout(nmHoursLater, 60000);
+      }
+      // New Moon: arrival dialogue (Prof Maple/Bramble/Sage) ends — NPCs walk off, then show 'Help me'
+      if (activeDialogueArr === NM_ARRIVE_DLG) {
+        arrivalNpcWalking = true;
+        activeDialogueArr = NM_HELPME_DLG;
+        dialogueIndex = 0;
+        showDialogue(0);
+        return;
       }
       // New Moon: 'Help me' ends — black screen + wake in cave
       if (activeDialogueArr === NM_HELPME_DLG) {
@@ -7435,10 +7450,14 @@
         saveProgress();
         exitSciCenter();
         return;
-      } else if (activeDialogueArr === WARK_ARRIVE_DLG || activeDialogueArr === OBS_ARRIVE_DLG) {
+      } else if (activeDialogueArr === WARK_ARRIVE_DLG || activeDialogueArr === OBS_ARRIVE_DLG ||
+                 activeDialogueArr === BARK_ARRIVE_DLG || activeDialogueArr === SCRATCH_ARRIVE_DLG) {
         arrivalNpcWalking = true;
         gameState = 'playing';
         dialogueCooldown = 60;
+        toastMsg   = '\u{1F43E} Welcome to the village! Explore freely.';
+        toastTimer = 260;
+        saveProgress();
         updateSwitcherBar();
         return;
         dialogueCooldown = 60;
@@ -7569,7 +7588,7 @@
       if (!ruffInVillage) buildRuffScene();
       activeDialogueArr = RUFF_INTRO_DLG;
     }},
-    bark: { enterTitle: 'Coming home\u2026', startX: 0, startZ: 0, onEnter: (restored) => {
+    bark: { enterTitle: 'In the den\u2026', startX: 0, startZ: -1.5, onEnter: (restored) => {
       if (!restored) {
         barkInVillage  = false;
         barkInUpstairs = false;
@@ -7592,6 +7611,19 @@
         wobCoins  = 0;
         warkPouch = null;
         inventory.length = 0;
+        // Show arrival animation for Scratch's first time in the village
+        const _gs = getGlobalSave();
+        _gs.warkArrivalCount = (_gs.warkArrivalCount || 0) + 1;
+        setGlobalSave(_gs);
+        SCRATCH_ARRIVE_DLG = buildArrivalDlg('Scratch', '\uD83D\uDC15', _gs.warkArrivalCount);
+        arrivalNpcsActive = true;
+        arrivalNpcWalking = false;
+        arrivalNpcWalkT   = 0;
+        gameState = 'cutscene';
+        activeDialogueArr = SCRATCH_ARRIVE_DLG;
+        dialogueIndex = 0;
+        showDialogue(0);
+        return;
       }
       gameState = 'playing';
     }},
@@ -7810,8 +7842,16 @@
       cam.yaw = Math.PI;
       cam.pos.x = 0; cam.pos.y = DOG_FLOOR + 3.5; cam.pos.z = 34 + 6.5;
       saveProgress();
+      // Show Prof.Maple / Dr.Sage / Chef Bramble arrival animation
+      const _gs = getGlobalSave();
+      _gs.warkArrivalCount = (_gs.warkArrivalCount || 0) + 1;
+      setGlobalSave(_gs);
+      NM_ARRIVE_DLG = buildArrivalDlg('New Moon', '\u{1F319}', _gs.warkArrivalCount);
+      arrivalNpcsActive = true;
+      arrivalNpcWalking = false;
+      arrivalNpcWalkT   = 0;
       gameState = 'cutscene';
-      activeDialogueArr = NM_HELPME_DLG;
+      activeDialogueArr = NM_ARRIVE_DLG;
       dialogueIndex = 0;
       showDialogue(0);
     });
@@ -12265,169 +12305,303 @@
     }
   }
 
-  // ── Dog Agility Course (west village path) ──────────────────────────────
-  function buildAgilityScene() {
-    agilityQuads.length = 0;
-    agilityObstacles = [];
-    agilityNextObs   = 0;
-    agilityRunning   = false;
-    agilityFinished  = false;
-    agilityTimer     = 0;
-    agilityScore     = 0;
-    const Q = agilityQuads;
+  // ── Mission HQ (west village path) ──────────────────────────────────────
 
-    // ── Bright grass ground (2-tone green, 4×4 tiles) ──────────────────
-    for (let gx = -12; gx < 12; gx += 4) {
-      for (let gz = -38; gz < 22; gz += 4) {
-        const even = (((gx / 4) + (gz / 4)) & 1) === 0;
-        Q.push({ verts:[v3(gx,0,gz),v3(gx+4,0,gz),v3(gx+4,0,gz+4),v3(gx,0,gz+4)],
-                 color: even ? 0x4caf50 : 0x388e3c, normal:v3(0,1,0), isGround:true });
+  // Seven professors and their three missions each.
+  // Each mission has: id, title, brief, objective, role (which pup), reward desc.
+  const PROFESSORS = [
+    {
+      name: 'Prof. Maple 🍁', icon: '🍁', color: 0xc87828,
+      title: 'Intelligence Division',
+      brief: "We need eyes behind enemy lines. The wolf camp won't know what hit them.",
+      missions: [
+        { title: 'Infiltrate Wolf Camp North',
+          brief: "Wolves have built a forward camp north of the nether border. Scout the perimeter, count their numbers, and return without being seen.",
+          role: 'Wark', roleEmoji: '🐾',
+          objective: 'Scout the wolf camp — reach the northern overlook and return',
+          reward: '🪙 25 WOB + Scout Badge' },
+        { title: 'Steal the Battle Plans',
+          brief: "Our informant says blueprints for the wolf offensive are stored in a tent near the camp's eastern gate. Get in, grab them, get out.",
+          role: 'New Moon', roleEmoji: '🌙',
+          objective: 'Retrieve the battle plans from the wolf camp tent',
+          reward: '🪙 30 WOB + Stealth Pin' },
+        { title: 'Sabotage the Signal Tower',
+          brief: "The wolves communicate via a howl-relay tower at grid point W-7. Disable it so they can't coordinate their next assault.",
+          role: 'Cheeseball', roleEmoji: '🧀',
+          objective: 'Reach the signal tower and destroy the relay crystal',
+          reward: '🪙 35 WOB + Disruptor Tag' },
+      ]
+    },
+    {
+      name: 'Prof. Birch 🌿', icon: '🌿', color: 0x4a9040,
+      title: 'Field Medicine',
+      brief: "Our medics are outnumbered. We need supplies and we need them yesterday.",
+      missions: [
+        { title: 'Raid the Human Lab',
+          brief: "Humans at the eastern research station stockpile DNA testers, bandages, and stimulant vials. Sneak in through the ventilation shaft and bring back what you can carry.",
+          role: 'Ruff', roleEmoji: '🐕',
+          objective: 'Collect 3 DNA testers from the human lab',
+          reward: '🪙 40 WOB + Lab Key' },
+        { title: 'Rescue the Captured Medic',
+          brief: "Dr. Fernwhistle was taken by wolves three days ago. She's being held in the dog house on the nether side. Get her out alive.",
+          role: 'Bark', roleEmoji: '🐶',
+          objective: 'Reach the dog house holding cell and escort Dr. Fernwhistle back',
+          reward: '🪙 45 WOB + Medic Ribbon' },
+        { title: 'Poison the Wolf Water Supply',
+          brief: "A harmless-to-dogs but wolf-debilitating compound needs to be added to the stream feeding their camp. Don't get caught near the stream.",
+          role: 'Obsidian', roleEmoji: '🌑',
+          objective: 'Reach the nether stream and add the compound without detection',
+          reward: '🪙 50 WOB + Chemist Badge' },
+      ]
+    },
+    {
+      name: 'Prof. Cedar 🌲', icon: '🌲', color: 0x6b4226,
+      title: 'Logistics Command',
+      brief: "Supply lines keep us in the fight. Without them we're just howling at the moon.",
+      missions: [
+        { title: 'Secure the Food Cache',
+          brief: "Wolves raided our western food depot and took three crates. The crates are stashed at their border post — retrieve them before they're consumed.",
+          role: 'Cheeseball', roleEmoji: '🧀',
+          objective: 'Recover all three food crates from the wolf border post',
+          reward: '🪙 30 WOB + Logistics Star' },
+        { title: 'Escort the Supply Convoy',
+          brief: "A convoy of medical and food supplies is moving through nether territory. Run interference — keep it safe until it reaches Warbark Village.",
+          role: 'Wark', roleEmoji: '🐾',
+          objective: 'Protect the supply convoy through 3 checkpoints',
+          reward: '🪙 35 WOB + Convoy Medal' },
+        { title: 'Destroy the Wolf Ammunition Dump',
+          brief: "They've been stockpiling howl-bombs in a cave near the nether ridge. One well-placed spark will set the whole cache off. Don't be anywhere near it when it blows.",
+          role: 'Scratch', roleEmoji: '🐾',
+          objective: 'Plant the spark charge and escape the cave before detonation',
+          reward: '🪙 55 WOB + Demolitions Badge' },
+      ]
+    },
+    {
+      name: 'Prof. Ash 🔥', icon: '🔥', color: 0xc04020,
+      title: 'Combat Division',
+      brief: "Diplomacy failed. It's time to show the wolves what the diamond pack can do.",
+      missions: [
+        { title: 'Defend the Village Gate',
+          brief: "Wolf scouts have been probing our southern gate each night. Tonight we set an ambush — hold them off until Prof. Maple can organise a counter-strike.",
+          role: 'Bark', roleEmoji: '🐶',
+          objective: 'Repel 5 waves of wolf scouts at the southern gate',
+          reward: '🪙 40 WOB + Defender Crest' },
+        { title: 'Capture the Wolf Lieutenant',
+          brief: "Lieutenant Fang commands the nether patrol. If we bring him in for questioning, we'll finally know their invasion timeline. He won't come quietly.",
+          role: 'Ruff', roleEmoji: '🐕',
+          objective: 'Locate and capture Lieutenant Fang alive',
+          reward: '🪙 60 WOB + Capture Pin' },
+        { title: 'Retake the Outpost',
+          brief: "Outpost Dusk — our forward listening post — was overrun two days ago. A fire team of one has to go in, clear it, and raise our flag again.",
+          role: 'New Moon', roleEmoji: '🌙',
+          objective: 'Clear Outpost Dusk of all wolves and hoist the Warbark flag',
+          reward: '🪙 50 WOB + Outpost Medal' },
+      ]
+    },
+    {
+      name: 'Prof. Flint ⚡', icon: '⚡', color: 0xd0c020,
+      title: 'Science & Technology',
+      brief: "Technology wins wars. The wolves have new gear — we need to reverse-engineer it.",
+      missions: [
+        { title: 'Steal the Wolf DNA Database',
+          brief: "The wolves have been cataloguing dog DNA for something sinister. Their databank is stored in a mobile lab on the nether plains. Get us a copy.",
+          role: 'Obsidian', roleEmoji: '🌑',
+          objective: 'Hack the wolf mobile lab and extract the DNA database',
+          reward: '🪙 55 WOB + Data Core' },
+        { title: 'Retrieve the Stolen Necklace',
+          brief: "A pup from Warbark Village had their necklace stolen by a wolf raider. It has sentimental value — and we think it might be enchanted. Get it back.",
+          role: 'Scratch', roleEmoji: '🐾',
+          objective: "Find the wolf raider's camp and recover the stolen necklace",
+          reward: '🪙 30 WOB + Recovered Necklace' },
+        { title: 'Plant a Tracking Device',
+          brief: "We need to know where the wolf alpha goes each night. Plant a tracking mushroom spore on his fur without him noticing. Easier said than done.",
+          role: 'Cheeseball', roleEmoji: '🧀',
+          objective: 'Get close enough to the wolf alpha to plant the tracking spore',
+          reward: '🪙 45 WOB + Spy Spore' },
+      ]
+    },
+    {
+      name: 'Prof. Slate 🪨', icon: '🪨', color: 0x8888a0,
+      title: 'Undercover Ops',
+      brief: "Some missions need a light touch. Our best agents go in alone — and come back with answers.",
+      missions: [
+        { title: 'Infiltrate the Dog House',
+          brief: "The wolves are keeping several captive dogs in a fortified kennel on the nether side. Pose as a stray, get inside, and open the back gate.",
+          role: 'Bark', roleEmoji: '🐶',
+          objective: 'Enter the dog house undetected and unlock the rear escape gate',
+          reward: '🪙 50 WOB + Undercover Badge' },
+        { title: 'Photograph the Wolf General',
+          brief: "We need proof of the wolf general's identity for the neutral-territory tribunal. Get close enough for a clear picture. Do NOT be seen.",
+          role: 'New Moon', roleEmoji: '🌙',
+          objective: 'Photograph the wolf general at the nether command tent',
+          reward: '🪙 40 WOB + Observer Medal' },
+        { title: 'Recover the Warbark Seal',
+          brief: "Our official village seal was stolen in the last raid — the wolves are using it to forge orders. Retrieve it from their record vault.",
+          role: 'Wark', roleEmoji: '🐾',
+          objective: 'Locate and retrieve the Warbark Seal from the wolf vault',
+          reward: '🪙 45 WOB + Honour Crest' },
+      ]
+    },
+    {
+      name: 'Prof. Ember 🌸', icon: '🌸', color: 0xe06080,
+      title: 'Rescue Division',
+      brief: "No pup gets left behind. We bring everyone home — no exceptions.",
+      missions: [
+        { title: 'Rescue the Hostage Pup',
+          brief: "A young pup from the east forest wandered into nether territory and was taken by wolves. They're using her as leverage. Get her out of that cage.",
+          role: 'Ruff', roleEmoji: '🐕',
+          objective: 'Find and rescue the hostage pup from the nether holding camp',
+          reward: '🪙 60 WOB + Rescue Star' },
+        { title: 'Find the Missing Scout',
+          brief: "Scout Bramblefur went dark three days ago. Last known position: near the nether ridge. Find out what happened to her.",
+          role: 'Scratch', roleEmoji: '🐾',
+          objective: 'Locate Scout Bramblefur or find evidence of what happened',
+          reward: '🪙 35 WOB + Search Pin' },
+        { title: 'Extract the Double Agent',
+          brief: "Our contact inside the wolf pack has been compromised. She needs to be pulled out tonight before they discover who she is.",
+          role: 'Obsidian', roleEmoji: '🌑',
+          objective: 'Rendezvous with the double agent and escort her to Warbark Village',
+          reward: '🪙 70 WOB + Agent Commendation' },
+      ]
+    },
+  ];
+
+  // ── Mission HQ 3D scene builder ─────────────────────────────────────────
+  function buildMissionHQScene() {
+    missionHQQuads.length = 0;
+    const Q = missionHQQuads;
+
+    // Ground — dark stone floor (war room vibe)
+    for (let gx = -18; gx < 18; gx += 3) {
+      for (let gz = -40; gz < 22; gz += 3) {
+        const even = (((gx / 3) + (gz / 3)) & 1) === 0;
+        Q.push({ verts:[v3(gx,0,gz),v3(gx+3,0,gz),v3(gx+3,0,gz+3),v3(gx,0,gz+3)],
+                 color: even ? 0x2e2a24 : 0x38342c, normal:v3(0,1,0), isGround:true });
       }
     }
 
-    // ── White painted fence border ──────────────────────────────────────
-    const FH = 1.0, FY = 0.5, FPOST = 0xf5f5f5, FRAIL = 0xe0e0e0;
-    for (let fz = -36; fz <= 18; fz += 4) {
-      pushBox(Q, -11.5, FY, fz,  0.15, FY, 0.15, FPOST);
-      pushBox(Q,  11.5, FY, fz,  0.15, FY, 0.15, FPOST);
-      if (fz < 18) {
-        pushBox(Q, -11.5, FY * 0.65, fz + 2, 0.1, 0.12, 2.0, FRAIL);
-        pushBox(Q,  11.5, FY * 0.65, fz + 2, 0.1, 0.12, 2.0, FRAIL);
-      }
+    // Perimeter walls — thick stone sandstone
+    const WH = 3.5, WT = 0.5;
+    // North wall
+    pushBox(Q, 0, WH/2, -40, 36, WH, WT, 0x5a4e3a);
+    // South wall — gap in centre for entrance
+    pushBox(Q, -10, WH/2, 22, 16, WH, WT, 0x5a4e3a);
+    pushBox(Q,  10, WH/2, 22, 16, WH, WT, 0x5a4e3a);
+    // East wall
+    pushBox(Q, 18, WH/2, -9, WT, WH, 62, 0x4e4430);
+    // West wall
+    pushBox(Q, -18, WH/2, -9, WT, WH, 62, 0x4e4430);
+
+    // ── Command table in the centre ──────────────────────────────────────
+    pushBox(Q, 0, 0.9, -8, 7.0, 0.12, 3.5, 0x6a4218);  // tabletop
+    pushBox(Q, 0, 0.44, -8, 6.6, 0.44, 3.1, 0x4e3010);  // table base
+    // Map canvas on table surface
+    pushBox(Q, 0, 1.03, -8, 6.5, 0.03, 3.0, 0xdcca90);  // parchment
+    // Map markings (raised dots for terrain)
+    for (let mi = 0; mi < 5; mi++) {
+      pushBox(Q, -2 + mi, 1.06, -8, 0.15, 0.04, 0.15, mi % 2 === 0 ? 0x7a2010 : 0x204880);
     }
-    for (let fx = -11.5; fx <= 11.5; fx += 4) {
-      pushBox(Q, fx, FY, -36, 0.15, FY, 0.15, FPOST);
-      if (fx < 11.5) pushBox(Q, fx + 2, FY * 0.65, -36, 2.0, 0.12, 0.1, FRAIL);
-    }
-    // South fence — gap from -3 to +3 for entrance
-    for (let fx = -11.5; fx <= -3.5; fx += 4) {
-      pushBox(Q, fx, FY, 18, 0.15, FY, 0.15, FPOST);
-      if (fx + 4 <= -3.5) pushBox(Q, fx + 2, FY * 0.65, 18, 2.0, 0.12, 0.1, FRAIL);
-    }
-    for (let fx = 3.5; fx <= 11.5; fx += 4) {
-      pushBox(Q, fx, FY, 18, 0.15, FY, 0.15, FPOST);
-      if (fx + 4 <= 11.5) pushBox(Q, fx + 2, FY * 0.65, 18, 2.0, 0.12, 0.1, FRAIL);
-    }
-
-    // ── Obstacle flag helper (numbered marker flag post) ────────────────
-    function addFlag(x, z, color) {
-      pushBox(Q, x - 3.2, 0.75, z, 0.07, 0.75, 0.07, 0x7a5c18);
-      pushBox(Q, x - 2.9, 1.3,  z, 0.28, 0.16, 0.04, color);
-    }
-
-    // ── Obstacle 0: Start gate ──── z = +14 ─────────────────────────────
-    pushBox(Q, -2.5, 1.25, 14, 0.17, 1.25, 0.17, 0x8b4513);
-    pushBox(Q,  2.5, 1.25, 14, 0.17, 1.25, 0.17, 0x8b4513);
-    pushBox(Q,    0, 2.42, 14, 2.55, 0.14, 0.14, 0xffffff);
-    pushBox(Q,    0, 2.42, 13.88, 1.0, 0.13, 0.02, 0x22cc44);
-    agilityObstacles.push({ id:0, type:'start',  cleared:false, x:0, z:14 });
-    addFlag(0, 14, 0x22cc44);
-
-    // ── Obstacle 1: Hurdle 1 ──── z = +8 ────────────────────────────────
-    pushBox(Q, -2.0, 0.62, 8, 0.13, 0.62, 0.13, 0xcd853f);
-    pushBox(Q,  2.0, 0.62, 8, 0.13, 0.62, 0.13, 0xcd853f);
-    pushBox(Q,    0, 1.18, 8, 2.05, 0.1,  0.1,  0xff4444);
-    agilityObstacles.push({ id:1, type:'hurdle', cleared:false, x:0, z:8 });
-    addFlag(0, 8, 0xff4444);
-
-    // ── Obstacle 2: Hurdle 2 ──── z = +2 ────────────────────────────────
-    pushBox(Q, -2.0, 0.62, 2, 0.13, 0.62, 0.13, 0xcd853f);
-    pushBox(Q,  2.0, 0.62, 2, 0.13, 0.62, 0.13, 0xcd853f);
-    pushBox(Q,    0, 1.18, 2, 2.05, 0.1,  0.1,  0xff8c00);
-    agilityObstacles.push({ id:2, type:'hurdle', cleared:false, x:0, z:2 });
-    addFlag(0, 2, 0xff8c00);
-
-    // ── Obstacle 3: Tunnel ──── z = -4, length 5 ────────────────────────
-    pushBox(Q, 0, 0.05, -4, 1.4, 0.05, 2.6, 0x2a2a2a);          // floor
-    pushBox(Q, 0, 1.1,  -4, 1.4, 0.1,  2.6, 0x252525);          // ceiling
-    pushBox(Q, -1.4, 0.55, -4, 0.1, 0.55, 2.6, 0x2a2a2a);       // L wall
-    pushBox(Q,  1.4, 0.55, -4, 0.1, 0.55, 2.6, 0x2a2a2a);       // R wall
-    // Yellow entry/exit rings
-    pushBox(Q, -1.4, 0.55, -6.5, 0.08, 0.58, 0.08, 0xffe000);
-    pushBox(Q,  1.4, 0.55, -6.5, 0.08, 0.58, 0.08, 0xffe000);
-    pushBox(Q, 0, 1.07, -6.5, 1.4, 0.08, 0.08, 0xffe000);
-    pushBox(Q, -1.4, 0.55, -1.5, 0.08, 0.58, 0.08, 0xffe000);
-    pushBox(Q,  1.4, 0.55, -1.5, 0.08, 0.58, 0.08, 0xffe000);
-    pushBox(Q, 0, 1.07, -1.5, 1.4, 0.08, 0.08, 0xffe000);
-    agilityObstacles.push({ id:3, type:'tunnel', cleared:false, x:0, z:-4 });
-    addFlag(0, -4, 0xffe000);
-
-    // ── Obstacle 4: Weave poles ──── z = -10, 6 poles ───────────────────
-    for (let i = 0; i < 6; i++) {
-      const px = (i % 2 === 0) ? -1.2 : 1.2;
-      const pz = -12.5 + i * 0.8;
-      pushBox(Q, px, 0.85, pz, 0.08, 0.85, 0.08, i % 2 === 0 ? 0xdd2222 : 0xffffff);
-    }
-    agilityObstacles.push({ id:4, type:'weave', cleared:false, x:0, z:-10 });
-    addFlag(0, -10, 0xdd2222);
-
-    // ── Obstacle 5: A-frame ──── z = -16 ────────────────────────────────
-    const AW = 1.8, AH = 2.4, ARAMP = 2.8;
-    const aAngle = Math.atan2(AH, ARAMP * 0.5);
-    pushBox(Q, 0, AH * 0.5, -16 - ARAMP * 0.35, AW, 0.1, ARAMP * 0.5, 0xc87020, 0, -aAngle);
-    pushBox(Q, 0, AH * 0.5, -16 + ARAMP * 0.35, AW, 0.1, ARAMP * 0.5, 0xc87020, 0,  aAngle);
-    // Base supports
-    [-AW * 0.45, AW * 0.45].forEach(bx => {
-      [-16 - ARAMP * 0.65, -16 + ARAMP * 0.65].forEach(bz => {
-        pushBox(Q, bx, 0.12, bz, 0.1, 0.12, 0.28, 0x5c3310);
+    // Chairs around table
+    const chairPositions = [[-4,-5.5,0],[-1.3,-5.5,0],[1.3,-5.5,0],[4,-5.5,0],
+                             [-4,-10.5,Math.PI],[0,-10.5,Math.PI],[4,-10.5,Math.PI]];
+    for (const [cx,cz,cy] of chairPositions) {
+      pushBox(Q, cx, 0.42, cz, 0.7, 0.06, 0.68, 0x3a2808, cy); // seat
+      pushBox(Q, cx, 0.78, cz + Math.cos(cy)*0.30, 0.62, 0.52, 0.07, 0x3a2808, cy); // back
+      // legs
+      [[-0.28,-0.28],[-0.28,0.28],[0.28,-0.28],[0.28,0.28]].forEach(([lx,lz]) => {
+        pushBox(Q, cx+lx, 0.21, cz+lz, 0.06, 0.21, 0.06, 0x2a1c04);
       });
+    }
+
+    // ── Briefing board (north wall) ──────────────────────────────────────
+    pushBox(Q,  0, 2.2, -39, 10, 1.6, 0.12, 0x181208);  // board frame
+    pushBox(Q,  0, 2.2, -39.1, 9.4, 1.38, 0.04, 0x1c2c10);  // board surface
+    // pins on board
+    const pinCols = [0xff3333, 0x3388ff, 0xffcc00, 0xff7700, 0x44dd44, 0xff44aa, 0xcc44ff];
+    pinCols.forEach((c, i) => pushBox(Q, -4.2 + i*1.4, 2.5, -39.14, 0.12, 0.12, 0.05, c));
+    // Connecting strings between pins
+    for (let si = 0; si < 3; si++) {
+      pushBox(Q, -2.1 + si * 2.1, 2.3, -39.14, 2.1, 0.04, 0.02, 0xaa4422);
+    }
+
+    // ── Torch sconces on walls ───────────────────────────────────────────
+    [[-16, -15], [-16, 0], [-16, -30], [16, -15], [16, 0], [16, -30]].forEach(([tx,tz]) => {
+      pushBox(Q, tx, 2.6, tz, 0.18, 0.18, 0.18, 0x5a4020);  // bracket
+      pushBox(Q, tx, 2.85, tz, 0.12, 0.28, 0.12, 0xf07820);  // flame glow
     });
-    agilityObstacles.push({ id:5, type:'aframe', cleared:false, x:0, z:-16 });
-    addFlag(0, -16, 0xcc7722);
 
-    // ── Obstacle 6: See-saw ──── z = -22 ────────────────────────────────
-    pushBox(Q, 0, 0.38, -22, 0.28, 0.38, 0.11, 0x8b6914);       // fulcrum
-    pushBox(Q, 0, 0.79, -22, 2.6,  0.08, 0.38, 0xe0a840, 0, 0.09); // plank (slight tilt)
-    // Legs
-    pushBox(Q, -2.3, 0.2, -22, 0.1, 0.2, 0.1, 0x7a5818);
-    pushBox(Q,  2.3, 0.2, -22, 0.1, 0.2, 0.1, 0x7a5818);
-    agilityObstacles.push({ id:6, type:'seesaw', cleared:false, x:0, z:-22 });
-    addFlag(0, -22, 0xe0a840);
+    // ── Crates and barrels in corners ────────────────────────────────────
+    [[15, -36],[13,-36],[15,-38],[13,-38],[-15,-36],[-13,-36]].forEach(([bx,bz],i) => {
+      pushBox(Q, bx, 0.55, bz, 0.9, 0.55, 0.9, i%3===0?0x6a4820:0x4a3010);
+    });
+    // Barrel
+    [[-15,-32],[-13,-32]].forEach(([bx,bz]) => {
+      pushBox(Q, bx, 0.65, bz, 0.72, 0.65, 0.72, 0x3a2a10);
+      pushBox(Q, bx, 0.95, bz, 0.76, 0.07, 0.76, 0x7a5820);
+    });
 
-    // ── Obstacle 7: Hurdle 3 ──── z = -27 ───────────────────────────────
-    pushBox(Q, -2.0, 0.62, -27, 0.13, 0.62, 0.13, 0xcd853f);
-    pushBox(Q,  2.0, 0.62, -27, 0.13, 0.62, 0.13, 0xcd853f);
-    pushBox(Q,    0, 1.18, -27, 2.05, 0.1,  0.1,  0x44aaff);
-    agilityObstacles.push({ id:7, type:'hurdle', cleared:false, x:0, z:-27 });
-    addFlag(0, -27, 0x44aaff);
+    // ── Entry arch (south) ───────────────────────────────────────────────
+    pushBox(Q, -3.5, 2.5, 22, 3.5, 1.0, 0.5, 0x5a4e3a);  // left pillar top
+    pushBox(Q,  3.5, 2.5, 22, 3.5, 1.0, 0.5, 0x5a4e3a);  // right pillar top
+    pushBox(Q, -3.5, 1.0, 22, 0.5, 2.0, 0.5, 0x5a4e3a);  // left pillar body
+    pushBox(Q,  3.5, 1.0, 22, 0.5, 2.0, 0.5, 0x5a4e3a);  // right pillar body
 
-    // ── Obstacle 8: Finish gate ──── z = -33 ────────────────────────────
-    pushBox(Q, -2.5, 1.25, -33, 0.17, 1.25, 0.17, 0x8b4513);
-    pushBox(Q,  2.5, 1.25, -33, 0.17, 1.25, 0.17, 0x8b4513);
-    pushBox(Q,    0, 2.42, -33, 2.55, 0.14, 0.14, 0xffd700);
-    pushBox(Q,    0, 2.42, -33.12, 1.0, 0.13, 0.02, 0xff3300);
-    agilityObstacles.push({ id:8, type:'finish', cleared:false, x:0, z:-33 });
-    addFlag(0, -33, 0xffd700);
+    // ── Trees beyond the walls (exterior atmosphere) ─────────────────────
+    addTree(-20, 24, 0.9, Q); addTree(20, 24, 0.9, Q);
+    addTree(-22, -8, 1.0, Q); addTree(22, -8, 1.0, Q);
+    addTree(-20,-42, 0.8, Q); addTree(20,-42, 0.8, Q);
 
-    // ── Spectator bench (west side) ──────────────────────────────────────
-    pushBox(Q, -9.2, 0.32, 2,  0.9, 0.32, 2.8, 0xc8a060);
-    pushBox(Q, -9.2, 0.66, 2,  0.7, 0.07, 2.6, 0xb09050);
-
-    // ── Corner trees (outside fence) ────────────────────────────────────
-    addTree(-15,  22, 1.0, Q); addTree( 15,  22, 1.0, Q);
-    addTree(-15, -39, 0.9, Q); addTree( 15, -39, 0.9, Q);
-    addTree(-15, -12, 0.8, Q); addTree( 15, -12, 0.8, Q);
+    // ── Professor NPCs — 7 stations around the command table ─────────────
+    // Positions around the walls / briefing stations
+    const profStations = [
+      { x: -14, z: -18, yaw: 0.4  },   // Maple — west wall midway
+      { x: -10, z: -32, yaw: 0.7  },   // Birch — west wall north
+      { x:   0, z: -36, yaw: Math.PI },// Cedar — north wall centre
+      { x:  10, z: -32, yaw: -0.7 },   // Ash — east wall north
+      { x:  14, z: -18, yaw: -0.4 },   // Flint — east wall midway
+      { x:   8, z:  -4, yaw: -2.4 },   // Slate — near table east
+      { x:  -8, z:  -4, yaw: 2.4  },   // Ember — near table west
+    ];
+    // Fur and ear combos per professor
+    const profAppearance = [
+      { fur: 0xc87828, ears: 'triangle' },  // Maple — tan
+      { fur: 0x4a9040, ears: 'floppy'   },  // Birch — green-grey
+      { fur: 0x6b4226, ears: 'triangle' },  // Cedar — brown
+      { fur: 0xc04020, ears: 'triangle' },  // Ash — reddish
+      { fur: 0xd0c020, ears: 'floppy'   },  // Flint — yellow
+      { fur: 0x8888a0, ears: 'floppy'   },  // Slate — grey
+      { fur: 0xe06080, ears: 'triangle' },  // Ember — rose
+    ];
+    const wagOff = Date.now() / 1000;
+    for (let pi = 0; pi < 7; pi++) {
+      const st  = profStations[pi];
+      const app = profAppearance[pi];
+      const wag = Math.sin(wagOff * 1.8 + pi * 1.1) * 0.5;
+      const leg = Math.sin(wagOff * 2.0 + pi * 0.8) * 0.2;  // subtle idle sway
+      buildAnimKidDog(Q, st.x, st.z, 0.82, app.fur, st.yaw, app.ears, leg, wag, false);
+    }
   }
 
-  function enterAgility() {
-    agilityExitX = dogState.x; agilityExitZ = dogState.z; agilityExitYaw = dogState.yaw;
-    showEnterScreen('Heading to the Agility Course…', () => {
-      inAgility = true;
-      buildAgilityScene();
-      dogState.x = 0; dogState.z = 16; dogState.y = DOG_FLOOR;
+  function enterMissionHQ() {
+    mhqExitX = dogState.x; mhqExitZ = dogState.z; mhqExitYaw = dogState.yaw;
+    showEnterScreen('Heading to Mission HQ…', () => {
+      inMissionHQ = true;
+      buildMissionHQScene();
+      dogState.x = 0; dogState.z = 19; dogState.y = DOG_FLOOR;
       dogState.yaw = Math.PI; dogState.velY = 0; dogState.grounded = true;
       cam.yaw   = Math.PI;
-      cam.pos.x = 0; cam.pos.y = DOG_FLOOR + 3.5; cam.pos.z = 16 + 6.5;
-      gameState = 'agility';
+      cam.pos.x = 0; cam.pos.y = DOG_FLOOR + 3.5; cam.pos.z = 19 + 6.5;
+      gameState = 'missionHQ';
+      renderMissionHUD();
     });
   }
 
-  function exitAgility() {
-    inAgility = false;
+  function exitMissionHQ() {
+    inMissionHQ = false;
+    document.getElementById('mhq-overlay').classList.add('hidden');
     showEnterScreen('Back to the Village…', () => {
-      // Place safely east of the x<-43 re-entry trigger so we don't loop back in
-      dogState.x = -40; dogState.z = agilityExitZ; dogState.y = DOG_FLOOR;
-      dogState.yaw = Math.PI * 0.5; // facing east, away from course
+      dogState.x = -40; dogState.z = mhqExitZ; dogState.y = DOG_FLOOR;
+      dogState.yaw = Math.PI * 0.5;
       dogState.velY = 0; dogState.grounded = true;
       cam.yaw   = dogState.yaw;
       cam.pos.x = dogState.x - sin(cam.yaw) * 6.5;
@@ -12437,7 +12611,102 @@
     });
   }
 
-  function updateAgility() {
+  // ── Mission HQ UI (overlay) ──────────────────────────────────────────────
+  function renderMissionHUD() {
+    const hud = document.getElementById('mission-hud');
+    if (activeMission) {
+      const p = PROFESSORS[activeMission.profIdx];
+      const m = p.missions[activeMission.mIdx];
+      hud.textContent = `🎯 ACTIVE: ${m.title} — ${m.objective}`;
+      hud.classList.add('visible');
+    } else {
+      hud.classList.remove('visible');
+    }
+  }
+
+  window.openMHQ = function() {
+    const overlay = document.getElementById('mhq-overlay');
+    overlay.classList.remove('hidden');
+    // Rebuild professor row
+    const row = document.getElementById('mhq-prof-row');
+    row.innerHTML = '';
+    PROFESSORS.forEach((p, pi) => {
+      const doneCount = p.missions.filter((_,mi) => missionCompleted.includes(`${pi}-${mi}`)).length;
+      const btn = document.createElement('button');
+      btn.className = 'mhq-prof-btn' + (doneCount === p.missions.length ? ' done' : '');
+      btn.innerHTML = `<span class="mhq-prof-icon">${p.icon}</span><span class="mhq-prof-name">${p.name.split(' ')[1] || p.name}</span><span class="mhq-prof-done">${doneCount}/${p.missions.length} done</span>`;
+      btn.onclick = () => showProfMissions(pi);
+      row.appendChild(btn);
+    });
+    // Show first professor by default
+    showProfMissions(0);
+  };
+
+  function showProfMissions(pi) {
+    // Highlight active professor button
+    document.querySelectorAll('.mhq-prof-btn').forEach((b,i) => {
+      b.classList.toggle('active', i === pi);
+    });
+    const p = PROFESSORS[pi];
+    document.getElementById('mhq-panel-speaker').textContent = `${p.name} – ${p.title}`;
+    document.getElementById('mhq-panel-brief').textContent = p.brief;
+    // Rebuild mission list
+    const panel = document.getElementById('mhq-mission-panel');
+    // Remove old mission buttons (keep speaker and brief)
+    Array.from(panel.querySelectorAll('.mhq-mission-btn')).forEach(b => b.remove());
+    p.missions.forEach((m, mi) => {
+      const key = `${pi}-${mi}`;
+      const done = missionCompleted.includes(key);
+      const isActive = activeMission && activeMission.profIdx === pi && activeMission.mIdx === mi;
+      const btn = document.createElement('button');
+      btn.className = 'mhq-mission-btn' + (done ? ' completed' : '') + (isActive ? ' active-mission' : '');
+      btn.innerHTML = `<strong>${m.roleEmoji} ${m.title}</strong><br><span style="font:11px Arial;color:${done?'#60a860':isActive?'#60a8d0':'#a89060'}">${done ? '✅ Mission complete – '+m.reward : isActive ? '⚡ In progress — '+m.objective : m.brief}</span>`;
+      if (!done) {
+        btn.onclick = () => {
+          if (isActive) {
+            // Abandon
+            completeMission(pi, mi, false);
+          } else {
+            acceptMission(pi, mi);
+          }
+        };
+      }
+      panel.appendChild(btn);
+    });
+  }
+
+  function acceptMission(profIdx, mIdx) {
+    activeMission = { profIdx, mIdx };
+    const p = PROFESSORS[profIdx];
+    const m = p.missions[mIdx];
+    renderMissionHUD();
+    saveProgress();
+    showProfMissions(profIdx);
+    // Show confirmation toast
+    toastMsg = `🎯 Mission accepted: ${m.title}! Use pup: ${m.role}`;
+    toastTimer = 340;
+  }
+
+  function completeMission(profIdx, mIdx, success) {
+    if (success) {
+      const key = `${profIdx}-${mIdx}`;
+      if (!missionCompleted.includes(key)) missionCompleted.push(key);
+      const m = PROFESSORS[profIdx].missions[mIdx];
+      showCollectFlash(`✅ Mission complete! ${m.reward}`);
+    }
+    activeMission = null;
+    renderMissionHUD();
+    saveProgress();
+    if (document.getElementById('mhq-overlay') && !document.getElementById('mhq-overlay').classList.contains('hidden')) {
+      showProfMissions(profIdx);
+    }
+  }
+
+  window.closeMHQ = function() {
+    document.getElementById('mhq-overlay').classList.add('hidden');
+  };
+
+  function updateMissionHQ() {
     const ds = dogState;
     let dx = 0, dz = 0;
     if (keys['ArrowLeft']  || keys['KeyA']) ds.yaw -= 0.042;
@@ -12452,7 +12721,7 @@
     }
     ds.wagT += 0.05;
 
-    // ── Jumping ───────────────────────────────────────────────────────────
+    // Jump
     if ((keys['Space'] || keysJustPressed.has('Space')) && ds.grounded) {
       ds.velY = JUMP_VEL; ds.grounded = false;
     }
@@ -12460,71 +12729,61 @@
     ds.y    += ds.velY;
     if (ds.y <= DOG_FLOOR) { ds.y = DOG_FLOOR; ds.velY = 0; ds.grounded = true; }
 
-    // ── Solid obstacle collision (AABB, push player out) ─────────────────
-    // Each entry: [cx, cz, half-width-x, half-width-z, maxY] — blocks movement below maxY
-    const solidBoxes = [
-      // Fence perimeter (east, west, north walls — south has entrance gap)
-      [-11.5, -9,  0.25, 27, 99],  // west fence
-      [ 11.5, -9,  0.25, 27, 99],  // east fence
-      [   0, -36,  12,  0.25, 99], // north fence
-      [-7.5,  18,  4.0, 0.25, 99], // south fence left of gap
-      [ 7.5,  18,  4.0, 0.25, 99], // south fence right of gap
-      // Hurdle posts (4 sets — 2 posts each; only solid below bar height ~1.15)
-      [-2.0,  8,  0.22, 0.22, 1.15], [ 2.0,  8, 0.22, 0.22, 1.15],
-      [-2.0,  2,  0.22, 0.22, 1.15], [ 2.0,  2, 0.22, 0.22, 1.15],
-      [-2.0, -27, 0.22, 0.22, 1.15], [ 2.0, -27, 0.22, 0.22, 1.15],
-      // Start gate posts
-      [-2.5, 14,  0.28, 0.28, 99], [ 2.5, 14, 0.28, 0.28, 99],
-      // Finish gate posts
-      [-2.5, -33, 0.28, 0.28, 99], [ 2.5, -33, 0.28, 0.28, 99],
-      // Tunnel side walls (solid all the way through)
-      [-1.4, -4,  0.22, 2.7, 1.2], [ 1.4, -4, 0.22, 2.7, 1.2],
-      // Weave poles
-      [-1.2, -12.5, 0.14, 0.14, 99], [ 1.2, -11.7, 0.14, 0.14, 99],
-      [-1.2, -10.9, 0.14, 0.14, 99], [ 1.2, -10.1, 0.14, 0.14, 99],
-      [-1.2,  -9.3, 0.14, 0.14, 99], [ 1.2,  -8.5, 0.14, 0.14, 99],
-      // Spectator bench (west side)
-      [-9.2, 2,  1.1, 3.0, 0.75],
-    ];
-    const PR = 0.38; // player radius
-    solidBoxes.forEach(([bx, bz, hw, hd, maxY]) => {
-      if (ds.y > maxY) return; // player has jumped over this obstacle
-      const ox = ds.x - bx, oz = ds.z - bz;
-      const px = hw + PR - Math.abs(ox), pz = hd + PR - Math.abs(oz);
-      if (px > 0 && pz > 0) {
-        if (px < pz) ds.x += px * Math.sign(ox);
-        else         ds.z += pz * Math.sign(oz);
-      }
-    });
+    // Bounds (inside HQ building)
+    ds.x = Math.max(-17.2, Math.min(17.2, ds.x));
+    ds.z = Math.max(-39, Math.min(22.5, ds.z));
 
-    // Course bounds
-    ds.x = Math.max(-10.8, Math.min(10.8, ds.x));
-    ds.z = Math.max(-37, Math.min(18.5, ds.z));
     // Walk back through the south entrance to exit
-    if (ds.z > 18.2 && Math.abs(ds.x) < 3.5) { exitAgility(); return; }
-    // Obstacle proximity — auto-clear in order
-    if (!agilityFinished && agilityNextObs < agilityObstacles.length) {
-      const obs = agilityObstacles[agilityNextObs];
-      if (Math.hypot(ds.x - obs.x, ds.z - obs.z) < 2.8) {
-        obs.cleared = true;
-        agilityScore++;
-        const names = ['Start Gate','Hurdle 1','Hurdle 2','Tunnel','Weave Poles','A-Frame','See-Saw','Hurdle 3','Finish Gate'];
-        if (obs.type === 'start') {
-          agilityRunning = true;
-          showCollectFlash('🏁 Go go go!');
-        } else if (obs.type === 'finish') {
-          agilityRunning  = false;
-          agilityFinished = true;
-          const secs = (agilityTimer / 60).toFixed(1);
-          showCollectFlash(`🏆 Course complete! ${agilityScore}/${agilityObstacles.length} in ${secs}s!`);
-        } else {
-          showCollectFlash(`✅ ${names[obs.id]}  (${agilityScore}/${agilityObstacles.length})`);
+    if (ds.z > 22.2 && Math.abs(ds.x) < 4) { exitMissionHQ(); return; }
+
+    // Proximity to professor — press E to open HQ overlay
+    const mhqOverlay = document.getElementById('mhq-overlay');
+    const overlayOpen = !mhqOverlay.classList.contains('hidden');
+    if (!overlayOpen) {
+      const profStations = [
+        { x: -14, z: -18 }, { x: -10, z: -32 }, { x: 0, z: -36 },
+        { x:  10, z: -32 }, { x:  14, z: -18 }, { x:  8, z:  -4 }, { x: -8, z: -4 },
+      ];
+      let nearestProf = -1, nearestDist = 4.5;
+      profStations.forEach(({ x, z }, i) => {
+        const d = Math.hypot(ds.x - x, ds.z - z);
+        if (d < nearestDist) { nearestDist = d; nearestProf = i; }
+      });
+      if (nearestProf >= 0) {
+        const W = canvas.width, H = canvas.height;
+        ctx.globalAlpha = Math.max(0, Math.min(1, (4.5 - nearestDist) / 2));
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.font = 'bold 14px Arial'; ctx.fillStyle = 'rgba(240,200,80,0.95)';
+        ctx.fillText(`E  ·  Talk to ${PROFESSORS[nearestProf].name}`, W/2, H - 120);
+        ctx.globalAlpha = 1;
+        if (keysJustPressed.has('KeyE')) {
+          keysJustPressed.delete('KeyE');
+          openMHQ();
+          showProfMissions(nearestProf);
         }
-        agilityNextObs++;
       }
     }
-    if (agilityRunning) agilityTimer++;
+
+    // Mission completion trigger — if active mission + press E near command table
+    if (activeMission && !overlayOpen) {
+      const tableDist = Math.hypot(ds.x, ds.z - (-8));
+      if (tableDist < 4) {
+        const W = canvas.width, H = canvas.height;
+        ctx.globalAlpha = Math.max(0, Math.min(1, (4 - tableDist) / 2));
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.font = 'bold 14px Arial'; ctx.fillStyle = 'rgba(80,200,100,0.95)';
+        ctx.fillText('E  ·  Mark mission complete', W/2, H - 100);
+        ctx.globalAlpha = 1;
+        if (keysJustPressed.has('KeyE')) {
+          keysJustPressed.delete('KeyE');
+          completeMission(activeMission.profIdx, activeMission.mIdx, true);
+        }
+      }
+    }
+
     keysJustPressed.clear();
+    // Rebuild scene each frame (professors animate)
+    buildMissionHQScene();
     // Camera follow
     camYawTarget = ds.yaw;
     cam.yaw  = lerp(cam.yaw, camYawTarget, 0.10);
@@ -12535,17 +12794,17 @@
     cam.pitch = 0.28;
   }
 
-  function renderAgility() {
+  function renderMissionHQScene() {
     const W = canvas.width, H = canvas.height;
-    // Daytime open-air sky
-    const fogHex = 0x87ceeb;
+    // Night / torchlit sky
+    const fogHex = 0x0a0806;
     const grad = ctx.createLinearGradient(0, 0, 0, H);
-    grad.addColorStop(0,    '#3a7fc1');
-    grad.addColorStop(0.45, '#87ceeb');
-    grad.addColorStop(1,    '#c4e8f4');
+    grad.addColorStop(0,    '#0a0806');
+    grad.addColorStop(0.5,  '#1c1408');
+    grad.addColorStop(1,    '#282010');
     ctx.fillStyle = grad; ctx.fillRect(0, 0, W, H);
     buildDog();
-    const allQ = [...agilityQuads, ...dogQuads];
+    const allQ = [...missionHQQuads, ...dogQuads];
     const toRender = allQ.map(q => {
       const pts = projectClipped(q.verts, cam);
       if (!pts) return null;
@@ -12553,7 +12812,7 @@
       const cy = q.verts.reduce((s,v)=>s+v.y,0)/4;
       const cz = q.verts.reduce((s,v)=>s+v.z,0)/4;
       const worldDist = len(sub(v3(cx,cy,cz), cam.pos));
-      const fogT = Math.min(1, Math.max(0, (worldDist - 6) / 32)) * (q.isGround ? 0.15 : 0.5);
+      const fogT = Math.min(1, Math.max(0, (worldDist - 6) / 28)) * (q.isGround ? 0.20 : 0.55);
       const avgZv = pts.reduce((s,p)=>s+p.z,0)/pts.length;
       return { pts, avgZv, color:shade(q.color, q.normal, fogT, fogHex), isGround:q.isGround };
     }).filter(Boolean);
@@ -12564,33 +12823,34 @@
       ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
       for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
       ctx.closePath(); ctx.fillStyle = color; ctx.fill();
-      if (!isGround) { ctx.strokeStyle='rgba(0,0,0,0.12)'; ctx.lineWidth=0.5; ctx.stroke(); }
+      if (!isGround) { ctx.strokeStyle='rgba(0,0,0,0.15)'; ctx.lineWidth=0.5; ctx.stroke(); }
     });
-    // HUD
+    // Draw professor name labels above NPCs
+    const profStations = [
+      { x: -14, z: -18 }, { x: -10, z: -32 }, { x: 0, z: -36 },
+      { x:  10, z: -32 }, { x:  14, z: -18 }, { x:  8, z:  -4 }, { x: -8, z: -4 },
+    ];
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    if (agilityRunning || agilityFinished) {
-      const secs = (agilityTimer / 60).toFixed(1);
-      ctx.fillStyle = 'rgba(0,0,0,0.38)';
-      ctx.fillRect(W/2 - 68, 12, 136, 30);
-      ctx.font = 'bold 15px Arial'; ctx.fillStyle = 'rgba(255,255,200,0.96)';
-      ctx.fillText(`⏱ ${secs}s  ·  ${agilityScore} / ${agilityObstacles.length}`, W/2, 27);
-    }
-    const names = ['Start Gate','Hurdle 1','Hurdle 2','Tunnel','Weave Poles','A-Frame','See-Saw','Hurdle 3','Finish Gate'];
-    if (!agilityFinished && agilityNextObs < agilityObstacles.length) {
-      ctx.font = 'bold 13px Arial'; ctx.fillStyle = 'rgba(255,255,160,0.90)';
-      ctx.fillText(`▶ Next: ${names[agilityNextObs]}`, W/2, H - 82);
-    }
-    if (agilityFinished) {
-      const secs = (agilityTimer / 60).toFixed(1);
-      ctx.fillStyle = 'rgba(0,0,0,0.42)';
-      ctx.fillRect(W/2 - 130, H/2 - 34, 260, 58);
-      ctx.font = 'bold 18px Arial'; ctx.fillStyle = 'rgba(255,220,50,0.97)';
-      ctx.fillText(`🏆 Course complete! — ${secs}s`, W/2, H/2 - 12);
-      ctx.font = '13px Arial'; ctx.fillStyle = 'rgba(180,255,160,0.90)';
-      ctx.fillText('Walk south to exit  ·  Esc to leave', W/2, H/2 + 15);
-    } else if (dogState.z > 15.0) {
-      ctx.font = '12px Arial'; ctx.fillStyle = 'rgba(160,230,255,0.70)';
-      ctx.fillText('Esc / walk south to exit', W/2, H - 56);
+    profStations.forEach(({ x, z }, pi) => {
+      const dist = Math.hypot(dogState.x - x, dogState.z - z);
+      if (dist > 10) return;
+      const sp = project(v3(x, 2.4, z), cam);
+      if (!sp) return;
+      const alpha = Math.max(0, Math.min(1, (10 - dist) / 5));
+      const doneCount = PROFESSORS[pi].missions.filter((_,mi) => missionCompleted.includes(`${pi}-${mi}`)).length;
+      ctx.globalAlpha = alpha;
+      ctx.font = 'bold 11px Arial';
+      ctx.fillStyle = doneCount === PROFESSORS[pi].missions.length ? '#80e080' : '#f0c840';
+      ctx.fillText(PROFESSORS[pi].name, sp.x, sp.y - 4);
+      ctx.font = '9px Arial';
+      ctx.fillStyle = 'rgba(200,180,120,0.70)';
+      ctx.fillText(`${doneCount}/${PROFESSORS[pi].missions.length} missions`, sp.x, sp.y + 8);
+    });
+    ctx.globalAlpha = 1;
+    // Exit hint
+    if (dogState.z > 16) {
+      ctx.font = '12px Arial'; ctx.fillStyle = 'rgba(200,170,80,0.65)';
+      ctx.fillText('Esc / walk south to exit HQ', W/2, H - 56);
     }
   }
 
@@ -13358,7 +13618,7 @@
       else if (gameState === 'foodcenter'){ updateFoodCenter(); renderFoodCenter(); }
       else if (gameState === 'cave')       { updateCave();        renderCave();        }
       else if (gameState === 'academy')    { updateAcademy();     renderAcademy();     }
-      else if (gameState === 'agility')    { updateAgility();     renderAgility();     }
+      else if (gameState === 'missionHQ')   { updateMissionHQ();   renderMissionHQScene(); }
       else if (gameState === 'rockScrub')  { updateRockScrub();   renderRockScrub();   }
       else if (gameState === 'sciCenter')  { updateSciCenter();   renderSciCenter();   }
       else if (gameState === 'city')       { updateCity();        renderCity();        }
@@ -13424,6 +13684,8 @@
 
   function buildRuffScene() {
     ruffQuads.length = 0;
+    clearingNPCs.length = 0;   // clear any village NPCs left from a previous character
+    npcQuads.length = 0;
     const STONE   = 0xc8b478, STONE2  = 0xb8a468;
     const HEDGE   = 0x2a5e18, HEDGE2  = 0x388026, HEDGEDK = 0x1c4010;
     const TABLE   = 0xe8d8b0, LEG     = 0x907060, CHAIR   = 0x8a6c4a;
