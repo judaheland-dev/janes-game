@@ -498,6 +498,54 @@
       transition: opacity 0.6s ease;
     }
     #sleep-fade.visible { opacity: 1; pointer-events: all; }
+    /* ── Cheeseball: Get Dressed overlay ──────────────── */
+    #cb-dressup-overlay {
+      position: fixed; inset: 0; z-index: 150;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      background: radial-gradient(ellipse at center, #1a0e2a 0%, #0a0614 100%);
+      gap: 20px;
+    }
+    #cb-dressup-overlay.hidden { display: none; }
+    #cbdu-title { font: bold 28px Arial, sans-serif; color: #ffd0a0; letter-spacing: 3px; text-transform: uppercase; text-shadow: 0 0 24px rgba(255,170,80,0.55); }
+    #cbdu-sub   { font: 14px Arial, sans-serif; color: #a08060; margin-top: -12px; }
+    #cbdu-steps { display: flex; gap: 22px; flex-wrap: wrap; justify-content: center; }
+    .cbdu-step  {
+      background: rgba(255,255,255,0.04); border: 2px solid rgba(255,170,50,0.22);
+      border-radius: 18px; padding: 22px 24px 18px;
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+      min-width: 158px; box-shadow: 0 4px 28px rgba(0,0,0,0.55);
+      transition: border-color 0.3s;
+    }
+    .cbdu-step.done { border-color: rgba(100,220,100,0.55); }
+    .cbdu-step-icon { font-size: 30px; }
+    .cbdu-step-name { font: bold 13px Arial, sans-serif; color: #ffd8a0; text-align: center; }
+    .cbdu-btn {
+      background: rgba(255,170,50,0.12); border: 1.5px solid rgba(255,170,50,0.55);
+      color: #ffd8a0; font: bold 13px/1 Arial, sans-serif;
+      padding: 9px 20px; border-radius: 9px; cursor: pointer;
+      transition: background 0.15s;
+    }
+    .cbdu-btn:hover:not(:disabled) { background: rgba(255,170,50,0.32); }
+    .cbdu-btn:disabled { opacity: 0.35; cursor: default; }
+    .cbdu-check { font: bold 18px Arial; color: #7fff9a; }
+    .cbdu-check.hidden { display: none; }
+    #cbdu-bow-picks { display: flex; gap: 9px; }
+    .cbdu-bow-swatch {
+      width: 30px; height: 30px; border-radius: 50%;
+      border: 2.5px solid rgba(255,255,255,0.22); cursor: pointer;
+      transition: border-color 0.15s, transform 0.12s;
+    }
+    .cbdu-bow-swatch:hover  { border-color: rgba(255,255,255,0.75); transform: scale(1.15); }
+    .cbdu-bow-swatch.picked { border-color: #fff; transform: scale(1.18);
+      box-shadow: 0 0 10px rgba(255,255,255,0.38); }
+    #cbdu-go-btn {
+      margin-top: 6px; padding: 12px 40px; font: bold 17px Arial, sans-serif;
+      background: rgba(100,200,100,0.15); border: 2px solid rgba(100,200,100,0.42);
+      border-radius: 14px; color: #a0f0a0; cursor: pointer; letter-spacing: 1px;
+      transition: background 0.18s, box-shadow 0.18s;
+    }
+    #cbdu-go-btn:hover:not(:disabled) { background: rgba(100,200,100,0.34); box-shadow: 0 0 22px rgba(80,200,80,0.28); }
+    #cbdu-go-btn:disabled { opacity: 0.28; cursor: default; }
     /* Missions-unlocked card */
     #missions-card {
       position: fixed; inset: 0; z-index: 320;
@@ -1080,6 +1128,42 @@
       <button class="bed-claim-btn" onclick="claimBedYes()">Yes ✓</button>
       <button class="bed-claim-btn" onclick="claimBedNo()">No ✕</button>
     </div>
+  </div>
+
+  <!-- Cheeseball: Get Dressed overlay -->
+  <div id="cb-dressup-overlay" class="hidden">
+    <div id="cbdu-title">🪴 Getting Ready!</div>
+    <div id="cbdu-sub">Get Cheeseball dressed before heading outside🐾</div>
+    <div id="cbdu-steps">
+      <!-- Step 1: Brush -->
+      <div class="cbdu-step" id="cbdu-step-brush">
+        <div class="cbdu-step-icon">🪶</div>
+        <div class="cbdu-step-name">Brush Hair</div>
+        <button class="cbdu-btn" id="cbdu-brush-btn" onclick="cbDoBrush()">Brush!</button>
+        <div class="cbdu-check hidden" id="cbdu-brush-check">✓ Done!</div>
+      </div>
+      <!-- Step 2: Collar -->
+      <div class="cbdu-step" id="cbdu-step-collar">
+        <div class="cbdu-step-icon">🧂</div>
+        <div class="cbdu-step-name">Gold &amp; Ruby Collar</div>
+        <button class="cbdu-btn" id="cbdu-collar-btn" onclick="cbDoCollar()">Put on!</button>
+        <div class="cbdu-check hidden" id="cbdu-collar-check">✓ On!</div>
+      </div>
+      <!-- Step 3: Hair bow -->
+      <div class="cbdu-step" id="cbdu-step-bow">
+        <div class="cbdu-step-icon">🎠</div>
+        <div class="cbdu-step-name">Pick a Hair Bow</div>
+        <div id="cbdu-bow-picks">
+          <button class="cbdu-bow-swatch" style="background:#ff6090" data-bow="0" onclick="cbPickBow(0)" title="Pink"></button>
+          <button class="cbdu-bow-swatch" style="background:#cc2020" data-bow="1" onclick="cbPickBow(1)" title="Red"></button>
+          <button class="cbdu-bow-swatch" style="background:#9030c0" data-bow="2" onclick="cbPickBow(2)" title="Purple"></button>
+          <button class="cbdu-bow-swatch" style="background:#2890d0" data-bow="3" onclick="cbPickBow(3)" title="Blue"></button>
+          <button class="cbdu-bow-swatch" style="background:#d4a010" data-bow="4" onclick="cbPickBow(4)" title="Gold"></button>
+        </div>
+        <div class="cbdu-check hidden" id="cbdu-bow-check">✓ Beautiful!</div>
+      </div>
+    </div>
+    <button id="cbdu-go-btn" disabled onclick="cbDressUpDone()">🐾 Go Outside!</button>
   </div>
 
   <!-- Sleep menu (cave beds) -->
@@ -2265,6 +2349,10 @@
   let cbMapViewed = false;  // true after map closed for first time → arrived at village
   let cbTreasureMapOpen = false;
   const cbHoleQuads = [];
+  // Get-dressed minigame
+  let cbBrushDone  = false;  // hair brushed ✓
+  let cbCollarOn   = false;  // gold+ruby collar put on ✓
+  let cbBowIndex   = -1;     // -1=none, 0=pink 1=red 2=purple 3=blue 4=gold
 
   const lostPups = [
     { wx: 47, wz: 25, s:0.60, fur:0xa87840, ears:'triangle', found:false, returned:false, followX:0, followZ:0, scared:"W-Wark! I was so scared!" },
@@ -3728,7 +3816,7 @@
       // addNpcDog label so proximity chat works
       clearingNPCs.push({
         wx: pos.x, wz: pos.z, s: 1.0, fur: npc.fur, yaw: pos.yaw ?? 0,
-        text: npc.id.charAt(0).toUpperCase() + npc.id.slice(1) + ' is here!',
+        text: DOG_DISPLAY_NAMES[npc.id] || (npc.id.charAt(0).toUpperCase() + npc.id.slice(1)),
         type: 'adult', ears: npc.ears,
       });
       drawPackMemberNpc(npcQuads, npc.id, pos.x, pos.z, pos.yaw ?? 0);
@@ -3949,6 +4037,41 @@
         pushBox(dogQuads, pawCentre.x, pawCentre.y-0.05, pawCentre.z,
                 0.13, 0.06, 0.13, lightGray, yaw, ang);
       });
+
+      // ── Gold + ruby collar ────────────────────────────────────────────
+      if (cbCollarOn) {
+        const cbColR = 0.20, cbColY = 0.69;
+        for (let b = 0; b < 12; b++) {
+          const ba   = (b / 12) * PI * 2;
+          const bxl  = sin(ba) * cbColR;
+          const byy  = cos(ba) * 0.035;
+          const bwp  = add(rotY(v3(bxl, cbColY + byy, 0.52), yaw), v3(x,y,z));
+          const bCol = (b % 3 === 0) ? 0xcc1010 : 0xd4a200; // ruby every 3rd, gold otherwise
+          pushBox(dogQuads, bwp.x, bwp.y, bwp.z, 0.028, 0.028, 0.028, bCol, yaw);
+        }
+      }
+
+      // ── Hair bow ──────────────────────────────────────────────────
+      if (cbBowIndex >= 0) {
+        const BOW_COLORS = [0xff5888, 0xcc1818, 0x9030c0, 0x2888d0, 0xd4a010];
+        const bowCol  = BOW_COLORS[cbBowIndex];
+        const bowDark = 0x1a0810; // near-black knot centre
+        // left loop
+        const bl = add(rotY(v3(-0.15, 1.56, 0.67), yaw), v3(x,y,z));
+        pushBox(dogQuads, bl.x, bl.y, bl.z, 0.10, 0.07, 0.06, bowCol, yaw);
+        // right loop
+        const br = add(rotY(v3( 0.15, 1.56, 0.67), yaw), v3(x,y,z));
+        pushBox(dogQuads, br.x, br.y, br.z, 0.10, 0.07, 0.06, bowCol, yaw);
+        // centre knot
+        const bk = add(rotY(v3(0, 1.56, 0.67), yaw), v3(x,y,z));
+        pushBox(dogQuads, bk.x, bk.y, bk.z, 0.04, 0.045, 0.045, bowDark, yaw);
+        // ribbon tails hanging down
+        const btl = add(rotY(v3(-0.09, 1.48, 0.65), yaw), v3(x,y,z));
+        pushBox(dogQuads, btl.x, btl.y, btl.z, 0.045, 0.04, 0.04, bowCol, yaw + 0.25);
+        const btr = add(rotY(v3( 0.09, 1.48, 0.65), yaw), v3(x,y,z));
+        pushBox(dogQuads, btr.x, btr.y, btr.z, 0.045, 0.04, 0.04, bowCol, yaw - 0.25);
+      }
+
       return;
     }
 
@@ -5839,6 +5962,8 @@
     if (obsidianMazeOpen) { updateObsMaze(); }
     // Ruff: cinematic overlays drawn on top of 3D world
     if (activeCharacter === 'ruff' && ruffScene !== 'patio') renderRuffOverlay();
+    // Bark: butterfly entry cutscene drawn on top of 3D forest clearing
+    if (activeCharacter === 'bark' && barkButterflyActive) renderBarkButterflyScene();
 
     // hole approach hint (Wark, surface, phase 0 only)
     if (activeCharacter==='wark' && !inTunnel && warkPhase===0) {
@@ -6097,6 +6222,8 @@
   let barkInVillage    = false; // true after Bark finds the village
   let barkInForest     = false; // true while Bark is in the forest clearing outside the cave
   let barkInUpstairs   = false; // true while upstairs in Bark's house
+  let barkButterflyActive = false; // true while the entry butterfly cutscene is playing
+  let barkButterflyT      = 0;    // frame counter for butterfly animation
   let BARK_ARRIVE_DLG  = [];
   let ruffPhase        = 0;     // 0 = hiding by bush (intro)
   let ruffInVillage    = false; // true after river sweep — Ruff wakes up in the village forest
@@ -6116,19 +6243,44 @@
     { id:'bark',       x: 1.8, z:-18, s:1.0, fur:0xd4a860, ears:'triangle' },
   ];
 
-  // Pack-gather cutscene: only Prof. Maple speaks — no pup introductions.
+  // Pack-gather cutscene: other dogs introduce themselves → active char → Prof. Maple closes.
   function buildPackGatherDlg(activeChar) {
-    return [
-      { speaker: 'Prof. Maple 🍁', text: '…And there you are.' },
-      { speaker: 'Prof. Maple 🍁', text: 'Seven pups. I\'ve been expecting you.' },
-      { speaker: 'Prof. Maple 🍁', text: 'The village is yours now. I believe you are all ready.' },
-    ];
+    const introLines = {
+      wark:       { speaker: 'Wark 🐾',        text: "I'm Wark. I came from the forest." },
+      newmoon:    { speaker: 'New Moon 🌙',     text: "I'm New Moon. I woke up here not long ago." },
+      cheeseball: { speaker: 'Cheeseball 🧡',  text: "I'm Cheeseball! I came from a human home." },
+      obsidian:   { speaker: 'Obsidian 🌑',    text: "I'm Obsidian. I came from the city." },
+      scratch:    { speaker: 'Scratch 🐕',     text: "I'm Scratch. I follow Obsidian around." },
+      ruff:       { speaker: 'Ruff 🍂',        text: "Name's Ruff. A river swept me here." },
+      bark:       { speaker: 'Bark 🐶',        text: "I'm Bark! I was born right here in this den." },
+    };
+    const selfLines = {
+      wark:       "And I'm Wark. Glad everyone finally made it.",
+      newmoon:    "I'm New Moon. Wasn't expecting so many others like me.",
+      cheeseball: "I'm Cheeseball! Wow, we're all really here!",
+      obsidian:   "I'm Obsidian. I didn't know there were so many of us.",
+      scratch:    "I'm Scratch. Still figuring it out.",
+      ruff:       "I'm Ruff. Didn't think I'd be standing here saying that.",
+      bark:       "I'm Bark! I've been waiting for this.",
+    };
+    const dlg = [];
+    for (const npc of PACK_GATHER_NPC) {
+      if (npc.id === activeChar) continue;
+      if (introLines[npc.id]) dlg.push(introLines[npc.id]);
+    }
+    if (selfLines[activeChar]) {
+      dlg.push({ speaker: introLines[activeChar]?.speaker || activeChar, text: selfLines[activeChar] });
+    }
+    dlg.push(
+      { speaker: 'Prof. Maple 🍁', text: 'Seven pups… it\'s not enough for a pack, but…' },
+      { speaker: 'Prof. Maple 🍁', text: '…Anyways. I believe the diamond pack is ready.' },
+    );
+    return dlg;
   }
   const barkQuads         = [];   // Bark ground floor + back yard geometry
   const barkColliders     = [];   // Bark furniture / object colliders
   const barkUpstairsQuads = [];   // Bark upstairs geometry
   const barkForestQuads   = [];   // Bark forest clearing geometry
-  const barkForestQuads   = [];   // Forest clearing outside Bark's cave
   const DOG_DISPLAY_NAMES = {
     wark: 'Wark', newmoon: 'New Moon', cheeseball: 'Cheeseball',
     obsidian: 'Obsidian', ruff: 'Ruff', scratch: 'Scratch', bark: 'Bark',
@@ -6345,6 +6497,9 @@
       save.cbHasToy    = cbHasToy;
       save.cbHasMap    = cbHasMap;
       save.cbMapViewed = cbMapViewed;
+      save.cbBrushDone = cbBrushDone;
+      save.cbCollarOn  = cbCollarOn;
+      save.cbBowIndex  = cbBowIndex;
       if (cbMapViewed) {
         save.wobCoins         = wobCoins;
         save.warkPouch        = warkPouch;
@@ -6528,6 +6683,9 @@
         cbHasToy    = s.cbHasToy    ?? false;
         cbHasMap    = s.cbHasMap    ?? false;
         cbMapViewed = s.cbMapViewed ?? false;
+        cbBrushDone = s.cbBrushDone ?? false;
+        cbCollarOn  = s.cbCollarOn  ?? false;
+        cbBowIndex  = s.cbBowIndex  ?? -1;
         if (cbHasMap && !cbMapViewed) document.getElementById('map-btn').classList.remove('hidden');
         if (cbMapViewed) {
           wobCoins  = s.wobCoins  ?? 0;
@@ -7492,6 +7650,61 @@
     { speaker: 'Pup',  text: 'You found them all!' },
     { speaker: 'Pup',  text: 'Thank you! Here is a map as a reward!' },
   ];
+  // ── Cheeseball: get-dressed minigame ──────────────────────────────────────
+  function openCbDressUp() {
+    document.getElementById('cb-dressup-overlay').classList.remove('hidden');
+    // reset UI state (pick up where we left off if partially done)
+    document.getElementById('cbdu-brush-check').classList.toggle('hidden', !cbBrushDone);
+    document.getElementById('cbdu-brush-btn').disabled = cbBrushDone;
+    document.getElementById('cbdu-step-brush').classList.toggle('done', cbBrushDone);
+    document.getElementById('cbdu-collar-check').classList.toggle('hidden', !cbCollarOn);
+    document.getElementById('cbdu-collar-btn').disabled = cbCollarOn;
+    document.getElementById('cbdu-step-collar').classList.toggle('done', cbCollarOn);
+    // bow
+    const hasBow = cbBowIndex >= 0;
+    document.getElementById('cbdu-bow-check').classList.toggle('hidden', !hasBow);
+    document.getElementById('cbdu-step-bow').classList.toggle('done', hasBow);
+    document.querySelectorAll('.cbdu-bow-swatch').forEach((el, i) => {
+      el.classList.toggle('picked', i === cbBowIndex);
+    });
+    document.getElementById('cbdu-go-btn').disabled = !(cbBrushDone && cbCollarOn && hasBow);
+  }
+  function _cbDressUpCheck() {
+    document.getElementById('cbdu-go-btn').disabled = !(cbBrushDone && cbCollarOn && cbBowIndex >= 0);
+  }
+  window.cbDoBrush = function() {
+    if (cbBrushDone) return;
+    cbBrushDone = true;
+    document.getElementById('cbdu-brush-btn').disabled = true;
+    document.getElementById('cbdu-brush-check').classList.remove('hidden');
+    document.getElementById('cbdu-step-brush').classList.add('done');
+    _cbDressUpCheck();
+  };
+  window.cbDoCollar = function() {
+    if (cbCollarOn) return;
+    cbCollarOn = true;
+    document.getElementById('cbdu-collar-btn').disabled = true;
+    document.getElementById('cbdu-collar-check').classList.remove('hidden');
+    document.getElementById('cbdu-step-collar').classList.add('done');
+    _cbDressUpCheck();
+  };
+  window.cbPickBow = function(idx) {
+    cbBowIndex = idx;
+    document.querySelectorAll('.cbdu-bow-swatch').forEach((el, i) => {
+      el.classList.toggle('picked', i === idx);
+    });
+    document.getElementById('cbdu-bow-check').classList.remove('hidden');
+    document.getElementById('cbdu-step-bow').classList.add('done');
+    _cbDressUpCheck();
+  };
+  window.cbDressUpDone = function() {
+    document.getElementById('cb-dressup-overlay').classList.add('hidden');
+    gameState = 'cutscene';
+    activeDialogueArr = CB_INTRO_DLG;
+    dialogueIndex = 0;
+    showDialogue(0);
+  };
+
   const CB_INTRO_DLG = [
     { speaker: 'Cheeseball', text: "It's a beautiful day!" },
     { speaker: 'Cheeseball', text: "I wonder what's out in the yard today..." },
@@ -7562,8 +7775,8 @@
   ];
   const RUFF_WAKE_DLG = [
     { speaker: 'Ruff 🐕', text: "...Ugh. Where am I?" },
-    { speaker: 'Ruff 🐕', text: "I can hear a river nearby. The ground is soft... it's a forest." },
-    { speaker: 'Ruff 🐕', text: "I must have washed up here. I wonder if anyone lives around here." },
+    { speaker: 'Ruff 🐕', text: "I can hear a river behind me. The current — it carried me here somehow." },
+    { speaker: 'Ruff 🐕', text: "...This looks like a village. I wonder if anyone lives here." },
   ];
   const BARK_INTRO_DLG = [
     { speaker: 'Bark 🐶', text: "Mm... mmph..." },
@@ -7571,6 +7784,9 @@
   ];
   const BARK_LEAVE_DLG = [
     { speaker: 'Mother 🐕', text: "Don't go far, Bark." },
+  ];
+  const BARK_WHAT_DLG = [
+    { speaker: 'Bark 🐶', text: 'What is that…?' },
   ];
   let WARK_ARRIVE_DLG = [];
   let OBS_ARRIVE_DLG  = [];
@@ -7717,7 +7933,7 @@
         updateSwitcherBar();
         gameState = 'cave'; dialogueCooldown = 60; return;
       }
-      // Bark: mother farewell ends — fade into forest clearing
+      // Bark: mother farewell ends — fade into forest clearing, then butterfly
       if (activeDialogueArr === BARK_LEAVE_DLG) {
         barkInForest = true;
         showEnterScreen('Forest Clearing\u2026', () => {
@@ -7727,11 +7943,18 @@
           cam.yaw = Math.PI;
           cam.pos.x = 0; cam.pos.y = DOG_FLOOR + 3.5; cam.pos.z = 6 + 6.5;
           saveProgress();
+          barkButterflyActive = true;
+          barkButterflyT      = 0;
           gameState = 'playing';
           dialogueCooldown = 60;
-          toastMsg   = '\uD83C\uDF32 Walk north into the forest to find the village.';
-          toastTimer = 300;
         });
+        return;
+      }
+      // Bark: 'What is that?' ends — free to roam
+      if (activeDialogueArr === BARK_WHAT_DLG) {
+        barkButterflyActive = false;
+        gameState = 'playing';
+        dialogueCooldown = 60;
         return;
       }
       gameState = 'playing';
@@ -7883,7 +8106,11 @@
         cbNpcPhase = 0; cbHasToy = false; cbHasMap = false;
         cbMapViewed = false;
         cbTreasureMapOpen = false; cbHoleQuads.length = 0;
+        cbBrushDone = false; cbCollarOn = false; cbBowIndex = -1;
         document.getElementById('map-btn').classList.add('hidden');
+        // Show the get-dressed minigame before entering the world
+        openCbDressUp();
+        return; // dialogue + gameState handled by cbDressUpDone()
       } else {
         if (cbMapViewed) {
           // Already arrived at village — restore player there
@@ -7898,6 +8125,11 @@
         }
         if (cbNpcPhase >= 1) buildCbHole();  // rebuild hole visuals from save
         if (cbHasMap && !cbMapViewed) document.getElementById('map-btn').classList.remove('hidden');
+        // If dressed state was saved, show overlay again so player can re-pick; otherwise just play
+        if (!cbCollarOn && !cbBrushDone && cbBowIndex < 0) {
+          openCbDressUp();
+          return;
+        }
       }
       activeDialogueArr = CB_INTRO_DLG;
     }},
@@ -7973,13 +8205,17 @@
     }},
     bark: { enterTitle: 'In the den\u2026', startX: 0, startZ: -1.5, onEnter: (restored) => {
       if (!restored) {
-        barkInVillage  = false;
-        barkInForest   = false;
-        barkInUpstairs = false;
+        barkInVillage      = false;
+        barkInForest       = false;
+        barkInUpstairs     = false;
+        barkButterflyActive = false;
+        barkButterflyT      = 0;
         buildBarkHouse();
         activeDialogueArr = BARK_INTRO_DLG;
       } else {
-        barkInUpstairs = false;  // always land on ground floor after reload
+        barkInUpstairs      = false;  // always land on ground floor after reload
+        barkButterflyActive = false;  // never replay butterfly on restore
+        barkButterflyT      = 0;
         if (barkInVillage) { buildVillage(); }
         else if (barkInForest) { buildBarkForest(); }
         else { buildBarkHouse(); }
@@ -11264,13 +11500,15 @@
       // White coat panel on his chest (the -x-facing side)
       pushBox(drStoneQ, 1.70, DOG_FLOOR + 0.60, -21.5, 0.04, 0.24, 0.32, 0xe6e8e2);
     }
-    // Pack gathering cutscene: Prof. Maple (centre), Chef Bramble (left), Dr. Sage (right)
+    // Pack gathering cutscene: all 6 other pack dogs + Prof. Maple at back
     const packNpcQ = [];
     const _gsRender = getGlobalSave();
     if (!_gsRender.packGatherDone && getVillageDogs().length >= 7 && activeDialogueArr === packGatherDlg && packGatherDlg.length > 0) {
-      addNpcDog(packNpcQ,  0,   -25.5, 1.55, 0xc07840, Math.PI, 'triangle'); // Prof. Maple — centre
-      addNpcDog(packNpcQ, -2.5, -25.0, 1.55, 0x9a5028, Math.PI, 'floppy');   // Chef Bramble — left
-      addNpcDog(packNpcQ,  2.5, -25.0, 1.50, 0x508868, Math.PI, 'floppy');   // Dr. Sage — right
+      for (const npc of PACK_GATHER_NPC) {
+        if (npc.id === activeCharacter) continue;
+        drawPackMemberNpc(packNpcQ, npc.id, npc.x, npc.z, Math.PI);
+      }
+      addNpcDog(packNpcQ, 0, -25.5, 1.55, 0xc07840, Math.PI, 'triangle'); // Prof. Maple — back centre
     }
     const allQ = [...caveQuads, ...dogQuads, ...drStoneQ, ...packNpcQ];
     const fogHex = 0x100c08;
@@ -11338,21 +11576,32 @@
         ctx.globalAlpha = 1;
       }
     }
-    // Pack gather: name labels for Maple, Bramble, Sage
+    // Pack gather: floating name labels for each pack member + Prof. Maple
     if (!_gsRender.packGatherDone && activeDialogueArr === packGatherDlg && packGatherDlg.length > 0) {
-      const cutNpcs = [
-        { x:  0,   z: -25.5, label: 'Prof. Maple 🍁', color: 'rgba(200,230,160,0.94)' },
-        { x: -2.5, z: -25.0, label: 'Chef Bramble 🍖', color: 'rgba(220,160,100,0.90)' },
-        { x:  2.5, z: -25.0, label: 'Dr. Sage 🌿',    color: 'rgba(140,220,160,0.90)' },
-      ];
-      cutNpcs.forEach(({ x, z, label, color }) => {
-        const sp = project(v3(x, DOG_FLOOR + 2.3, z), cam);
-        if (!sp) return;
+      const packNameLabel = {
+        wark:'Wark 🐾', newmoon:'New Moon 🌙', cheeseball:'Cheeseball 🧡',
+        obsidian:'Obsidian 🌑', scratch:'Scratch 🐕', ruff:'Ruff 🍂', bark:'Bark 🐶',
+      };
+      const packNameColor = {
+        wark:'#f0c870', newmoon:'#a8c8ff', cheeseball:'#ffb060',
+        obsidian:'#a090c8', scratch:'#c8a870', ruff:'#d8b878', bark:'#ffe090',
+      };
+      for (const npc of PACK_GATHER_NPC) {
+        if (npc.id === activeCharacter) continue;
+        const sp = project(v3(npc.x, DOG_FLOOR + 2.3, npc.z), cam);
+        if (!sp) continue;
         ctx.globalAlpha = 0.90; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-        ctx.font = 'bold 13px Arial'; ctx.fillStyle = color;
-        ctx.fillText(label, sp.x, sp.y - 4);
+        ctx.font = 'bold 12px Arial'; ctx.fillStyle = packNameColor[npc.id] || '#ffffff';
+        ctx.fillText(packNameLabel[npc.id] || npc.id, sp.x, sp.y - 4);
         ctx.globalAlpha = 1;
-      });
+      }
+      const mpSp = project(v3(0, DOG_FLOOR + 2.3, -25.5), cam);
+      if (mpSp) {
+        ctx.globalAlpha = 0.90; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+        ctx.font = 'bold 13px Arial'; ctx.fillStyle = 'rgba(200,230,160,0.94)';
+        ctx.fillText('Prof. Maple 🍁', mpSp.x, mpSp.y - 4);
+        ctx.globalAlpha = 1;
+      }
     }
     // Exit hint
     if (dogState.z > 0) {
@@ -13410,6 +13659,176 @@
     { emotion: 'Angry',    color: '#ff3030', hex: 0xff3030 },
   ];
 
+  // ── Bark: butterfly entry cutscene ───────────────────────────────────────
+  // Timeline (all in frames at ~60fps):
+  //   0-40   : fade-in soft vignette zoom (camera pushes closer)
+  //  40-160  : butterfly flies from top-right, flapping wings, arcs down
+  // 160-220  : butterfly settles + hovers over flower (wing flap slows)
+  // 220-260  : butterfly lands on flower, wings fold still
+  // 260-310  : brief pause
+  // 310+     : show BARK_WHAT_DLG line
+  function renderBarkButterflyScene() {
+    const W = canvas.width, H = canvas.height;
+    barkButterflyT++;
+    const t = barkButterflyT;
+
+    // ── Trigger the dialogue at the right moment ──────────────────────────
+    if (t === 310 && gameState === 'playing') {
+      gameState = 'cutscene';
+      activeDialogueArr = BARK_WHAT_DLG;
+      dialogueIndex = 0;
+      showDialogue(0);
+    }
+    // Keep drawing past 310 while dialogue is up
+    if (t > 310 && !dialogueActive) return;
+
+    // ── Vignette zoom-in overlay ──────────────────────────────────────────
+    const vigAlpha = Math.min(0.55, t / 60 * 0.55);
+    const grad = ctx.createRadialGradient(W*0.55, H*0.44, H*0.12, W*0.55, H*0.44, H*0.68);
+    grad.addColorStop(0, `rgba(0,0,0,0)`);
+    grad.addColorStop(1, `rgba(0,0,0,${vigAlpha.toFixed(2)})`);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+
+    // ── Flower at landing position ─────────────────────────────────────────
+    // Placed at canvas coords ~(58%, 62%)
+    const fx = W * 0.58, fy = H * 0.62;
+    const flowerAlpha = Math.min(1, Math.max(0, (t - 30) / 40));
+    ctx.save();
+    ctx.globalAlpha = flowerAlpha;
+    // Stem
+    ctx.strokeStyle = '#3a8030'; ctx.lineWidth = Math.max(2, H * 0.004);
+    ctx.beginPath(); ctx.moveTo(fx, fy + H*0.06); ctx.lineTo(fx, fy); ctx.stroke();
+    // Petals
+    const pr = H * 0.028;
+    const petalColors = ['#ff88cc','#ffaadd','#ff70bb','#ffbbee','#ff60aa'];
+    for (let i = 0; i < 5; i++) {
+      const pa = (i / 5) * Math.PI * 2;
+      ctx.fillStyle = petalColors[i];
+      ctx.beginPath();
+      ctx.ellipse(fx + Math.cos(pa) * pr * 1.1, fy + Math.sin(pa) * pr * 1.1,
+                  pr * 0.9, pr * 0.55, pa, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // Centre
+    ctx.fillStyle = '#ffe060';
+    ctx.beginPath(); ctx.arc(fx, fy, pr * 0.52, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+
+    // ── Butterfly position along arc path ────────────────────────────────
+    // Phase 1 (t 40-160): fly in from upper-right, sweeping arc down to flower
+    // Phase 2 (t 160-260): hover + settle
+    // Phase 3 (t 260+): landed, still
+    let bx, by, wingPhase;
+    const ARRIVE_START = 40, ARRIVE_END = 160;
+    const SETTLE_END   = 260;
+
+    if (t < ARRIVE_START) {
+      // Not yet visible
+      return;
+    } else if (t <= ARRIVE_END) {
+      const p = (t - ARRIVE_START) / (ARRIVE_END - ARRIVE_START);
+      const ep = 1 - Math.pow(1 - p, 2);  // ease out
+      // Arc: start upper-right, sweep down-left to just above flower
+      const sx = W * 0.92, sy = H * 0.10;
+      const cx1 = W * 0.80, cy1 = H * 0.25;  // control point
+      // Bezier position
+      const inv = 1 - ep;
+      bx = inv*inv*sx + 2*inv*ep*cx1 + ep*ep*(fx);
+      by = inv*inv*sy + 2*inv*ep*cy1 + ep*ep*(fy - H*0.12);
+      wingPhase = t * 0.38;  // fast flapping
+    } else if (t <= SETTLE_END) {
+      const p = (t - ARRIVE_END) / (SETTLE_END - ARRIVE_END);
+      const ep = 1 - Math.pow(1 - p, 2);
+      bx = fx + Math.sin(p * Math.PI * 3) * W * 0.018 * (1 - p);  // tiny hover drift
+      by = (fy - H * 0.12) + ep * H * 0.12;  // descend to flower
+      wingPhase = t * (0.38 - 0.28 * ((t - ARRIVE_END) / (SETTLE_END - ARRIVE_END)));  // slowing flap
+    } else {
+      // Landed — sit on flower centre
+      bx = fx; by = fy - H * 0.005;
+      wingPhase = -99;  // wings folded
+    }
+
+    // ── Draw butterfly ────────────────────────────────────────────────────
+    ctx.save();
+    const scale = H * 0.072;
+    const landed = t > SETTLE_END;
+    const flapAng = landed ? 0.08 : Math.abs(Math.sin(wingPhase)) * 0.95;
+
+    // Wing colour — vivid orange with dark veins
+    const wingAlpha = Math.min(1, (t - ARRIVE_START) / 15);
+    ctx.globalAlpha = wingAlpha;
+
+    // Left upper wing
+    ctx.save();
+    ctx.translate(bx, by);
+    ctx.scale(landed ? 0.5 : 1, 1);
+    ctx.fillStyle = '#f07010';
+    ctx.beginPath();
+    ctx.save();
+    ctx.transform(Math.cos(flapAng), -Math.sin(flapAng)*0.4, 0, 1, 0, 0);
+    ctx.ellipse(-scale*0.55, -scale*0.10, scale*0.52, scale*0.30, -0.28, 0, Math.PI*2);
+    ctx.fill();
+    // Wing border
+    ctx.strokeStyle = '#1a0800'; ctx.lineWidth = Math.max(1, scale*0.04);
+    ctx.stroke();
+    ctx.restore();
+
+    // Right upper wing
+    ctx.save();
+    ctx.transform(Math.cos(-flapAng), Math.sin(flapAng)*0.4, 0, 1, 0, 0);
+    ctx.fillStyle = '#f07010';
+    ctx.beginPath();
+    ctx.ellipse(scale*0.55, -scale*0.10, scale*0.52, scale*0.30, 0.28, 0, Math.PI*2);
+    ctx.fill();
+    ctx.strokeStyle = '#1a0800'; ctx.lineWidth = Math.max(1, scale*0.04);
+    ctx.stroke();
+    ctx.restore();
+
+    // Lower wings (smaller, rounded)
+    ctx.fillStyle = '#cc5008';
+    ctx.save();
+    ctx.transform(Math.cos(flapAng*0.7), -Math.sin(flapAng*0.7)*0.3, 0, 1, 0, 0);
+    ctx.beginPath();
+    ctx.ellipse(-scale*0.38, scale*0.18, scale*0.30, scale*0.20, 0.20, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+    ctx.save();
+    ctx.transform(Math.cos(-flapAng*0.7), Math.sin(flapAng*0.7)*0.3, 0, 1, 0, 0);
+    ctx.beginPath();
+    ctx.ellipse(scale*0.38, scale*0.18, scale*0.30, scale*0.20, -0.20, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+
+    // Wing spots
+    ctx.fillStyle = 'rgba(255,240,180,0.7)';
+    ctx.beginPath(); ctx.arc(-scale*0.42, -scale*0.06, scale*0.07, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc( scale*0.42, -scale*0.06, scale*0.07, 0, Math.PI*2); ctx.fill();
+
+    // Body
+    ctx.fillStyle = '#1a0800';
+    ctx.beginPath();
+    ctx.ellipse(0, scale*0.04, scale*0.07, scale*0.28, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    // Antennae
+    ctx.strokeStyle = '#1a0800'; ctx.lineWidth = Math.max(1, scale*0.030);
+    ctx.beginPath();
+    ctx.moveTo(0, -scale*0.12);
+    ctx.bezierCurveTo(-scale*0.12, -scale*0.40, -scale*0.22, -scale*0.44, -scale*0.18, -scale*0.50);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0, -scale*0.12);
+    ctx.bezierCurveTo( scale*0.12, -scale*0.40,  scale*0.22, -scale*0.44,  scale*0.18, -scale*0.50);
+    ctx.stroke();
+    // Antenna tips
+    ctx.fillStyle = '#1a0800';
+    ctx.beginPath(); ctx.arc(-scale*0.18, -scale*0.52, scale*0.04, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc( scale*0.18, -scale*0.52, scale*0.04, 0, Math.PI*2); ctx.fill();
+
+    ctx.restore();  // butterfly group
+  }
+
   // Draw emotion aura halos over every visible NPC when Bark has the emotion necklace
   function renderBarkEmotionAuras() {
     if (!hasBarkEmotionNecklace()) return;
@@ -14604,16 +15023,16 @@
       if (ruffRiverPhase === 0 && ruffRiverT >  80) { ruffRiverPhase = 1; }
       if (ruffRiverPhase === 1 && ruffRiverT > 160) { ruffRiverPhase = 2; ruffRiverT = 0; }
       buildRuffRiverScene();
-      // After full fade-to-black — Ruff wakes up in the village forest
+      // After full fade-to-black — Ruff wakes up on the village south path
       if (ruffRiverPhase === 2 && ruffRiverT > 200) {
         ruffScene     = 'patio';   // suppress overlay; village renders via isInVillage()
         ruffInVillage = true;
         ruffPhase     = 2;
         dogState.x    = 0;
-        dogState.z    = -41;       // north bank of the village forest river
-        dogState.yaw  = Math.PI;   // facing south, toward the village
+        dogState.z    = 36;        // south entrance — Prof. Maple can reach him here
+        dogState.yaw  = Math.PI;   // facing north into the village
         dogState.y    = DOG_FLOOR;
-        cam.pos = v3(0, dogState.y + 2.5, -41 + 7);
+        cam.pos = v3(0, dogState.y + 3.5, 36 + 6.5);  // camera behind (south), looking north
         cam.yaw = Math.PI;
         buildVillage();
         activeDialogueArr = RUFF_WAKE_DLG;
