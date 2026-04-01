@@ -498,6 +498,34 @@
       transition: opacity 0.6s ease;
     }
     #sleep-fade.visible { opacity: 1; pointer-events: all; }
+    /* Missions-unlocked card */
+    #missions-card {
+      position: fixed; inset: 0; z-index: 320;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.88); gap: 18px;
+    }
+    #missions-card.hidden { display: none; }
+    #missions-card-title {
+      font: bold 38px Arial, sans-serif; color: #f0d060;
+      text-shadow: 0 0 40px rgba(255,210,60,0.8); letter-spacing: 3px;
+      animation: lpulse 2s ease-in-out infinite;
+    }
+    #missions-card-body {
+      font: 17px Arial, sans-serif; color: #e8dfc0;
+      max-width: 520px; text-align: center; line-height: 1.65;
+    }
+    #missions-card-sub {
+      font: 14px Arial, sans-serif; color: #b0a880;
+      max-width: 500px; text-align: center; margin-top: 4px;
+    }
+    #missions-card-btn {
+      margin-top: 10px; padding: 10px 34px;
+      background: rgba(200,170,50,0.22); border: 1.5px solid rgba(200,170,50,0.55);
+      border-radius: 10px; color: #f0d870; font: bold 16px Arial, sans-serif;
+      cursor: pointer; transition: background 0.2s;
+    }
+    #missions-card-btn:hover { background: rgba(200,170,50,0.40); }
     /* Obsidian game-over overlay */
     #obsidian-gameover {
       position: fixed; inset: 0; z-index: 400;
@@ -1003,6 +1031,14 @@
 
   <!-- Sleep fade overlay -->
   <div id="sleep-fade"></div>
+
+  <!-- Missions unlocked card -->
+  <div id="missions-card" class="hidden">
+    <div id="missions-card-title">🎯 Missions Unlocked!</div>
+    <div id="missions-card-body">Go to the <strong>East Path</strong> to see available missions!</div>
+    <div id="missions-card-sub">Missions are tasks given by the seven professors — collect materials, scout locations, or bring back information. Head east to get started.</div>
+    <button id="missions-card-btn" onclick="closeMissionsCard()">Let's go! 🐾</button>
+  </div>
 
   <!-- Obsidian game-over overlay -->
   <div id="obsidian-gameover" class="hidden">
@@ -3828,6 +3864,101 @@
       return;
     }
 
+    if (activeCharacter === 'bark') {
+      // ── Colour palette (Shiba-style bicolor — Bark) ──────────────────────
+      // Near-black body with rich amber-tan bicolor markings; very different from
+      // Ruff's scattered merle patches — Bark is clean bicolor and more compact.
+      const bDark    = 0x1c0e06;   // near-black main body
+      const bMid     = 0x361808;   // slightly lighter dark-brown shadow
+      const bTan     = 0xc87828;   // warm amber-tan bicolor markings
+      const bDeepTan = 0x9a5418;   // deeper tan for shadow within markings
+      const bCream   = 0xeac880;   // pale cream belly / inner chest
+      const bEye     = 0xd08a1a;   // warm honey-amber iris
+      const bEyeHi   = 0xf8e870;   // bright yellow-gold eye highlight
+      const bNose    = 0x0e0806;   // near-black nose
+      const bInnerEar= 0x703a18;   // warm cinnamon inner ear
+
+      // ── Compact stocky body ──────────────────────────────────────────────
+      dbox(0,     0.54,  0,     0.44, 0.27, 0.68, bDark);    // core
+      dbox(0,     0.62,  0.10,  0.48, 0.20, 0.50, bMid);     // upper shadow
+      dbox(0,     0.50,  0.56,  0.28, 0.24, 0.22, bCream);   // chest / belly
+      dbox(0,     0.56, -0.52,  0.36, 0.25, 0.18, bDark);    // rump
+      dbox( 0.44, 0.54,  0,     0.10, 0.19, 0.46, bMid);     // side L
+      dbox(-0.44, 0.54,  0,     0.10, 0.19, 0.46, bMid);     // side R
+
+      // ── Neck ─────────────────────────────────────────────────────────────
+      dbox(0, 0.72, 0.50, 0.22, 0.20, 0.18, bDark);
+
+      // ── Head ─────────────────────────────────────────────────────────────
+      dbox(0,     0.96, 0.78,  0.34, 0.32, 0.32, bDark);
+      dbox(0,     1.06, 0.72,  0.38, 0.14, 0.22, bMid);
+      dbox( 0.32, 0.90, 0.72,  0.10, 0.18, 0.20, bMid);
+      dbox(-0.32, 0.90, 0.72,  0.10, 0.18, 0.20, bMid);
+      // Distinct amber eyebrow spots (key bicolor feature)
+      dbox( 0.20, 1.11, 0.90,  0.08, 0.05, 0.07, bTan);
+      dbox(-0.20, 1.11, 0.90,  0.08, 0.05, 0.07, bTan);
+
+      // ── Amber muzzle (wider and warmer than Ruff's cream muzzle) ─────────
+      dbox(0, 0.84, 1.06, 0.18, 0.10, 0.17, bTan);
+      dbox(0, 0.84, 1.13, 0.13, 0.08, 0.08, bCream);  // pale muzzle tip
+      dbox(0, 0.92, 1.22, 0.06, 0.05, 0.04, bNose);
+
+      // ── Eyes (warm honey-amber) ───────────────────────────────────────────
+      dbox( 0.18, 1.00, 1.07, 0.07, 0.07, 0.04, bEye);
+      dbox(-0.18, 1.00, 1.07, 0.07, 0.07, 0.04, bEye);
+      dbox( 0.18, 1.00, 1.11, 0.03, 0.04, 0.02, bNose);
+      dbox(-0.18, 1.00, 1.11, 0.03, 0.04, 0.02, bNose);
+      dbox( 0.20, 1.03, 1.11, 0.02, 0.02, 0.02, bEyeHi);
+      dbox(-0.16, 1.03, 1.11, 0.02, 0.02, 0.02, bEyeHi);
+
+      // ── Erect ears — wide-set, cinnamon inner (different from Ruff's wolf ears)
+      dbox( 0.33, 1.22, 0.70, 0.11, 0.22, 0.08, bDark);
+      dbox(-0.33, 1.22, 0.70, 0.11, 0.22, 0.08, bDark);
+      dbox( 0.33, 1.20, 0.73, 0.06, 0.14, 0.04, bInnerEar);
+      dbox(-0.33, 1.20, 0.73, 0.06, 0.14, 0.04, bInnerEar);
+      dbox( 0.33, 1.44, 0.68, 0.07, 0.08, 0.07, bDark);  // ear tip (slightly rounder)
+      dbox(-0.33, 1.44, 0.68, 0.07, 0.08, 0.07, bDark);
+
+      // ── Shiba-style curled tail (curls up over back, less side-wag) ──────
+      const bWag = sin(wagT) * 0.28;
+      const bt0 = add(rotY(v3(0, 0.84, -0.54), yaw), v3(x,y,z));
+      pushBox(dogQuads, bt0.x, bt0.y, bt0.z, 0.10, 0.10, 0.20, bMid, yaw+bWag*0.3);
+      const bt1dir = rotY(rotX(v3(0, 0.28, -0.10), -1.0+bWag*0.2), yaw);
+      const bt1    = add(bt0, bt1dir);
+      pushBox(dogQuads, bt1.x, bt1.y, bt1.z, 0.09, 0.09, 0.16, bDark, yaw+bWag*0.5, -1.0);
+      const bt2dir = rotY(rotX(v3(0, 0.16,  0.06), -1.8+bWag*0.3), yaw);
+      const bt2    = add(bt1, bt2dir);
+      pushBox(dogQuads, bt2.x, bt2.y, bt2.z, 0.10, 0.10, 0.10, bMid, yaw+bWag*0.7, -1.8);
+      const bt3dir = rotY(rotX(v3(0, 0.08,  0.10), -2.3+bWag*0.2), yaw);
+      const bt3    = add(bt2, bt3dir);
+      pushBox(dogQuads, bt3.x, bt3.y, bt3.z, 0.09, 0.09, 0.09, bCream, yaw+bWag, -2.3);
+
+      // ── Legs — dark upper, amber lower, tan paws ──────────────────────────
+      const bLegs = [
+        [ 0.28, 0.18,  0.42, frontLegAngle],
+        [-0.28, 0.18,  0.42,-frontLegAngle],
+        [ 0.28, 0.18, -0.42,-backLegAngle],
+        [-0.28, 0.18, -0.42, backLegAngle],
+      ];
+      bLegs.forEach(([lx,ly,lz,ang]) => {
+        const hipLocal = v3(lx, 0.38, lz);
+        const hipWorld = add(rotY(hipLocal, yaw), v3(x,y,z));
+        // upper leg — dark body colour
+        const upOff = rotY(rotX(v3(0,-0.12,0), ang), yaw);
+        const upC   = add(hipWorld, upOff);
+        pushBox(dogQuads, upC.x, upC.y, upC.z, 0.11, 0.12, 0.11, bDark, yaw, ang);
+        // lower leg — tan marking
+        const loOff = rotY(rotX(v3(0,-0.21,0), ang), yaw);
+        const loC   = add(hipWorld, loOff);
+        pushBox(dogQuads, loC.x, loC.y, loC.z, 0.10, 0.10, 0.10, bTan, yaw, ang);
+        // paw
+        const pawOff = rotY(rotX(v3(0,-0.27,0), ang), yaw);
+        const pawC   = add(hipWorld, pawOff);
+        pushBox(dogQuads, pawC.x, pawC.y - 0.05, pawC.z, 0.13, 0.06, 0.13, bDeepTan, yaw, ang);
+      });
+      return;
+    }
+
     // ── Colour palette (dark wolf pup — New Moon) ────────────────────────
     const blackFur  = 0x1a1a2e;   // deep black-blue main fur
     const darkFur   = 0x0d0d1a;   // near-black for deeper areas
@@ -5605,15 +5736,80 @@
     try { return JSON.parse(localStorage.getItem(SAVE_KEY_GLOBAL) || '{}'); } catch(e) { return {}; }
   }
   function setGlobalSave(obj) { localStorage.setItem(SAVE_KEY_GLOBAL, JSON.stringify(obj)); }
+  // Read packGatherDone from global save on startup
+  (function() { const _gs = JSON.parse(localStorage.getItem(SAVE_KEY_GLOBAL)||'{}'); packGatherDone = !!_gs.packGatherDone; })();
   let ruffPhase        = 0;   // 0 = hiding by bush (intro)
   let ruffInVillage    = false; // true after river sweep — Ruff wakes up in the village forest
   let barkInVillage    = false; // true after Bark finds the village
   let barkInUpstairs   = false; // true while upstairs in Bark's house
   let BARK_ARRIVE_DLG  = [];
+  let packGatherDone   = false;  // true after all-7 cave intro cutscene has played
+  let packGatherDlg    = [];     // built fresh each time
+
+  // Visual definitions for the 6 "waiting pups" shown in the gathering cutscene.
+  // Each pup is placed along the back of the cave facing south (toward the entrance).
+  // Position, fur, ear-type and scale match each character's buildDog palette.
+  const PACK_GATHER_NPC = [
+    { id:'wark',       x:-5.5, z:-20, s:1.0, fur:0xc8853a, ears:'triangle' },
+    { id:'newmoon',    x:-3.0, z:-22, s:1.0, fur:0x1a1a2e, ears:'triangle' },
+    { id:'cheeseball', x: 0.0, z:-23, s:1.0, fur:0xd06018, ears:'floppy'   },
+    { id:'obsidian',   x: 3.0, z:-22, s:1.0, fur:0x1a1a2e, ears:'triangle' },
+    { id:'scratch',    x: 5.5, z:-20, s:1.0, fur:0x7a4e28, ears:'floppy'   },
+    { id:'ruff',       x:-1.8, z:-18, s:1.0, fur:0x9a6030, ears:'floppy'   },
+    { id:'bark',       x: 1.8, z:-18, s:1.0, fur:0xd4a860, ears:'triangle' },
+  ];
+
+  // Prof. Maple stands near bed 7 (x=0, z=-22) facing the entrance.
+  function buildPackGatherDlg(activeChar) {
+    // The six OTHER pups that were waiting
+    const others = PACK_GATHER_NPC.filter(n => n.id !== activeChar);
+    const dlg = [];
+    // Prof. Maple opens
+    dlg.push({ speaker: 'Prof. Maple 🍁', text: '…Here they come.' });
+    // Each waiting pup introduces themselves (in order, skip the active one)
+    const intros = {
+      wark:       { speaker: 'Wark 🐾',        text: "I'm Wark. I came from the forest. These pups are my lost pups — I found every one of them." },
+      newmoon:    { speaker: 'New Moon 🌙',     text: "I'm New Moon. I woke up here not long ago. I still don't know everything about this place." },
+      cheeseball: { speaker: 'Cheeseball 🧡',  text: "I'm Cheeseball! I came from a human home. Still not totally sure how I ended up here, but I love it." },
+      obsidian:   { speaker: 'Obsidian 🌑',    text: "I'm Obsidian. I came from the city. I'll admit — I didn't think I'd end up somewhere like this." },
+      scratch:    { speaker: 'Scratch 🐕',     text: "I'm Scratch. Obsidian found me. I follow them around — I can handle myself, though." },
+      ruff:       { speaker: 'Ruff 🍂',        text: "Name's Ruff. Got swept here by a river. Thought I was done for. Turns out… maybe not." },
+      bark:       { speaker: 'Bark 🐶',        text: "And I'm Bark! I've been sniffing around my little house wondering when everyone else would show up!" },
+    };
+    // Show each pup's intro except the active character
+    for (const npc of others) {
+      if (intros[npc.id]) dlg.push(intros[npc.id]);
+    }
+    // The active character introduces themselves last
+    if (intros[activeChar]) {
+      const self = { ...intros[activeChar] };
+      // Tweak slightly to feel like a response
+      const selfLines = {
+        wark:       "And me? I'm Wark. I built this pack — I'm glad everyone finally made it.",
+        newmoon:    "…And I'm New Moon. I wasn't expecting to find so many others like me.",
+        cheeseball: "And I'm Cheeseball! Wow, we're all really here! This is amazing!",
+        obsidian:   "I'm Obsidian. I didn't know there were so many of us.",
+        scratch:    "I'm Scratch. Didn't know what to expect. Still figuring it out.",
+        ruff:       "I'm Ruff. Didn't think I'd be standing here saying that to a room full of dogs.",
+        bark:       "I'm Bark. And honestly? I've been waiting for this moment.",
+      };
+      self.text = selfLines[activeChar] || self.text;
+      dlg.push(self);
+    }
+    // Prof. Maple has the last word before missions unlock
+    dlg.push(
+      { speaker: 'Prof. Maple 🍁', text: 'Seven pups… it\'s not enough for a pack, but…' },
+      { speaker: 'Prof. Maple 🍁', text: '…Anyways. I believe you are all ready.' },
+    );
+    return dlg;
+  }
   const barkQuads         = [];   // Bark ground floor + back yard geometry
   const barkColliders     = [];   // Bark furniture / object colliders
   const barkUpstairsQuads = [];   // Bark upstairs geometry
-  const DOG_DISPLAY_NAMES = { wark: 'Wark', newmoon: 'New Moon', cheeseball: 'Cheeseball', obsidian: 'Obsidian' };
+  const DOG_DISPLAY_NAMES = {
+    wark: 'Wark', newmoon: 'New Moon', cheeseball: 'Cheeseball',
+    obsidian: 'Obsidian', ruff: 'Ruff', scratch: 'Scratch', bark: 'Bark',
+  };
 
   // ── Arrival greeting NPCs ────────────────────────────────────────────────
   let arrivalNpcsActive  = false;   // true while arrival dialogue or walk-away is active
@@ -5787,6 +5983,10 @@
     bar.classList.add('visible');
   }
   window.updateSwitcherBar = updateSwitcherBar;
+
+  window.closeMissionsCard = function() {
+    document.getElementById('missions-card').classList.add('hidden');
+  };
 
   function saveProgress() {
     const save = { x: dogState.x, z: dogState.z, yaw: dogState.yaw };
@@ -6803,89 +7003,106 @@
   // ── Canine portrait: Bark ────────────────────────────────────────────────
   function drawPreviewBark(pc, W, H) {
     const cx = W / 2;
-    // ── Bright warm cream room ───────────────────────────────────────────
+    // ── Warm indoor background (lamp light, wood floor) ──────────────────
     const bg = pc.createLinearGradient(0, 0, 0, H);
-    bg.addColorStop(0, '#e8d8c0'); bg.addColorStop(0.65, '#d4c0a0'); bg.addColorStop(1, '#b89870');
+    bg.addColorStop(0, '#c8b89a'); bg.addColorStop(0.60, '#baa880'); bg.addColorStop(1, '#a08860');
     pc.fillStyle = bg; pc.fillRect(0, 0, W, H);
-    // Warm lamp glow upper-right
-    const lamp = pc.createRadialGradient(W*0.85, H*0.08, 2, W*0.85, H*0.08, W*0.70);
-    lamp.addColorStop(0, 'rgba(255,220,140,0.60)');
-    lamp.addColorStop(0.5, 'rgba(230,180,80,0.22)');
+    // Warm lamp glow top-right
+    const lamp = pc.createRadialGradient(W*0.88, H*0.06, 2, W*0.88, H*0.06, W*0.72);
+    lamp.addColorStop(0, 'rgba(255,225,150,0.55)');
+    lamp.addColorStop(0.5, 'rgba(220,170,70,0.18)');
     lamp.addColorStop(1,   'rgba(0,0,0,0)');
     pc.fillStyle = lamp; pc.fillRect(0, 0, W, H);
-    // Baseboard / floor edge
-    pc.fillStyle = '#c8a870';
-    pc.fillRect(0, H*0.78, W, H*0.22);
-    // Floor plank lines
-    pc.strokeStyle = 'rgba(160,110,50,0.35)'; pc.lineWidth = 1;
-    [H*0.82, H*0.88, H*0.94].forEach(ly => {
+    // Floor / baseboard
+    pc.fillStyle = '#a08050'; pc.fillRect(0, H*0.80, W, H*0.20);
+    pc.strokeStyle = 'rgba(130,90,35,0.30)'; pc.lineWidth = 1;
+    [H*0.84, H*0.90, H*0.96].forEach(ly => {
       pc.beginPath(); pc.moveTo(0, ly); pc.lineTo(W, ly); pc.stroke();
     });
-    // ── Round dog bed ────────────────────────────────────────────────────
-    const bCX = cx, bCY = H * 0.81;
-    pc.fillStyle = 'rgba(80,50,20,0.18)';
-    pc.beginPath(); pc.ellipse(bCX, bCY+H*0.045, W*0.44, H*0.040, 0, 0, PI*2); pc.fill();
-    pc.fillStyle = '#8a8078'; pc.beginPath(); pc.ellipse(bCX, bCY, W*0.43, H*0.10, 0, 0, PI*2); pc.fill();
-    pc.fillStyle = '#706860'; pc.beginPath(); pc.ellipse(bCX, bCY, W*0.35, H*0.082, 0, 0, PI*2); pc.fill();
-    pc.fillStyle = '#c0b8b0'; pc.beginPath(); pc.ellipse(bCX, bCY+H*0.008, W*0.28, H*0.065, 0, 0, PI*2); pc.fill();
-    // ── Dark chocolate body curled in bed ────────────────────────────────
-    const dCY = H * 0.758;
-    // Main body mass
-    pc.fillStyle = '#4a2210';
-    pc.beginPath(); pc.ellipse(cx+W*0.03, dCY+H*0.010, W*0.28, H*0.092, 0.10, 0, PI*2); pc.fill();
-    pc.fillStyle = '#3a1808';
-    pc.beginPath(); pc.ellipse(cx+W*0.02, dCY+H*0.032, W*0.22, H*0.062, 0.14, 0, PI*2); pc.fill();
-    // Tail curl right
-    pc.fillStyle = '#4a2210';
-    pc.beginPath(); pc.ellipse(cx+W*0.26, dCY+H*0.022, W*0.095, H*0.052, -0.60, 0, PI*2); pc.fill();
-    pc.fillStyle = '#c07030';
-    pc.beginPath(); pc.ellipse(cx+W*0.30, dCY+H*0.030, W*0.022, H*0.018, -0.60, 0, PI*2); pc.fill();
-    // Front paws
-    pc.fillStyle = '#4a2210';
-    pc.beginPath(); pc.ellipse(cx-W*0.22, dCY+H*0.065, W*0.11, H*0.036, 0.06, 0, PI*2); pc.fill();
-    pc.fillStyle = '#c07030';
-    [-0.30, -0.23, -0.16].forEach(ox => {
-      pc.beginPath(); pc.arc(cx+ox*W, dCY+H*0.079, W*0.012, 0, PI*2); pc.fill();
+    // Hint of furniture / dresser top-right
+    pc.fillStyle = '#8a6030';
+    pc.fillRect(W*0.68, H*0.28, W*0.32, H*0.50);
+    pc.fillStyle = '#7a5020';
+    pc.fillRect(W*0.68, H*0.26, W*0.32, H*0.04);
+    // Curtain hint top-left
+    pc.fillStyle = 'rgba(210,200,180,0.40)';
+    pc.fillRect(0, 0, W*0.18, H*0.72);
+    // ── Round dog bed ─────────────────────────────────────────────────────
+    const bCX = cx, bCY = H * 0.83;
+    // Shadow under bed
+    pc.fillStyle = 'rgba(40,20,5,0.22)';
+    pc.beginPath(); pc.ellipse(bCX, bCY+H*0.050, W*0.46, H*0.038, 0, 0, PI*2); pc.fill();
+    // Bed rim (grey)
+    pc.fillStyle = '#8a8480'; pc.beginPath(); pc.ellipse(bCX, bCY, W*0.44, H*0.105, 0, 0, PI*2); pc.fill();
+    pc.fillStyle = '#6e6a66'; pc.beginPath(); pc.ellipse(bCX, bCY, W*0.37, H*0.088, 0, 0, PI*2); pc.fill();
+    // Bed cushion interior (cream/light grey)
+    pc.fillStyle = '#cec8c0'; pc.beginPath(); pc.ellipse(bCX, bCY+H*0.010, W*0.30, H*0.070, 0, 0, PI*2); pc.fill();
+    // ── Near-black body curled in bed ─────────────────────────────────────
+    const dCY = H * 0.770;
+    // Main body — very dark
+    pc.fillStyle = '#1e0e06';
+    pc.beginPath(); pc.ellipse(cx+W*0.04, dCY+H*0.012, W*0.26, H*0.088, 0.12, 0, PI*2); pc.fill();
+    // Body shadow layer
+    pc.fillStyle = '#140804';
+    pc.beginPath(); pc.ellipse(cx+W*0.04, dCY+H*0.036, W*0.20, H*0.058, 0.16, 0, PI*2); pc.fill();
+    // Curled Shiba tail over back (tan at tip)
+    pc.fillStyle = '#2a1408';
+    pc.beginPath(); pc.ellipse(cx+W*0.27, dCY+H*0.016, W*0.100, H*0.048, -0.55, 0, PI*2); pc.fill();
+    pc.fillStyle = '#eac880';  // cream tail tip
+    pc.beginPath(); pc.ellipse(cx+W*0.31, dCY+H*0.008, W*0.024, H*0.016, -0.55, 0, PI*2); pc.fill();
+    // Front paws — tan/amber lower legs stretched forward
+    pc.fillStyle = '#2a1408';
+    pc.beginPath(); pc.ellipse(cx-W*0.24, dCY+H*0.060, W*0.09, H*0.032, 0.06, 0, PI*2); pc.fill();
+    pc.fillStyle = '#c87828';  // amber paw colour
+    pc.beginPath(); pc.ellipse(cx-W*0.23, dCY+H*0.072, W*0.07, H*0.022, 0.06, 0, PI*2); pc.fill();
+    // Paw toe dots
+    pc.fillStyle = '#a86020';
+    [-0.28, -0.22, -0.17].forEach(ox => {
+      pc.beginPath(); pc.arc(cx+ox*W, dCY+H*0.076, W*0.011, 0, PI*2); pc.fill();
     });
-    // ── Neck ─────────────────────────────────────────────────────────────
-    pc.fillStyle = '#4a2210';
-    pc.beginPath(); pc.ellipse(cx-W*0.10, dCY-H*0.054, W*0.086, H*0.052, 0.48, 0, PI*2); pc.fill();
-    // ── Head ─────────────────────────────────────────────────────────────
-    const hCY = dCY - H*0.155;
-    pc.fillStyle = '#4a2210';
-    pc.beginPath(); pc.arc(cx-W*0.085, hCY, W*0.158, 0, PI*2); pc.fill();
-    // ── Floppy rounded ears ───────────────────────────────────────────────
-    pc.fillStyle = '#3a1808';
-    pc.beginPath(); pc.ellipse(cx-W*0.205, hCY+H*0.012, W*0.058, H*0.072, 0.42, 0, PI*2); pc.fill();
-    pc.beginPath(); pc.ellipse(cx+W*0.020, hCY+H*0.014, W*0.052, H*0.066, -0.34, 0, PI*2); pc.fill();
-    pc.fillStyle = '#5a2c14';
-    pc.beginPath(); pc.ellipse(cx-W*0.200, hCY+H*0.018, W*0.034, H*0.046, 0.42, 0, PI*2); pc.fill();
-    pc.beginPath(); pc.ellipse(cx+W*0.016, hCY+H*0.020, W*0.032, H*0.044, -0.34, 0, PI*2); pc.fill();
-    // ── Tan muzzle / face markings ────────────────────────────────────────
-    pc.fillStyle = '#c87838';
-    pc.beginPath(); pc.ellipse(cx-W*0.085, hCY+H*0.028, W*0.078, H*0.042, 0, 0, PI*2); pc.fill();
-    pc.fillStyle = '#e0a060';
-    pc.beginPath(); pc.ellipse(cx-W*0.085, hCY+H*0.034, W*0.048, H*0.026, 0, 0, PI*2); pc.fill();
-    // Eyebrow spots
-    pc.fillStyle = '#d08840';
-    pc.beginPath(); pc.ellipse(cx-W*0.152, hCY-H*0.024, W*0.026, H*0.016, 0, 0, PI*2); pc.fill();
-    pc.beginPath(); pc.ellipse(cx-W*0.030, hCY-H*0.024, W*0.026, H*0.016, 0, 0, PI*2); pc.fill();
+    // ── Neck ──────────────────────────────────────────────────────────────
+    pc.fillStyle = '#1e0e06';
+    pc.beginPath(); pc.ellipse(cx-W*0.09, dCY-H*0.050, W*0.082, H*0.050, 0.46, 0, PI*2); pc.fill();
+    // ── Head ──────────────────────────────────────────────────────────────
+    const hCY = dCY - H*0.158;
+    pc.fillStyle = '#1e0e06';
+    pc.beginPath(); pc.arc(cx-W*0.082, hCY, W*0.155, 0, PI*2); pc.fill();
+    // ── Erect ears (wide-set, rounded tips, warm cinnamon inner) ──────────
+    // Left ear (viewer's right)
+    pc.fillStyle = '#160a04';
+    pc.beginPath(); pc.ellipse(cx-W*0.218, hCY-H*0.038, W*0.048, H*0.066, -0.20, 0, PI*2); pc.fill();
+    // Right ear (viewer's left)
+    pc.beginPath(); pc.ellipse(cx+W*0.038, hCY-H*0.036, W*0.044, H*0.062, 0.22, 0, PI*2); pc.fill();
+    // Cinnamon inner ear
+    pc.fillStyle = '#7a4020';
+    pc.beginPath(); pc.ellipse(cx-W*0.213, hCY-H*0.032, W*0.028, H*0.040, -0.20, 0, PI*2); pc.fill();
+    pc.beginPath(); pc.ellipse(cx+W*0.034, hCY-H*0.030, W*0.026, H*0.038, 0.22, 0, PI*2); pc.fill();
+    // ── Amber muzzle (wide, warm) ─────────────────────────────────────────
+    pc.fillStyle = '#c87828';
+    pc.beginPath(); pc.ellipse(cx-W*0.082, hCY+H*0.030, W*0.082, H*0.044, 0, 0, PI*2); pc.fill();
+    // Pale muzzle tip
+    pc.fillStyle = '#eac880';
+    pc.beginPath(); pc.ellipse(cx-W*0.082, hCY+H*0.036, W*0.050, H*0.028, 0, 0, PI*2); pc.fill();
+    // ── Distinct amber eyebrow spots ─────────────────────────────────────
+    pc.fillStyle = '#d08830';
+    pc.beginPath(); pc.ellipse(cx-W*0.148, hCY-H*0.022, W*0.030, H*0.018, 0, 0, PI*2); pc.fill();
+    pc.beginPath(); pc.ellipse(cx-W*0.026, hCY-H*0.022, W*0.026, H*0.016, 0, 0, PI*2); pc.fill();
     // ── Nose ─────────────────────────────────────────────────────────────
-    pc.fillStyle = '#1c0c06';
-    pc.beginPath(); pc.ellipse(cx-W*0.085, hCY+H*0.006, W*0.030, H*0.020, 0, 0, PI*2); pc.fill();
-    pc.fillStyle = 'rgba(255,220,200,0.35)';
-    pc.beginPath(); pc.arc(cx-W*0.097, hCY+H*0.001, W*0.009, 0, PI*2); pc.fill();
-    // ── Warm amber/honey eyes ────────────────────────────────────────────
-    [[cx-W*0.150, hCY-H*0.010],[cx-W*0.032, hCY-H*0.010]].forEach(([ex,ey]) => {
-      pc.fillStyle = 'rgba(220,140,40,0.28)'; pc.beginPath(); pc.arc(ex, ey, W*0.042, 0, PI*2); pc.fill();
-      pc.fillStyle = '#c88028'; pc.beginPath(); pc.arc(ex, ey, W*0.030, 0, PI*2); pc.fill();
-      pc.fillStyle = '#a06018'; pc.beginPath(); pc.arc(ex, ey, W*0.020, 0, PI*2); pc.fill();
-      pc.fillStyle = '#100806'; pc.beginPath(); pc.arc(ex, ey, W*0.012, 0, PI*2); pc.fill();
-      pc.fillStyle = '#fff8e0'; pc.beginPath(); pc.arc(ex+W*0.010, ey-W*0.010, W*0.008, 0, PI*2); pc.fill();
+    pc.fillStyle = '#100806';
+    pc.beginPath(); pc.ellipse(cx-W*0.082, hCY+H*0.008, W*0.030, H*0.020, 0, 0, PI*2); pc.fill();
+    pc.fillStyle = 'rgba(255,220,200,0.32)';
+    pc.beginPath(); pc.arc(cx-W*0.094, hCY+H*0.003, W*0.008, 0, PI*2); pc.fill();
+    // ── Warm honey-amber eyes, looking forward ────────────────────────────
+    [[cx-W*0.148, hCY-H*0.008],[cx-W*0.028, hCY-H*0.008]].forEach(([ex,ey]) => {
+      pc.fillStyle = 'rgba(210,135,30,0.30)'; pc.beginPath(); pc.arc(ex, ey, W*0.040, 0, PI*2); pc.fill();
+      pc.fillStyle = '#d08820'; pc.beginPath(); pc.arc(ex, ey, W*0.028, 0, PI*2); pc.fill();
+      pc.fillStyle = '#a86010'; pc.beginPath(); pc.arc(ex, ey, W*0.018, 0, PI*2); pc.fill();
+      pc.fillStyle = '#100806'; pc.beginPath(); pc.arc(ex, ey, W*0.011, 0, PI*2); pc.fill();
+      pc.fillStyle = '#fff5d0'; pc.beginPath(); pc.arc(ex+W*0.009, ey-W*0.009, W*0.007, 0, PI*2); pc.fill();
     });
-    // ── Warm vignette to blend dog into bed ──────────────────────────────
-    const vig = pc.createRadialGradient(cx, H*0.62, H*0.14, cx, H*0.62, H*0.50);
-    vig.addColorStop(0, 'rgba(0,0,0,0)'); vig.addColorStop(1, 'rgba(160,100,40,0.18)');
+    // ── Subtle vignette ───────────────────────────────────────────────────
+    const vig = pc.createRadialGradient(cx, H*0.60, H*0.12, cx, H*0.60, H*0.52);
+    vig.addColorStop(0, 'rgba(0,0,0,0)'); vig.addColorStop(1, 'rgba(100,60,20,0.20)');
     pc.fillStyle = vig; pc.fillRect(0, 0, W, H);
   }
 
@@ -7226,6 +7443,15 @@
         return;
         dialogueCooldown = 60;
         return;
+      } else if (activeDialogueArr === packGatherDlg && packGatherDlg.length > 0) {
+        // Pack gathering complete — show missions-unlocked card + permanently mark done
+        const _gs = getGlobalSave();
+        setGlobalSave({ ..._gs, packGatherDone: true });
+        packGatherDone = true;
+        gameState = 'cave';
+        dialogueCooldown = 60;
+        document.getElementById('missions-card').classList.remove('hidden');
+        return;
       }
     } else {
       showDialogue(dialogueIndex);
@@ -7358,7 +7584,7 @@
       document.getElementById('obs-map-btn').classList.add('hidden');
       if (!barkInVillage) gameState = 'playing';
     }},
-    scratch: { enterTitle: 'Playing as Scratch\u2026', startX: 2, startZ: 36, onEnter: (restored) => {
+    scratch: { enterTitle: 'Playing as Scratch\u2026', startX: 2, startZ: 36, defaultState: 'playing', onEnter: (restored) => {
       buildVillage();
       document.getElementById('wob-coins').classList.remove('hidden');
       document.getElementById('obs-map-btn').classList.add('hidden');
@@ -10403,7 +10629,34 @@
   }
 
   function enterCave() {
-    caveExitX = dogState.x; caveExitZ = dogState.z; caveExitYaw = dogState.yaw;
+    // ── All-7 pack gathering scene (triggers once, first time all 7 are in village) ───
+    const _gs = getGlobalSave();
+    if (!_gs.packGatherDone && getVillageDogs().length >= 7) {
+      packGatherDlg = buildPackGatherDlg(activeCharacter);
+      caveExitX = dogState.x; caveExitZ = dogState.z; caveExitYaw = dogState.yaw;
+      showEnterScreen('Entering the Cave…', () => {
+        inCave = true;
+        loadBedOwners();
+        if (warkClaimedBed >= 0 && caveBedOwners[warkClaimedBed] === null) {
+          caveBedOwners[warkClaimedBed] = activeCharacter;
+          saveBedOwners();
+        }
+        warkClaimedBed = caveBedOwners.indexOf(activeCharacter);
+        buildCaveInterior();
+        dogState.x = 0; dogState.z = 2.5; dogState.y = DOG_FLOOR;
+        dogState.yaw = Math.PI; dogState.velY = 0; dogState.grounded = true;
+        cam.yaw = Math.PI;
+        cam.pos.x = 0; cam.pos.y = DOG_FLOOR + 3.5; cam.pos.z = 2.5 + 7.0;
+        gameState = 'cave';
+        // Short delay so the camera settles, then start the dialogue
+        setTimeout(() => {
+          activeDialogueArr = packGatherDlg;
+          dialogueIndex     = 0;
+          showDialogue(0);
+        }, 800);
+      });
+      return;
+    }
     showEnterScreen('Entering the Cave…', () => {
       inCave = true;
       // Load shared bed ownership from storage
@@ -10582,7 +10835,20 @@
       // White coat panel on his chest (the -x-facing side)
       pushBox(drStoneQ, 1.70, DOG_FLOOR + 0.60, -21.5, 0.04, 0.24, 0.32, 0xe6e8e2);
     }
-    const allQ = [...caveQuads, ...dogQuads, ...drStoneQ];
+    // Pack gathering cutscene: show the OTHER 6 pups waiting in the cave
+    const packNpcQ = [];
+    const _gsRender = getGlobalSave();
+    if (!_gsRender.packGatherDone && getVillageDogs().length >= 7 && activeDialogueArr === packGatherDlg && packGatherDlg.length > 0) {
+      const villageSet = new Set(getVillageDogs());
+      for (const npc of PACK_GATHER_NPC) {
+        if (npc.id === activeCharacter) continue;  // player is the one entering
+        if (!villageSet.has(npc.id)) continue;     // skip if not in village yet
+        addNpcDog(packNpcQ, npc.x, npc.z, npc.s, npc.fur, Math.PI, npc.ears);
+      }
+      // Prof. Maple — tan fur, triangle ears, faces entrance (south)
+      addNpcDog(packNpcQ, 0, -25.5, 1.55, 0xc07840, Math.PI, 'triangle');
+    }
+    const allQ = [...caveQuads, ...dogQuads, ...drStoneQ, ...packNpcQ];
     const fogHex = 0x100c08;
     const toRender = allQ.map(q => {
       const pts = projectClipped(q.verts, cam);
@@ -10645,6 +10911,33 @@
         ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
         ctx.font = 'bold 13px Arial'; ctx.fillStyle = 'rgba(160,220,160,0.94)';
         ctx.fillText('Dr. Stone 🐾', dsSp.x, dsSp.y - 4);
+        ctx.globalAlpha = 1;
+      }
+    }
+    // Pack gather: floating name labels above waiting pups
+    if (!_gsRender.packGatherDone && activeDialogueArr === packGatherDlg && packGatherDlg.length > 0) {
+      const nameEmoji = { wark:'Wark 🐾', newmoon:'New Moon 🌙', cheeseball:'Cheeseball 🧡',
+        obsidian:'Obsidian 🌑', scratch:'Scratch 🐕', ruff:'Ruff 🍂', bark:'Bark 🐶' };
+      const nameColor = { wark:'#f0c870', newmoon:'#a8c8ff', cheeseball:'#ffb060',
+        obsidian:'#a090c8', scratch:'#c8a870', ruff:'#d8b878', bark:'#ffe090' };
+      for (const npc of PACK_GATHER_NPC) {
+        if (npc.id === activeCharacter) continue;
+        const lsp = project(v3(npc.x, DOG_FLOOR + npc.s * 1.5, npc.z), cam);
+        if (!lsp) continue;
+        ctx.globalAlpha = 0.90;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+        ctx.font = 'bold 12px Arial';
+        ctx.fillStyle = nameColor[npc.id] || 'rgba(220,200,160,0.90)';
+        ctx.fillText(nameEmoji[npc.id] || npc.id, lsp.x, lsp.y - 4);
+        ctx.globalAlpha = 1;
+      }
+      // Prof. Maple label
+      const mpSp = project(v3(0, DOG_FLOOR + 2.3, -25.5), cam);
+      if (mpSp) {
+        ctx.globalAlpha = 0.88;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+        ctx.font = 'bold 13px Arial'; ctx.fillStyle = 'rgba(200,230,160,0.94)';
+        ctx.fillText('Prof. Maple 🍁', mpSp.x, mpSp.y - 4);
         ctx.globalAlpha = 1;
       }
     }
