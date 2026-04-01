@@ -1892,6 +1892,81 @@
     pushBox(barkQuads, -4.7, 2.55,-5,   0.15, 0.12, 0.15, WARM);      // flame
   }
 
+  // ── Bark's Forest Clearing ────────────────────────────────────────────────
+  function buildBarkForest() {
+    barkForestQuads.length = 0;
+    const GRASS1 = 0x4a8830, GRASS2 = 0x3d7428, DIRT = 0x8c6a3c;
+    const BARK_C = 0x5a3a18, LEAF1 = 0x2a6820, LEAF2 = 0x3a8030, LEAF3 = 0x1e5418;
+    const ROCK_C = 0x808080, ROCK2 = 0x6a6870, MUSHCAP = 0xcc3820, MUSHSTEM = 0xe8e0c8;
+    const MOSS  = 0x4a7030, WARM_L = 0xffdd88;
+
+    // ── Grass floor tiles ─────────────────────────────────────────────────
+    for (let fx = -12; fx <= 12; fx += 1.5) {
+      for (let fz = -22; fz <= 10; fz += 1.5) {
+        const g = ((Math.floor(fx/1.5) ^ Math.floor(fz/1.5)) & 1);
+        barkForestQuads.push({ verts:[v3(fx,0,fz),v3(fx+1.5,0,fz),v3(fx+1.5,0,fz+1.5),v3(fx,0,fz+1.5)],
+          color: g ? GRASS1 : GRASS2, normal:v3(0,1,0), isGround:true });
+      }
+    }
+
+    // ── Dirt path running north (the route to the village) ────────────────
+    for (let pz = -22; pz <= 2; pz += 1.2) {
+      barkForestQuads.push({ verts:[v3(-1.2,0.01,pz),v3(1.2,0.01,pz),v3(1.2,0.01,pz+1.2),v3(-1.2,0.01,pz+1.2)],
+        color: DIRT, normal:v3(0,1,0), isGround:false });
+    }
+
+    // ── Cave entrance arch (south side) ───────────────────────────────────
+    // Stone arch pillars
+    pushBox(barkForestQuads, -1.6, 1.5, 7.6,  0.6, 1.5, 0.5, ROCK_C);
+    pushBox(barkForestQuads,  1.6, 1.5, 7.6,  0.6, 1.5, 0.5, ROCK_C);
+    // Capstone over the arch
+    pushBox(barkForestQuads,  0,   3.2, 7.6,  2.5, 0.4, 0.55, ROCK2);
+    // Mossy stones around the entrance
+    pushBox(barkForestQuads, -3.2, 0.55, 7.2, 0.7, 0.55, 0.6, ROCK2);
+    pushBox(barkForestQuads,  3.0, 0.45, 7.4, 0.6, 0.45, 0.55, ROCK_C);
+    pushBox(barkForestQuads, -3.2, 0.25, 7.2, 0.7, 0.25, 0.6, MOSS);
+    // Torch beside cave door
+    pushBox(barkForestQuads, -2.5, 1.8, 7.3,  0.08, 0.3, 0.08, 0x6a3818);
+    pushBox(barkForestQuads, -2.5, 2.2, 7.3,  0.15, 0.14, 0.15, WARM_L);
+
+    // ── Tree ring — 8 trees around clearing perimeter ─────────────────────
+    const TREE_POSITIONS = [
+      [-10, -18], [ 10, -18],
+      [-12,  -6], [ 12,  -6],
+      [-11,   6], [ 11,   6],
+      [ -8, -22], [  8, -22],
+    ];
+    for (const [tx, tz] of TREE_POSITIONS) {
+      const leafColor = [LEAF1, LEAF2, LEAF3][Math.abs(Math.floor(tx + tz)) % 3];
+      // Trunk
+      pushBox(barkForestQuads, tx, 2.0, tz,  0.35, 2.0, 0.35, BARK_C);
+      // Layered canopy
+      pushBox(barkForestQuads, tx, 4.5, tz,  1.6,  0.9, 1.6,  leafColor);
+      pushBox(barkForestQuads, tx, 5.6, tz,  1.2,  0.8, 1.2,  LEAF2);
+      pushBox(barkForestQuads, tx, 6.5, tz,  0.7,  0.7, 0.7,  LEAF1);
+    }
+
+    // ── Extra border trees (left / right walls) ───────────────────────────
+    for (let tz = -14; tz <= -4; tz += 9) {
+      pushBox(barkForestQuads, -13, 2.0, tz,  0.3, 2.0, 0.3, BARK_C);
+      pushBox(barkForestQuads, -13, 4.2, tz,  1.4, 0.8, 1.4, LEAF2);
+      pushBox(barkForestQuads,  13, 2.0, tz,  0.3, 2.0, 0.3, BARK_C);
+      pushBox(barkForestQuads,  13, 4.2, tz,  1.4, 0.8, 1.4, LEAF1);
+    }
+
+    // ── Mushrooms scattered in clearing ───────────────────────────────────
+    const SHROOMS = [[-4, -8], [5, -12], [-7, -4], [6, -3], [-3, -17]];
+    for (const [mx, mz] of SHROOMS) {
+      pushBox(barkForestQuads, mx, 0.22, mz,  0.12, 0.22, 0.12, MUSHSTEM);
+      pushBox(barkForestQuads, mx, 0.52, mz,  0.32, 0.10, 0.32, MUSHCAP);
+    }
+
+    // ── Small mossy boulders ──────────────────────────────────────────────
+    pushBox(barkForestQuads, -6, 0.4, -10, 0.8, 0.4, 0.7, ROCK2);
+    pushBox(barkForestQuads, -6, 0.4, -10, 0.8, 0.2, 0.7, MOSS);
+    pushBox(barkForestQuads,  7, 0.3,  -5, 0.6, 0.3, 0.5, ROCK_C);
+  }
+
   // ── Bark Upstairs ─────────────────────────────────────────────────────────
   function buildBarkUpstairs() {
     barkUpstairsQuads.length = 0;
@@ -2361,6 +2436,7 @@
   let villageScratchPos  = { x: 2, z: 36, yaw: 0, legAngle: 0, wagT: 0 }; // Scratch companion in village
   const villageScratchQuads = [];
   let sleepFading        = false;  // true while fade-to-black transition running
+  let sleptThisVisit     = false;  // set by sleepChoice(); consumed by exitCave() to reshuffle NPCs
   const caveQuads   = [];
   let caveExitX = 0, caveExitZ = -28, caveExitYaw = 0;
   // ── Day / night cycle ────────────────────────────────────────────────────
@@ -3308,26 +3384,36 @@
 
   function initDailyQuests() {
     const today = new Date().toDateString();
-    if (dailyQuestSeed === today && villageQuests.length > 0) return;
-    dailyQuestSeed = today;
-    villageQuests  = [];
 
-    // If today's quests were saved (including physObj positions), restore them directly
+    // Restore full quest state from save (preserves physObj positions and status)
     if (_restoredQuestsFull) {
-      villageQuests   = _restoredQuestsFull;
+      villageQuests       = _restoredQuestsFull;
       _restoredQuestsFull = null;
+      dailyQuestSeed      = today;
       return;
     }
 
-    // Pick 4 unique NPC indices from 0–10 (adults 0–7, static kids 8–10)
-    const pool   = [0,1,2,3,4,5,6,7,8,9,10];
+    // Long-term quests: keep all incomplete quests across days
+    villageQuests = villageQuests.filter(q => q.status !== 'done');
+
+    // Only add fresh quests once per calendar day
+    if (dailyQuestSeed === today) return;
+    dailyQuestSeed = today;
+
+    // Fill up to 4 quests total; skip NPCs that already have an active quest
+    const usedNpcs = new Set(villageQuests.map(q => q.npcIdx));
+    const pool     = [0,1,2,3,4,5,6,7,8,9,10].filter(i => !usedNpcs.has(i));
+    const slots    = Math.min(4 - villageQuests.length, pool.length);
+    if (slots <= 0) return;
+
     const chosen = [];
-    while (chosen.length < 4) {
+    while (chosen.length < slots && pool.length > 0) {
       const i = Math.floor(Math.random() * pool.length);
       chosen.push(pool.splice(i, 1)[0]);
     }
 
-    const LOC_TYPES  = ['sister','toy','investigate','hide_seek','treasure','errand','flower','berries'];
+    // Quest type tables — index 3=hide_seek and index 8=tag are kids only
+    const LOC_TYPES  = ['sister','toy','investigate','hide_seek','treasure','errand','flower','berries','tag'];
     const LOC_DESCS  = [
       (s) => `My little sibling wandered off near ${s}! Can you find her? 🐾`,
       (s) => `I lost my favourite toy near ${s}! Can you find it? 🎾`,
@@ -3337,15 +3423,18 @@
       (s) => `Can you check on ${s} for me? I'm too busy... 📋`,
       (s) => `My flower blew away near ${s}! 🌸 Please get it!`,
       (s) => `There are berries growing near ${s}! 🫐 Grab some?`,
+      (s) => `Come play tag near ${s}! 🐾 Can you catch us?`,
     ];
-    const LOC_REWARD_BASE  = [10, 8, 12, 8, 14, 10, 7, 10];
-    const LOC_REWARD_RANGE = [6,  5,  6, 4,  8,  5, 4,  5];
-    // Fur colours used for wandering sister NPCs
-    const SISTER_FURS = [0xe07840, 0x70a060, 0xa060b0, 0x4a7090, 0xc08040, 0x608040, 0x904060, 0xd06050];
+    const LOC_REWARD_BASE  = [10, 8, 12, 8, 14, 10, 7, 10, 6];
+    const LOC_REWARD_RANGE = [6,  5,  6, 4,  8,  5, 4,  5,  3];
+    const KID_ONLY_LOC = new Set([3, 8]);        // hide_seek=3, tag=8
+    const ADULT_LOC    = [0, 1, 2, 4, 5, 6, 7]; // locate types safe for adults
+    const SISTER_FURS  = [0xe07840, 0x70a060, 0xa060b0, 0x4a7090, 0xc08040, 0x608040, 0x904060, 0xd06050];
 
     chosen.forEach(npcIdx => {
-      const qRoll = Math.floor(Math.random() * 10); // 0–1 fetch, 2–9 locate (8 sub-types)
-      const quest = { npcIdx, status: 'active' };
+      const isKid = npcIdx >= 8; // indices 8–10 are kid NPCs
+      const qRoll = Math.floor(Math.random() * 10); // 0–1 fetch, 2–9 locate
+      const quest  = { npcIdx, status: 'active' };
 
       if (qRoll <= 1) {
         // ── Fetch quest ─────────────────────────────────────────────────
@@ -3367,7 +3456,13 @@
         quest.reward     = (isMush ? FETCH_REWARD_MUSHROOM : FETCH_REWARD_ANIMAL)[def.rarity];
       } else {
         // ── Locate quest ─────────────────────────────────────────────────
-        const locIdx  = qRoll - 2;  // 0–7 maps to LOC_TYPES
+        let locIdx = qRoll - 2; // 0–7
+        // Kids get an extra chance to give a tag quest
+        if (isKid && Math.random() < 0.35) locIdx = 8;
+        // Adults can't give play-based quests (hide_seek/tag) — reroll to an adult-safe type
+        if (!isKid && KID_ONLY_LOC.has(locIdx)) {
+          locIdx = ADULT_LOC[Math.floor(Math.random() * ADULT_LOC.length)];
+        }
         const spotIdx = Math.floor(Math.random() * QUEST_SPOTS.length);
         const spot    = QUEST_SPOTS[spotIdx];
         quest.type       = 'locate';
@@ -3383,9 +3478,8 @@
             x:   spot.x + (Math.random() - 0.5) * 5,
             z:   spot.z + (Math.random() - 0.5) * 5,
             found: false,
-            // appearance (sister only — ignored for toy)
-            fur: SISTER_FURS[Math.floor(Math.random() * SISTER_FURS.length)],
-            yaw: Math.random() * Math.PI * 2,
+            fur:  SISTER_FURS[Math.floor(Math.random() * SISTER_FURS.length)],
+            yaw:  Math.random() * Math.PI * 2,
           };
         }
       }
@@ -3543,20 +3637,23 @@
     }
 
     // Village NPCs — indices in clearingNPCs (0–10) used by the daily quest system
+    // Helper: random offset clamped to village bounds — NPCs wander each cave exit after sleeping
+    const _nj = (v, r, lo, hi) => Math.max(lo, Math.min(hi, v + (Math.random()*2-1)*r));
+    const _ny = () => Math.random() * Math.PI * 2;
     const vNpcs = [
-      // Adults 0–7
-      { wx:  3, wz: 30, s:1.55, fur:0x9a7850, yaw: Math.PI, text:'Welcome to the village!',          type:'adult', ears:'triangle' },
-      { wx: -9, wz: 14, s:1.45, fur:0x708068, yaw: 0.4,     text:'Nice day today!',                   type:'adult', ears:'floppy'   },
-      { wx:  9, wz: -1, s:1.60, fur:0x4a3a28, yaw: 2.1,     text:'Busy busy...',                       type:'adult', ears:'triangle' },
-      { wx:-12, wz:  4, s:1.50, fur:0x787870, yaw: 5.0,     text:'Where is that pup?',                    type:'adult', ears:'floppy'   },
-      { wx:  8, wz:-22, s:1.45, fur:0xc09060, yaw: 3.3,     text:'Hi there!',                          type:'adult', ears:'triangle' },
-      { wx:-10, wz:-26, s:1.60, fur:0x3a2a18, yaw: 1.8,     text:'This is your cave.',                    type:'adult', ears:'floppy'   },
-      { wx: 19, wz: -6, s:1.55, fur:0x9a7058, yaw: 3.9,     text:'Lovely view from the east side!',   type:'adult', ears:'triangle' },
-      { wx: -4, wz:-13, s:1.50, fur:0x5878a0, yaw: 0.8,     text:'That well has been here forever...', type:'adult', ears:'floppy'   },
-      // Static kids 8–10 — smaller scale, get kid-themed quests
-      { wx:  4, wz:-11, s:1.12, fur:0xe07840, yaw: 1.0,     text:'The water is so shiny!',             type:'kid',   ears:'floppy'   },
-      { wx: 17, wz: -5, s:1.08, fur:0x70a060, yaw: 5.2,     text:'Where does the east path go?',       type:'kid',   ears:'triangle' },
-      { wx: -7, wz: 24, s:1.10, fur:0xa060b0, yaw: 2.8,     text:'Come play with us!',                 type:'kid',   ears:'floppy'   },
+      // Adults 0–7 — wander up to ±5 units from their home spot
+      { wx:_nj(  3,5,-19,19), wz:_nj( 30,5,-34,39), s:1.55, fur:0x9a7850, yaw:_ny(), text:'Welcome to the village!',           type:'adult', ears:'triangle' },
+      { wx:_nj( -9,5,-19,19), wz:_nj( 14,5,-34,39), s:1.45, fur:0x708068, yaw:_ny(), text:'Nice day today!',                    type:'adult', ears:'floppy'   },
+      { wx:_nj(  9,5,-19,19), wz:_nj( -1,5,-34,39), s:1.60, fur:0x4a3a28, yaw:_ny(), text:'Busy busy...',                        type:'adult', ears:'triangle' },
+      { wx:_nj(-12,5,-19,19), wz:_nj(  4,5,-34,39), s:1.50, fur:0x787870, yaw:_ny(), text:'Where is that pup?',                     type:'adult', ears:'floppy'   },
+      { wx:_nj(  8,5,-19,19), wz:_nj(-22,5,-34,39), s:1.45, fur:0xc09060, yaw:_ny(), text:'Hi there!',                           type:'adult', ears:'triangle' },
+      { wx:_nj(-10,5,-19,19), wz:_nj(-26,5,-34,39), s:1.60, fur:0x3a2a18, yaw:_ny(), text:'This is your cave.',                     type:'adult', ears:'floppy'   },
+      { wx:_nj( 19,4,-19,21), wz:_nj( -6,5,-34,39), s:1.55, fur:0x9a7058, yaw:_ny(), text:'Lovely view from the east side!',    type:'adult', ears:'triangle' },
+      { wx:_nj( -4,5,-19,19), wz:_nj(-13,5,-34,39), s:1.50, fur:0x5878a0, yaw:_ny(), text:'That well has been here forever...', type:'adult', ears:'floppy'   },
+      // Static kids 8–10 — smaller wander range
+      { wx:_nj(  4,3,-18,18), wz:_nj(-11,3,-34,38), s:1.12, fur:0xe07840, yaw:_ny(), text:'The water is so shiny!',              type:'kid',   ears:'floppy'   },
+      { wx:_nj( 17,3,-18,21), wz:_nj( -5,3,-34,38), s:1.08, fur:0x70a060, yaw:_ny(), text:'Where does the east path go?',        type:'kid',   ears:'triangle' },
+      { wx:_nj( -7,3,-18,18), wz:_nj( 24,3,-34,38), s:1.10, fur:0xa060b0, yaw:_ny(), text:'Come play with us!',                  type:'kid',   ears:'floppy'   },
     ];
     vNpcs.forEach(n => {
       clearingNPCs.push(n);
@@ -3661,7 +3758,7 @@
     // Growth scale: Obsidian slowly grows; Bark starts as a tiny newborn pup
     const dogGrowScale = (activeCharacter === 'obsidian' && obsidianShardPhase >= 3)
       ? 1.0 + Math.min(obsidianDaysPostNecklace * 0.14, 0.42)
-      : (activeCharacter === 'bark' && !barkInVillage)
+      : (activeCharacter === 'bark' && !barkInVillage && !barkInForest)
       ? 0.38
       : 1.0;
 
@@ -4885,7 +4982,7 @@
         ? cbColliders
         : activeCharacter === 'ruff'
           ? []   // ruff patio — boundary-only collision
-          : activeCharacter === 'bark' && !barkInVillage
+          : activeCharacter === 'bark' && !barkInVillage && !barkInForest
             ? barkColliders
             : (activeCharacter === 'wark' && warkPhase >= 2)
               ? []   // village — use building box collision instead
@@ -4936,14 +5033,29 @@
     }
 
     // Bark: den boundary clamping — opening at front (|x| < 1.4 at z=3.8)
-    if (activeCharacter === 'bark' && !barkInVillage) {
+    if (activeCharacter === 'bark' && !barkInVillage && !barkInForest) {
       ds.x = Math.max(-4.8, Math.min(4.8, ds.x));
       ds.z = Math.max(-6.8, ds.z);
       // Block the front wall except for the opening gap
       if (ds.z > 3.8 && Math.abs(ds.x) >= 1.4) ds.z = 3.8;
-      // Trigger village arrival when Bark walks out through the gap
+      // Trigger mother farewell when Bark walks out through the gap
       if (ds.z > 4.4 && Math.abs(ds.x) < 1.4 && gameState === 'playing') {
+        ds.z = 4.4;
+        gameState = 'cutscene';
+        activeDialogueArr = BARK_LEAVE_DLG;
+        dialogueIndex = 0;
+        showDialogue(0);
+      }
+    }
+
+    // Bark: forest clearing boundary + north exit to village
+    if (activeCharacter === 'bark' && barkInForest) {
+      ds.x = Math.max(-11.5, Math.min(11.5, ds.x));
+      ds.z = Math.max(-22, Math.min(9, ds.z));
+      // Trigger village arrival when Bark walks far enough north
+      if (ds.z < -20 && gameState === 'playing') {
         barkInVillage = true;
+        barkInForest  = false;
         showEnterScreen('Venturing into the Village\u2026', () => {
           buildVillage();
           dogState.x = 0; dogState.z = 34; dogState.y = DOG_FLOOR;
@@ -5352,8 +5464,8 @@
     // camera follows behind dog
     camYawTarget = ds.yaw;
     cam.yaw = lerp(cam.yaw, camYawTarget, 0.08);
-    const CAM_DIST = (activeCharacter === 'bark' && !barkInVillage) ? 3.5 : 6.5;
-    const CAM_H    = (activeCharacter === 'bark' && !barkInVillage) ? 1.6 : 3.5;
+    const CAM_DIST = (activeCharacter === 'bark' && !barkInVillage && !barkInForest) ? 3.5 : 6.5;
+    const CAM_H    = (activeCharacter === 'bark' && !barkInVillage && !barkInForest) ? 1.6 : 3.5;
     const targetPos = v3(
       ds.x - sin(cam.yaw) * CAM_DIST,
       ds.y + CAM_H,
@@ -5362,7 +5474,7 @@
     cam.pos.x = lerp(cam.pos.x, targetPos.x, 0.08);
     cam.pos.y = lerp(cam.pos.y, targetPos.y, 0.08);
     cam.pos.z = lerp(cam.pos.z, targetPos.z, 0.08);
-    cam.pitch = (activeCharacter === 'bark' && !barkInVillage) ? 0.36 : 0.28;
+    cam.pitch = (activeCharacter === 'bark' && !barkInVillage && !barkInForest) ? 0.36 : 0.28;
   }
 
   function buildArrivalNpcQuads() {
@@ -5394,11 +5506,16 @@
       grad.addColorStop(0,   '#2a5090');
       grad.addColorStop(0.55,'#6898c8');
       grad.addColorStop(1,   '#a8c8e8');
-    } else if (activeCharacter === 'bark' && !barkInVillage) {
+    } else if (activeCharacter === 'bark' && !barkInVillage && !barkInForest) {
       // Warm indoor ceiling glow
       grad.addColorStop(0,   '#1a0e06');
       grad.addColorStop(0.45,'#2e1a0a');
       grad.addColorStop(1,   '#3e2010');
+    } else if (activeCharacter === 'bark' && barkInForest) {
+      // Forest clearing — dappled green-sky morning
+      grad.addColorStop(0,   '#1a3a18');
+      grad.addColorStop(0.5, '#2e6628');
+      grad.addColorStop(1,   '#78b870');
     } else if (activeCharacter === 'ruff' && !ruffInVillage) {
       if (ruffScene === 'battle') {
         grad.addColorStop(0,   '#030810');
@@ -5548,7 +5665,7 @@
       ...(activeCharacter === 'cheeseball' && !cbMapViewed ? cbQuads : []),
       ...(activeCharacter === 'cheeseball' && cbNpcPhase >= 1 && !cbMapViewed ? cbHoleQuads : []),
       ...(activeCharacter === 'ruff' && !ruffInVillage ? (ruffScene === 'battle' ? ruffBattleQuads : ruffScene === 'river' ? ruffRiverQuads : ruffQuads) : []),
-      ...(activeCharacter === 'bark' && !barkInVillage ? (barkInUpstairs ? barkUpstairsQuads : barkQuads) : []),
+      ...(activeCharacter === 'bark' && !barkInVillage ? (barkInUpstairs ? barkUpstairsQuads : barkInForest ? barkForestQuads : barkQuads) : []),
       ...(isInVillage() ? villageQuads : []),
       ...(isInVillage() ? npcQuads : []),
       ...arrivalNpcQuads,
@@ -5978,6 +6095,7 @@
   }
   function setGlobalSave(obj) { localStorage.setItem(SAVE_KEY_GLOBAL, JSON.stringify(obj)); }
   let barkInVillage    = false; // true after Bark finds the village
+  let barkInForest     = false; // true while Bark is in the forest clearing outside the cave
   let barkInUpstairs   = false; // true while upstairs in Bark's house
   let BARK_ARRIVE_DLG  = [];
   let ruffPhase        = 0;     // 0 = hiding by bush (intro)
@@ -6009,6 +6127,8 @@
   const barkQuads         = [];   // Bark ground floor + back yard geometry
   const barkColliders     = [];   // Bark furniture / object colliders
   const barkUpstairsQuads = [];   // Bark upstairs geometry
+  const barkForestQuads   = [];   // Bark forest clearing geometry
+  const barkForestQuads   = [];   // Forest clearing outside Bark's cave
   const DOG_DISPLAY_NAMES = {
     wark: 'Wark', newmoon: 'New Moon', cheeseball: 'Cheeseball',
     obsidian: 'Obsidian', ruff: 'Ruff', scratch: 'Scratch', bark: 'Bark',
@@ -6296,6 +6416,7 @@
     }
     if (activeCharacter === 'bark') {
       save.barkInVillage = barkInVillage;
+      save.barkInForest  = barkInForest;
     }
     if (activeCharacter === 'scratch') {
       save.wobCoins         = wobCoins;
@@ -6561,7 +6682,9 @@
       }
       if (activeCharacter === 'bark') {
         barkInVillage = s.barkInVillage ?? false;
+        barkInForest  = barkInVillage ? false : (s.barkInForest ?? false);
         if (barkInVillage) buildVillage();
+        else if (barkInForest) buildBarkForest();
       }
       if (activeCharacter === 'scratch') {
         wobCoins  = s.wobCoins  ?? 0;
@@ -7446,6 +7569,9 @@
     { speaker: 'Bark 🐶', text: "Mm... mmph..." },
     { speaker: 'Bark 🐶', text: "...so warm in here..." },
   ];
+  const BARK_LEAVE_DLG = [
+    { speaker: 'Mother 🐕', text: "Don't go far, Bark." },
+  ];
   let WARK_ARRIVE_DLG = [];
   let OBS_ARRIVE_DLG  = [];
   let CB_ARRIVE_DLG   = [];
@@ -7591,6 +7717,23 @@
         updateSwitcherBar();
         gameState = 'cave'; dialogueCooldown = 60; return;
       }
+      // Bark: mother farewell ends — fade into forest clearing
+      if (activeDialogueArr === BARK_LEAVE_DLG) {
+        barkInForest = true;
+        showEnterScreen('Forest Clearing\u2026', () => {
+          buildBarkForest();
+          dogState.x = 0; dogState.z = 6; dogState.y = DOG_FLOOR;
+          dogState.yaw = Math.PI; dogState.velY = 0; dogState.grounded = true;
+          cam.yaw = Math.PI;
+          cam.pos.x = 0; cam.pos.y = DOG_FLOOR + 3.5; cam.pos.z = 6 + 6.5;
+          saveProgress();
+          gameState = 'playing';
+          dialogueCooldown = 60;
+          toastMsg   = '\uD83C\uDF32 Walk north into the forest to find the village.';
+          toastTimer = 300;
+        });
+        return;
+      }
       gameState = 'playing';
       dialogueCooldown = 60;   // ~1 second at 60fps — prevents immediate re-trigger
       if (activeDialogueArr === CB_LETSGO_DLG) {
@@ -7637,7 +7780,7 @@
         toastTimer = 360;
         saveProgress();
       } else if (activeDialogueArr === RUFF_WAKE_DLG) {
-        // Ruff woke up — now Prof. Maple finds her
+        // Ruff woke up — now Prof. Maple finds him
         const _gs = getGlobalSave();
         _gs.warkArrivalCount = (_gs.warkArrivalCount || 0) + 1;
         setGlobalSave(_gs);
@@ -7831,12 +7974,14 @@
     bark: { enterTitle: 'In the den\u2026', startX: 0, startZ: -1.5, onEnter: (restored) => {
       if (!restored) {
         barkInVillage  = false;
+        barkInForest   = false;
         barkInUpstairs = false;
         buildBarkHouse();
         activeDialogueArr = BARK_INTRO_DLG;
       } else {
         barkInUpstairs = false;  // always land on ground floor after reload
         if (barkInVillage) { buildVillage(); }
+        else if (barkInForest) { buildBarkForest(); }
         else { buildBarkHouse(); }
       }
       document.getElementById('wob-coins').classList.add('hidden');
@@ -10962,6 +11107,8 @@
     if (activeCharacter === 'newmoon') nmDrStoneInCave = false;  // Dr. Stone stays behind
     document.getElementById('sleep-menu').classList.add('hidden');
     document.getElementById('bed-claim-menu').classList.add('hidden');
+    const _didSleep = sleptThisVisit;
+    sleptThisVisit = false;
     showEnterScreen('Back to the Village…', () => {
       dogState.x = caveExitX; dogState.z = caveExitZ; dogState.y = DOG_FLOOR;
       dogState.yaw = caveExitYaw; dogState.velY = 0; dogState.grounded = true;
@@ -10969,6 +11116,7 @@
       cam.pos.x = dogState.x - Math.sin(cam.yaw) * 6.5;
       cam.pos.y = DOG_FLOOR + 3.4;
       cam.pos.z = dogState.z - Math.cos(cam.yaw) * 6.5;
+      if (_didSleep && isInVillage()) buildVillage();
       gameState = 'playing';
     });
   }
@@ -11030,6 +11178,7 @@
         // Phase 3 — apply time change
         const TOD_PHASE = { morning: 0.15, noon: 0.50, night: 0.85 };
         dayPhaseMs = (TOD_PHASE[tod] ?? 0.85) * 900000;
+        sleptThisVisit = true;
         saveProgress();
         setTimeout(() => {
           // Phase 4 — fade back in
@@ -13286,7 +13435,7 @@
       ctx.fillText(emo.emotion, sp.x, sp.y - 26);
       ctx.restore();
     }
-    if (!barkInVillage) {
+    if (!barkInVillage && !barkInForest) {
       // Bark's cave: mother dog and sleeping sibling
       drawAura(-2.5, -3.5, 0);  // Loving (mother)
       drawAura( 1.0, -1.5, 3);  // Peaceful (sleeping sibling)
