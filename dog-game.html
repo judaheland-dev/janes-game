@@ -1884,7 +1884,7 @@
     barkColliders.push({ x: -2.5, z: -3.5, r: 1.1 });
 
     // ── Ruff: tiny newborn sibling, sleeping on nest ───────────────────────
-    buildAnimKidDog(barkQuads, 1.0, -1.5, 0.38, 0x9a6030, Math.PI * 0.8, 'floppy', 0, 0.12, true);
+    buildRuffNpc(barkQuads, 1.0, -1.5, 0.38, Math.PI * 0.8, 0.12, true);
     barkColliders.push({ x: 1.0, z: -1.5, r: 0.28 });
 
     // ── Torch on wall ─────────────────────────────────────────────────────
@@ -2542,6 +2542,7 @@
     { name:'Chrysocolla',         icon:'💎', color:0x2ab0c8, rarity:'uncommon',  weight:9,  glow:false, time:'day'     },
     { name:"Tiger's Eye",         icon:'💎', color:0xb87020, rarity:'uncommon',  weight:9,  glow:false, time:'morning' },
     { name:'Petrified Wood',      icon:'💎', color:0x8b6230, rarity:'uncommon',  weight:9,  glow:false, time:'any'     },
+    { name:'Opal',                icon:'💎', color:0xd8eaf8, rarity:'uncommon',  weight:10, glow:false, time:'any'     },
     // ── rare (19) ───────────────────────────────────────────────────────────
     { name:'Ruby',                icon:'💎', color:0xdd2244, rarity:'rare',      weight:8,  glow:false, time:'day'     },
     { name:'Sapphire',            icon:'💎', color:0x3060d0, rarity:'rare',      weight:8,  glow:false, time:'day'     },
@@ -2613,6 +2614,7 @@
     { name:'Chromite',       icon:'🪨', color:0x3c3820, rarity:'common',    weight:18, glow:false },
     { name:'Pyrrhotite',     icon:'🪨', color:0x7a5820, rarity:'common',    weight:17, glow:false },
     { name:'Limonite',       icon:'🪨', color:0xb87038, rarity:'common',    weight:17, glow:false },
+    { name:'Bronze Ore',     icon:'🪨', color:0xa05c18, rarity:'common',    weight:16, glow:false },
     // ── uncommon (10) ───────────────────────────────────────────────────────────────
     { name:'Silver Ore',     icon:'⚙️', color:0xc0c0d0, rarity:'uncommon',  weight:12, glow:false },
     { name:'Nickel Ore',     icon:'⚙️', color:0x809880, rarity:'uncommon',  weight:11, glow:false },
@@ -2710,6 +2712,166 @@
       pushBox(tunnelQuads, lp.x, lp.y+.22+r*.44, lp.z, .40, .04, .05, 0x6a4018); // rungs
   }
 
+  // Render a pack member as their real character model (not a generic NPC dog).
+  // Uses per-character colour palettes that match buildDog(). Called when squad
+  // members appear in the village standing where the player left them.
+  function drawPackMemberNpc(list, charId, wx, wz, yaw) {
+    const fl = 0.21;
+    const s  = 1.0;
+    const fwdX = sin(yaw), fwdZ = cos(yaw);
+    const rtX  = cos(yaw), rtZ  = -sin(yaw);
+    const hx = wx + fwdX*s*0.78, hz = wz + fwdZ*s*0.78;
+    const snx = wx + fwdX*s*1.22, snz = wz + fwdZ*s*1.22;
+    const tlx = wx - fwdX*s*0.72, tlz = wz - fwdZ*s*0.72;
+
+    // Helper to push a box at a world position
+    const pb = (bx,by,bz, bw,bh,bd, col) => pushBox(list, bx, by, bz, bw,bh,bd, col, yaw);
+
+    if (charId === 'scratch') {
+      buildScratch(list, wx, wz, yaw, 0, 0, false); return;
+    }
+    if (charId === 'ruff') {
+      buildRuffNpc(list, wx, wz, s, yaw, 0, false); return;
+    }
+
+    if (charId === 'newmoon') {
+      const C = { body:0x1a1a2e, dark:0x0d0d1a, silver:0x8a9bb5, eye:0x5ab4f5, nose:0x111122 };
+      pb(wx,   fl+s*0.54, wz,           s*0.46,s*0.28,s*0.72, C.body);
+      pb(wx+fwdX*s*0.14, fl+s*0.50, wz+fwdZ*s*0.14, s*0.30,s*0.22,s*0.20, C.silver);// chest
+      pb(wx,   fl+s*0.62, wz+s*0.06,    s*0.50,s*0.22,s*0.52, C.dark);
+      pb(hx,   fl+s*0.96, hz,           s*0.34,s*0.32,s*0.32, C.body);
+      pb(hx+rtX*s*0.16, fl+s*0.98, hz+rtZ*s*0.16, s*0.10,s*0.10,s*0.06, C.silver);// L eye patch
+      pb(hx-rtX*s*0.16, fl+s*0.98, hz-rtZ*s*0.16, s*0.10,s*0.10,s*0.06, C.silver);// R eye patch
+      pb(snx,  fl+s*0.85, snz,          s*0.15,s*0.09,s*0.14, C.silver);// muzzle
+      pb(snx,  fl+s*0.92, snz, s*0.06,s*0.05,s*0.04, C.nose);
+      pb(hx+rtX*s*0.15+fwdX*s*0.06, fl+s*1.00, hz+rtZ*s*0.15+fwdZ*s*0.06, s*0.07,s*0.07,s*0.04, C.eye);
+      pb(hx-rtX*s*0.15+fwdX*s*0.06, fl+s*1.00, hz-rtZ*s*0.15+fwdZ*s*0.06, s*0.07,s*0.07,s*0.04, C.eye);
+      // Wolf ears (erect)
+      pb(hx+rtX*s*0.28, fl+s*1.26, hz+rtZ*s*0.28, s*0.09,s*0.24,s*0.07, C.body);
+      pb(hx-rtX*s*0.28, fl+s*1.26, hz-rtZ*s*0.28, s*0.09,s*0.24,s*0.07, C.body);
+      pb(hx+rtX*s*0.28, fl+s*1.24, hz+rtZ*s*0.28, s*0.04,s*0.15,s*0.04, C.silver);
+      pb(hx-rtX*s*0.28, fl+s*1.24, hz-rtZ*s*0.28, s*0.04,s*0.15,s*0.04, C.silver);
+      // Tail
+      pb(tlx, fl+s*0.84, tlz, s*0.08,s*0.08,s*0.20, C.body);
+      pb(tlx-fwdX*s*0.14, fl+s*0.84, tlz-fwdZ*s*0.14, s*0.07,s*0.07,s*0.10, C.silver);
+      [[s*0.28,s*0.40],[-s*0.28,s*0.40],[s*0.28,-s*0.40],[-s*0.28,-s*0.40]].forEach(([lt,ln])=>{
+        const hpx=wx+rtX*lt+fwdX*ln, hpz=wz+rtZ*lt+fwdZ*ln;
+        pb(hpx,fl+s*0.20,hpz, s*0.10,s*0.21,s*0.10,C.body);
+        pb(hpx,fl+s*0.05,hpz, s*0.12,s*0.05,s*0.12,C.dark);
+      }); return;
+    }
+
+    if (charId === 'wark') {
+      const C = { body:0xc8853a, dark:0xa06830, white:0xe0d0b8, eye:0x5ab8a8, nose:0x111108, spot:0x1a1208, ear:0x7a4820 };
+      pb(wx,   fl+s*0.54, wz,           s*0.48,s*0.28,s*0.74, C.body);
+      pb(wx+fwdX*s*0.14, fl+s*0.50, wz+fwdZ*s*0.14, s*0.32,s*0.22,s*0.18, C.white);
+      pb(wx,   fl+s*0.62, wz+s*0.06,   s*0.52,s*0.22,s*0.54, C.dark);
+      pb(wx+rtX*s*0.20, fl+s*0.54, wz+rtZ*s*0.20, s*0.12,s*0.18,s*0.30, C.spot);
+      pb(wx-rtX*s*0.18, fl+s*0.56, wz-rtZ*s*0.18, s*0.10,s*0.16,s*0.26, C.spot);
+      pb(hx,   fl+s*0.96, hz,           s*0.34,s*0.32,s*0.32, C.body);
+      pb(snx,  fl+s*0.85, snz,          s*0.15,s*0.09,s*0.14, C.white);
+      pb(snx,  fl+s*0.92, snz, s*0.06,s*0.05,s*0.04, C.nose);
+      pb(hx+rtX*s*0.15+fwdX*s*0.06, fl+s*1.00, hz+rtZ*s*0.15+fwdZ*s*0.06, s*0.07,s*0.07,s*0.04, C.eye);
+      pb(hx-rtX*s*0.15+fwdX*s*0.06, fl+s*1.00, hz-rtZ*s*0.15+fwdZ*s*0.06, s*0.07,s*0.07,s*0.04, C.eye);
+      pb(hx+rtX*s*0.28, fl+s*0.88, hz+rtZ*s*0.28, s*0.06,s*0.20,s*0.10, C.body);// floppy L
+      pb(hx-rtX*s*0.28, fl+s*0.88, hz-rtZ*s*0.28, s*0.06,s*0.20,s*0.10, C.body);// floppy R
+      pb(hx+rtX*s*0.26, fl+s*0.86, hz+rtZ*s*0.26, s*0.03,s*0.12,s*0.07, C.ear);
+      pb(hx-rtX*s*0.26, fl+s*0.86, hz-rtZ*s*0.26, s*0.03,s*0.12,s*0.07, C.ear);
+      pb(tlx, fl+s*0.84, tlz, s*0.08,s*0.08,s*0.22, C.dark);
+      pb(tlx-fwdX*s*0.16, fl+s*0.84, tlz-fwdZ*s*0.16, s*0.07,s*0.07,s*0.10, C.white);
+      [[s*0.28,s*0.40],[-s*0.28,s*0.40],[s*0.28,-s*0.40],[-s*0.28,-s*0.40]].forEach(([lt,ln])=>{
+        const hpx=wx+rtX*lt+fwdX*ln, hpz=wz+rtZ*lt+fwdZ*ln;
+        pb(hpx,fl+s*0.20,hpz, s*0.10,s*0.21,s*0.10,C.body);
+        pb(hpx,fl+s*0.05,hpz, s*0.12,s*0.05,s*0.12,C.white);
+      }); return;
+    }
+
+    if (charId === 'cheeseball') {
+      const C = { body:0xd06018, deep:0xa04010, cream:0xe8d4b8, eye:0x5888d8, nose:0x100e0c, ear:0x3a1e08 };
+      pb(wx,   fl+s*0.52, wz,           s*0.50,s*0.28,s*0.70, C.body);
+      pb(wx+fwdX*s*0.14, fl+s*0.48, wz+fwdZ*s*0.14, s*0.28,s*0.22,s*0.20, C.cream);
+      pb(wx,   fl+s*0.60, wz+s*0.08,   s*0.54,s*0.22,s*0.52, C.deep);
+      pb(wx+rtX*s*0.44, fl+s*0.52, wz+rtZ*s*0.44, s*0.14,s*0.24,s*0.48, C.deep);
+      pb(wx-rtX*s*0.44, fl+s*0.52, wz-rtZ*s*0.44, s*0.14,s*0.24,s*0.48, C.deep);
+      pb(hx,   fl+s*0.94, hz,           s*0.35,s*0.30,s*0.30, C.body);
+      pb(hx,   fl+s*1.04, hz-s*0.04,   s*0.38,s*0.14,s*0.22, C.deep);
+      pb(snx-fwdX*s*0.06,  fl+s*0.84, snz-fwdZ*s*0.06,  s*0.16,s*0.09,s*0.16, C.cream);
+      pb(snx, fl+s*0.91, snz, s*0.06,s*0.05,s*0.04, C.nose);
+      pb(hx+rtX*s*0.15+fwdX*s*0.06, fl+s*0.97, hz+rtZ*s*0.15+fwdZ*s*0.06, s*0.07,s*0.07,s*0.04, C.eye);
+      pb(hx-rtX*s*0.15+fwdX*s*0.06, fl+s*0.97, hz-rtZ*s*0.15+fwdZ*s*0.06, s*0.07,s*0.07,s*0.04, C.eye);
+      // Pointed ears
+      pb(hx+rtX*s*0.26, fl+s*1.24, hz+rtZ*s*0.26, s*0.10,s*0.22,s*0.08, C.body);
+      pb(hx-rtX*s*0.26, fl+s*1.24, hz-rtZ*s*0.26, s*0.10,s*0.22,s*0.08, C.body);
+      pb(hx+rtX*s*0.26, fl+s*1.22, hz+rtZ*s*0.26, s*0.05,s*0.14,s*0.04, C.ear);
+      pb(hx-rtX*s*0.26, fl+s*1.22, hz-rtZ*s*0.26, s*0.05,s*0.14,s*0.04, C.ear);
+      // Fluffy curled tail
+      pb(tlx, fl+s*0.84, tlz, s*0.10,s*0.10,s*0.22, C.body);
+      pb(tlx+rtX*s*0.10, fl+s*0.96, tlz+rtZ*s*0.10, s*0.09,s*0.09,s*0.16, C.deep);
+      [[s*0.28,s*0.40],[-s*0.28,s*0.40],[s*0.28,-s*0.40],[-s*0.28,-s*0.40]].forEach(([lt,ln])=>{
+        const hpx=wx+rtX*lt+fwdX*ln, hpz=wz+rtZ*lt+fwdZ*ln;
+        pb(hpx,fl+s*0.20,hpz, s*0.10,s*0.19,s*0.10,C.body);
+        pb(hpx,fl+s*0.05,hpz, s*0.12,s*0.05,s*0.12,C.cream);
+      }); return;
+    }
+
+    if (charId === 'obsidian') {
+      const C = { body:0x3a2010, mid:0x5a3418, light:0x7a5028, cream:0xc4a070, eye:0xc87830, nose:0x0e0806, ear:0x2a1408 };
+      pb(wx,   fl+s*0.54, wz,           s*0.46,s*0.28,s*0.72, C.body);
+      pb(wx+fwdX*s*0.14, fl+s*0.50, wz+fwdZ*s*0.14, s*0.30,s*0.22,s*0.20, C.light);
+      pb(wx,   fl+s*0.62, wz+s*0.06,   s*0.50,s*0.22,s*0.54, C.mid);
+      pb(wx+rtX*s*0.48, fl+s*0.52, wz+rtZ*s*0.48, s*0.14,s*0.26,s*0.52, C.mid);
+      pb(wx-rtX*s*0.48, fl+s*0.52, wz-rtZ*s*0.48, s*0.14,s*0.26,s*0.52, C.mid);
+      pb(hx,   fl+s*0.96, hz,           s*0.34,s*0.32,s*0.32, C.body);
+      pb(hx,   fl+s*1.06, hz-s*0.04,   s*0.38,s*0.14,s*0.22, C.mid);
+      pb(snx-fwdX*s*0.06,  fl+s*0.85, snz-fwdZ*s*0.06,  s*0.15,s*0.09,s*0.16, C.cream);
+      pb(snx, fl+s*0.92, snz, s*0.06,s*0.05,s*0.04, C.nose);
+      pb(hx+rtX*s*0.15+fwdX*s*0.06, fl+s*1.00, hz+rtZ*s*0.15+fwdZ*s*0.06, s*0.07,s*0.07,s*0.04, C.eye);
+      pb(hx-rtX*s*0.15+fwdX*s*0.06, fl+s*1.00, hz-rtZ*s*0.15+fwdZ*s*0.06, s*0.07,s*0.07,s*0.04, C.eye);
+      // Shaggy erect ears
+      pb(hx+rtX*s*0.30, fl+s*1.26, hz+rtZ*s*0.30, s*0.10,s*0.24,s*0.07, C.mid);
+      pb(hx-rtX*s*0.30, fl+s*1.26, hz-rtZ*s*0.30, s*0.10,s*0.24,s*0.07, C.mid);
+      pb(hx+rtX*s*0.30, fl+s*1.24, hz+rtZ*s*0.30, s*0.04,s*0.16,s*0.04, C.ear);
+      pb(hx-rtX*s*0.30, fl+s*1.24, hz-rtZ*s*0.30, s*0.04,s*0.16,s*0.04, C.ear);
+      pb(tlx, fl+s*0.84, tlz, s*0.08,s*0.08,s*0.20, C.body);
+      pb(tlx-fwdX*s*0.14, fl+s*0.86, tlz-fwdZ*s*0.14, s*0.07,s*0.07,s*0.10, C.light);
+      [[s*0.28,s*0.40],[-s*0.28,s*0.40],[s*0.28,-s*0.40],[-s*0.28,-s*0.40]].forEach(([lt,ln])=>{
+        const hpx=wx+rtX*lt+fwdX*ln, hpz=wz+rtZ*lt+fwdZ*ln;
+        pb(hpx,fl+s*0.20,hpz, s*0.10,s*0.21,s*0.10,C.body);
+        pb(hpx,fl+s*0.05,hpz, s*0.12,s*0.05,s*0.12,C.light);
+      }); return;
+    }
+
+    if (charId === 'bark') {
+      const C = { dark:0x1c0e06, mid:0x361808, tan:0xc87828, cream:0xeac880, nose:0x0e0806, ear:0x703a18 };
+      pb(wx,   fl+s*0.54, wz,           s*0.44,s*0.27,s*0.68, C.dark);
+      pb(wx+fwdX*s*0.14, fl+s*0.50, wz+fwdZ*s*0.14, s*0.28,s*0.24,s*0.22, C.cream);
+      pb(wx,   fl+s*0.62, wz+s*0.06,   s*0.48,s*0.20,s*0.50, C.mid);
+      pb(hx,   fl+s*0.96, hz,           s*0.34,s*0.32,s*0.32, C.dark);
+      pb(hx+rtX*s*0.20, fl+s*1.11, hz+rtZ*s*0.20, s*0.08,s*0.05,s*0.07, C.tan);// eyebrow L
+      pb(hx-rtX*s*0.20, fl+s*1.11, hz-rtZ*s*0.20, s*0.08,s*0.05,s*0.07, C.tan);// eyebrow R
+      pb(snx-fwdX*s*0.04,  fl+s*0.84, snz-fwdZ*s*0.04,  s*0.18,s*0.10,s*0.17, C.tan);// amber muzzle
+      pb(snx, fl+s*0.92, snz, s*0.06,s*0.05,s*0.04, C.nose);
+      pb(hx+rtX*s*0.15+fwdX*s*0.06, fl+s*1.00, hz+rtZ*s*0.15+fwdZ*s*0.06, s*0.07,s*0.07,s*0.04, C.tan);
+      pb(hx-rtX*s*0.15+fwdX*s*0.06, fl+s*1.00, hz-rtZ*s*0.15+fwdZ*s*0.06, s*0.07,s*0.07,s*0.04, C.tan);
+      // Erect ears wide-set
+      pb(hx+rtX*s*0.33, fl+s*1.22, hz+rtZ*s*0.33, s*0.11,s*0.22,s*0.08, C.dark);
+      pb(hx-rtX*s*0.33, fl+s*1.22, hz-rtZ*s*0.33, s*0.11,s*0.22,s*0.08, C.dark);
+      pb(hx+rtX*s*0.33, fl+s*1.20, hz+rtZ*s*0.33, s*0.06,s*0.14,s*0.04, C.ear);
+      pb(hx-rtX*s*0.33, fl+s*1.20, hz-rtZ*s*0.33, s*0.06,s*0.14,s*0.04, C.ear);
+      pb(tlx, fl+s*0.84, tlz, s*0.10,s*0.10,s*0.20, C.mid);
+      pb(tlx+rtX*s*0.10, fl+s*0.96, tlz+rtZ*s*0.10, s*0.09,s*0.09,s*0.15, C.dark);
+      [[s*0.28,s*0.40],[-s*0.28,s*0.40],[s*0.28,-s*0.40],[-s*0.28,-s*0.40]].forEach(([lt,ln])=>{
+        const hpx=wx+rtX*lt+fwdX*ln, hpz=wz+rtZ*lt+fwdZ*ln;
+        pb(hpx,fl+s*0.20,hpz, s*0.11,s*0.12,s*0.11,C.dark);
+        pb(hpx,fl+s*0.08,hpz, s*0.10,s*0.10,s*0.10,C.tan);
+        pb(hpx,fl+s*0.03,hpz, s*0.13,s*0.06,s*0.13,C.mid);
+      }); return;
+    }
+
+    // Fallback — generic NPC
+    addNpcDog(list, wx, wz, s, 0xaa8850, yaw, 'triangle');
+  }
+
   function addNpcDog(list, wx, wz, s, fur, facingYaw, earType='triangle') {
     const fl = 0.21;   // floor height (= DOG_FLOOR)
     pushBox(list, wx, fl + 0.54*s, wz,        0.46*s, 0.28*s, 0.72*s, fur, facingYaw);
@@ -2795,6 +2957,90 @@
       const pawOff   = rotY(rotX(v3(0, -s*0.22, 0), ang), yaw);
       const pawC     = add(hipWorld, pawOff);
       pushBox(list, pawC.x, pawC.y - s*0.04, pawC.z, s*0.12, s*0.05, s*0.12, 0x2a1808, yaw, ang);
+    });
+  }
+
+  // ── Ruff: NPC that matches his playable character (chocolate merle) ────────
+  function buildRuffNpc(list, wx, wz, s, yaw, wagAngle, sleeping) {
+    const darkChoc  = 0x2a1208;
+    const midChoc   = 0x4a2010;
+    const tanPatch  = 0xc47828;
+    const deepTan   = 0x9a5c18;
+    const creamMuz  = 0xd8b068;
+    const innerEarR = 0x6a3010;
+    const noseR     = 0x0c0806;
+    const amberEye  = 0xd89c18;
+    const fl = 0.21;
+    const fwdX = sin(yaw), fwdZ = cos(yaw);
+    const rtX  = cos(yaw), rtZ  = -sin(yaw);
+
+    if (sleeping) {
+      // ── Body lying flat ───────────────────────────────────────────────
+      pushBox(list, wx, fl+s*0.16, wz,          s*0.46, s*0.16, s*0.72, darkChoc, yaw);
+      pushBox(list, wx, fl+s*0.24, wz-s*0.06,   s*0.30, s*0.08, s*0.44, midChoc,  yaw);  // saddle
+      pushBox(list, wx+fwdX*s*0.28, fl+s*0.10, wz+fwdZ*s*0.28, s*0.20, s*0.06, s*0.16, creamMuz, yaw);  // chest
+      // Merle amber patches on visible side
+      pushBox(list, wx+rtX*s*0.18, fl+s*0.25, wz+rtZ*s*0.18, s*0.16, s*0.06, s*0.22, tanPatch, yaw);
+      pushBox(list, wx-rtX*s*0.06, fl+s*0.23, wz-rtZ*s*0.06, s*0.13, s*0.05, s*0.16, deepTan,  yaw);
+      pushBox(list, wx+rtX*s*0.14, fl+s*0.22, wz-rtZ*s*0.20,  s*0.10, s*0.05, s*0.13, tanPatch, yaw);
+      // ── Head resting ─────────────────────────────────────────────────
+      const hx = wx+fwdX*s*0.68, hz = wz+fwdZ*s*0.68;
+      pushBox(list, hx, fl+s*0.22, hz,              s*0.30, s*0.22, s*0.28, darkChoc, yaw);
+      pushBox(list, hx+rtX*s*0.12, fl+s*0.30, hz+rtZ*s*0.12, s*0.11, s*0.06, s*0.09, tanPatch, yaw);  // eye patch
+      // ── Snout ─────────────────────────────────────────────────────────
+      pushBox(list, wx+fwdX*s*1.02, fl+s*0.13, wz+fwdZ*s*1.02, s*0.13, s*0.07, s*0.13, creamMuz, yaw);
+      // ── One erect ear, upright ────────────────────────────────────────
+      pushBox(list, hx+rtX*s*0.24, fl+s*0.42, hz+rtZ*s*0.24, s*0.09, s*0.22, s*0.06, darkChoc,  yaw);
+      pushBox(list, hx+rtX*s*0.24, fl+s*0.40, hz+rtZ*s*0.24, s*0.04, s*0.14, s*0.03, innerEarR, yaw);
+      // ── Tail curled at base ───────────────────────────────────────────
+      const tlx = wx-fwdX*s*0.65, tlz = wz-fwdZ*s*0.65;
+      const tyw = yaw + wagAngle*0.3 + 0.4;
+      pushBox(list, tlx, fl+s*0.20, tlz, s*0.08, s*0.08, s*0.18, darkChoc, tyw);
+      pushBox(list, tlx-sin(tyw)*s*0.14, fl+s*0.20, tlz-cos(tyw)*s*0.14, s*0.07, s*0.07, s*0.10, tanPatch, tyw+0.3);
+      // ── Paws ─────────────────────────────────────────────────────────
+      const pvx = rtX*s*0.22, pvz = rtZ*s*0.22;
+      pushBox(list, wx+fwdX*s*0.38+pvx, fl+s*0.10, wz+fwdZ*s*0.38+pvz, s*0.10, s*0.10, s*0.10, darkChoc, yaw);
+      pushBox(list, wx-fwdX*s*0.38+pvx, fl+s*0.10, wz-fwdZ*s*0.38+pvz, s*0.10, s*0.10, s*0.10, darkChoc, yaw);
+      return;
+    }
+
+    // ── Standing pose ─────────────────────────────────────────────────────
+    const y = fl;
+    pushBox(list, wx, y+s*0.54, wz,           s*0.46, s*0.28, s*0.72, darkChoc, yaw);
+    pushBox(list, wx, y+s*0.62, wz+s*0.06,    s*0.50, s*0.22, s*0.52, midChoc,  yaw);
+    pushBox(list, wx+fwdX*s*0.28, y+s*0.46, wz+fwdZ*s*0.28, s*0.28, s*0.22, s*0.18, creamMuz, yaw);  // chest
+    pushBox(list, wx, y+s*0.56, wz-s*0.28,    s*0.38, s*0.26, s*0.20, darkChoc, yaw);  // rump
+    // Merle amber patches
+    pushBox(list, wx+rtX*s*0.14, y+s*0.72, wz+rtZ*s*0.14, s*0.18, s*0.10, s*0.22, tanPatch, yaw);
+    pushBox(list, wx-rtX*s*0.10, y+s*0.70, wz-rtZ*s*0.10, s*0.14, s*0.08, s*0.18, deepTan,  yaw);
+    // Head
+    const hx = wx+fwdX*s*0.78, hz = wz+fwdZ*s*0.78;
+    pushBox(list, hx, y+s*0.96, hz,              s*0.34, s*0.32, s*0.32, darkChoc, yaw);
+    pushBox(list, hx+rtX*s*0.14, y+s*0.98, hz+rtZ*s*0.14, s*0.12, s*0.11, s*0.08, tanPatch, yaw);
+    pushBox(list, hx-rtX*s*0.14, y+s*0.98, hz-rtZ*s*0.14, s*0.12, s*0.11, s*0.08, tanPatch, yaw);
+    // Snout
+    pushBox(list, wx+fwdX*s*1.22, y+s*0.85, wz+fwdZ*s*1.22, s*0.15, s*0.09, s*0.14, creamMuz, yaw);
+    pushBox(list, wx+fwdX*s*1.37, y+s*0.91, wz+fwdZ*s*1.37, s*0.05, s*0.04, s*0.04, noseR, yaw);
+    // Eyes (amber)
+    pushBox(list, hx+rtX*s*0.15+fwdX*s*0.13, y+s*1.01, hz+rtZ*s*0.15+fwdZ*s*0.13, s*0.07, s*0.07, s*0.04, amberEye, yaw);
+    pushBox(list, hx-rtX*s*0.15+fwdX*s*0.13, y+s*1.01, hz-rtZ*s*0.15+fwdZ*s*0.13, s*0.07, s*0.07, s*0.04, amberEye, yaw);
+    // Erect ears with tan inner
+    pushBox(list, hx+rtX*s*0.26, y+s*1.26, hz+rtZ*s*0.26, s*0.09, s*0.22, s*0.06, darkChoc,  yaw);
+    pushBox(list, hx-rtX*s*0.26, y+s*1.26, hz-rtZ*s*0.26, s*0.09, s*0.22, s*0.06, darkChoc,  yaw);
+    pushBox(list, hx+rtX*s*0.26, y+s*1.24, hz+rtZ*s*0.26, s*0.04, s*0.14, s*0.03, innerEarR, yaw);
+    pushBox(list, hx-rtX*s*0.26, y+s*1.24, hz-rtZ*s*0.26, s*0.04, s*0.14, s*0.03, innerEarR, yaw);
+    // Tail
+    const tlx = wx-fwdX*s*0.72, tlz = wz-fwdZ*s*0.72;
+    const tyw = yaw + wagAngle*0.5 + 0.4;
+    pushBox(list, tlx, y+s*0.84, tlz, s*0.08, s*0.08, s*0.20, darkChoc, tyw);
+    pushBox(list, tlx-sin(tyw)*s*0.16, y+s*0.84, tlz-cos(tyw)*s*0.16, s*0.07, s*0.07, s*0.10, tanPatch, tyw+0.3);
+    // Legs
+    [[s*0.28, s*0.40],[-s*0.28, s*0.40],[s*0.28,-s*0.40],[-s*0.28,-s*0.40]].forEach(([lat,lon]) => {
+      const hip = add(rotY(v3(lat, s*0.38, lon), yaw), v3(wx, y, wz));
+      const lC  = add(hip, rotY(v3(0,-s*0.21,0), yaw));
+      const pC  = add(hip, rotY(v3(0,-s*0.22,0), yaw));
+      pushBox(list, lC.x, lC.y, lC.z, s*0.10, s*0.21, s*0.10, darkChoc, yaw);
+      pushBox(list, pC.x, pC.y-s*0.04, pC.z, s*0.12, s*0.05, s*0.12, creamMuz, yaw);
     });
   }
 
@@ -3017,7 +3263,9 @@
     villageScratchQuads.length = 0;
     // When playing as Scratch herself she IS the player — no companion to draw
     if (activeCharacter === 'scratch') return;
-    if (activeCharacter !== 'obsidian' || obsidianArea !== 'village' || !obsidianPupFollowing) return;
+    // Once Obsidian reaches the village, Scratch is independent — stop following
+    if (activeCharacter !== 'obsidian' || obsidianArea !== 'village') return;
+    if (!obsidianPupFollowing || obsidianArea === 'village') return;
     const FOLLOW_DIST = 2.2;
     const tx = dogState.x - sin(dogState.yaw) * FOLLOW_DIST;
     const tz = dogState.z - cos(dogState.yaw) * FOLLOW_DIST;
@@ -3395,15 +3643,22 @@
       scratch:    { x:  2, z: 36  }, ruff:       { x:  6, z: -20 },
       bark:       { x:  6, z:  22 },
     };
+    const PACK_LABELS = {
+      wark: 'Wark 🐾', newmoon: 'New Moon 🌙', cheeseball: 'Cheeseball 🧡',
+      obsidian: 'Obsidian 🌑', scratch: 'Scratch 🐕', ruff: 'Ruff 🍂', bark: 'Bark 🐶',
+    };
     for (const npc of PACK_GATHER_NPC) {
       if (npc.id === activeCharacter) continue;              // don't render self
       if (!getVillageDogs().includes(npc.id)) continue;     // not in village yet
       const pos = _cvp[npc.id] || PACK_DEFAULT_POS[npc.id] || { x: 0, z: 30 };
-      // addNpcDog label so proximity chat works
+      const niceName = npc.id.charAt(0).toUpperCase() + npc.id.slice(1);
+      // Store in clearingNPCs with pack-member flag so drawNpcBubbles can label them
       clearingNPCs.push({
         wx: pos.x, wz: pos.z, s: 1.0, fur: npc.fur, yaw: pos.yaw ?? 0,
-        text: npc.id.charAt(0).toUpperCase() + npc.id.slice(1) + ' is here!',
-        type: 'adult', ears: npc.ears,
+        label: PACK_LABELS[npc.id],                   // floating name-tag pill
+        text: niceName + ' is hanging out here.',     // proximity speech bubble
+        type: 'packMember', ears: npc.ears,
+        packId: npc.id,
       });
       addNpcDog(npcQuads, pos.x, pos.z, 1.0, npc.fur, pos.yaw ?? 0, npc.ears);
     }
@@ -3893,21 +4148,22 @@
       dbox( 0.33, 1.44, 0.68, 0.07, 0.08, 0.07, bDark);  // ear tip (slightly rounder)
       dbox(-0.33, 1.44, 0.68, 0.07, 0.08, 0.07, bDark);
 
-      // ── Shiba-style curled tail (curls up over back, less side-wag) ──────
+      // ── Shiba-style curled tail — all coords scaled by dogGrowScale ────────
+      const sc  = dogGrowScale;
       const bWag = sin(wagT) * 0.28;
-      const bt0 = add(rotY(v3(0, 0.84, -0.54), yaw), v3(x,y,z));
-      pushBox(dogQuads, bt0.x, bt0.y, bt0.z, 0.10, 0.10, 0.20, bMid, yaw+bWag*0.3);
-      const bt1dir = rotY(rotX(v3(0, 0.28, -0.10), -1.0+bWag*0.2), yaw);
+      const bt0 = add(rotY(v3(0, 0.84*sc, -0.54*sc), yaw), v3(x,y,z));
+      pushBox(dogQuads, bt0.x, bt0.y, bt0.z, 0.10*sc, 0.10*sc, 0.20*sc, bMid, yaw+bWag*0.3);
+      const bt1dir = rotY(rotX(v3(0, 0.28*sc, -0.10*sc), -1.0+bWag*0.2), yaw);
       const bt1    = add(bt0, bt1dir);
-      pushBox(dogQuads, bt1.x, bt1.y, bt1.z, 0.09, 0.09, 0.16, bDark, yaw+bWag*0.5, -1.0);
-      const bt2dir = rotY(rotX(v3(0, 0.16,  0.06), -1.8+bWag*0.3), yaw);
+      pushBox(dogQuads, bt1.x, bt1.y, bt1.z, 0.09*sc, 0.09*sc, 0.16*sc, bDark, yaw+bWag*0.5, -1.0);
+      const bt2dir = rotY(rotX(v3(0, 0.16*sc,  0.06*sc), -1.8+bWag*0.3), yaw);
       const bt2    = add(bt1, bt2dir);
-      pushBox(dogQuads, bt2.x, bt2.y, bt2.z, 0.10, 0.10, 0.10, bMid, yaw+bWag*0.7, -1.8);
-      const bt3dir = rotY(rotX(v3(0, 0.08,  0.10), -2.3+bWag*0.2), yaw);
+      pushBox(dogQuads, bt2.x, bt2.y, bt2.z, 0.10*sc, 0.10*sc, 0.10*sc, bMid, yaw+bWag*0.7, -1.8);
+      const bt3dir = rotY(rotX(v3(0, 0.08*sc,  0.10*sc), -2.3+bWag*0.2), yaw);
       const bt3    = add(bt2, bt3dir);
-      pushBox(dogQuads, bt3.x, bt3.y, bt3.z, 0.09, 0.09, 0.09, bCream, yaw+bWag, -2.3);
+      pushBox(dogQuads, bt3.x, bt3.y, bt3.z, 0.09*sc, 0.09*sc, 0.09*sc, bCream, yaw+bWag, -2.3);
 
-      // ── Legs — dark upper, amber lower, tan paws ──────────────────────────
+      // ── Legs — dark upper, amber lower, tan paws (all proportions scaled) ─
       const bLegs = [
         [ 0.28, 0.18,  0.42, frontLegAngle],
         [-0.28, 0.18,  0.42,-frontLegAngle],
@@ -3915,20 +4171,17 @@
         [-0.28, 0.18, -0.42, backLegAngle],
       ];
       bLegs.forEach(([lx,ly,lz,ang]) => {
-        const hipLocal = v3(lx, 0.38, lz);
+        const hipLocal = v3(lx*sc, 0.38*sc, lz*sc);
         const hipWorld = add(rotY(hipLocal, yaw), v3(x,y,z));
-        // upper leg — dark body colour
-        const upOff = rotY(rotX(v3(0,-0.12,0), ang), yaw);
+        const upOff = rotY(rotX(v3(0,-0.12*sc,0), ang), yaw);
         const upC   = add(hipWorld, upOff);
-        pushBox(dogQuads, upC.x, upC.y, upC.z, 0.11, 0.12, 0.11, bDark, yaw, ang);
-        // lower leg — tan marking
-        const loOff = rotY(rotX(v3(0,-0.21,0), ang), yaw);
+        pushBox(dogQuads, upC.x, upC.y, upC.z, 0.11*sc, 0.12*sc, 0.11*sc, bDark, yaw, ang);
+        const loOff = rotY(rotX(v3(0,-0.21*sc,0), ang), yaw);
         const loC   = add(hipWorld, loOff);
-        pushBox(dogQuads, loC.x, loC.y, loC.z, 0.10, 0.10, 0.10, bTan, yaw, ang);
-        // paw
-        const pawOff = rotY(rotX(v3(0,-0.27,0), ang), yaw);
+        pushBox(dogQuads, loC.x, loC.y, loC.z, 0.10*sc, 0.10*sc, 0.10*sc, bTan, yaw, ang);
+        const pawOff = rotY(rotX(v3(0,-0.27*sc,0), ang), yaw);
         const pawC   = add(hipWorld, pawOff);
-        pushBox(dogQuads, pawC.x, pawC.y - 0.05, pawC.z, 0.13, 0.06, 0.13, bDeepTan, yaw, ang);
+        pushBox(dogQuads, pawC.x, pawC.y - 0.05*sc, pawC.z, 0.13*sc, 0.06*sc, 0.13*sc, bDeepTan, yaw, ang);
       });
       return;
     }
@@ -4628,11 +4881,12 @@
     const sx = sin(ds.yaw), sz = cos(ds.yaw);
     const moving = keys['ArrowUp'] || keys['ArrowDown'] || (inRuffBattle && (keys['ArrowLeft']||keys['ArrowRight']));
 
-    // Speed bonus from equipped jewelry + moon blessing
+    // Speed bonus from equipped jewelry + moon blessing + Ruff opal/copper necklace
     const _eff = (typeof getActiveEffects === 'function') ? getActiveEffects() : {};
     _moon = getMoonBlessing();
-    const _spd = MOVE_SPEED * (1 + (_eff.speed || 0) * 0.20) * (_moon ? 1.40 : 1);
-    const _bck = BACK_SPEED * (1 + (_eff.speed || 0) * 0.20) * (_moon ? 1.40 : 1);
+    const _ruffBoost = hasRuffSpeedNecklace() ? 2.4 : 1;
+    const _spd = MOVE_SPEED * (1 + (_eff.speed || 0) * 0.20) * (_moon ? 1.40 : 1) * _ruffBoost;
+    const _bck = BACK_SPEED * (1 + (_eff.speed || 0) * 0.20) * (_moon ? 1.40 : 1) * _ruffBoost;
     const _jumpVel = JUMP_VEL * (_moon ? 1.55 : 1);
 
     if (keys['ArrowUp']) {
@@ -4945,10 +5199,14 @@
                 if (itemIdx !== -1) {
                   inventory[itemIdx].count = (inventory[itemIdx].count || 1) - 1;
                   if (inventory[itemIdx].count <= 0) inventory.splice(itemIdx, 1);
-                  wobCoins += q.reward;
+                  const charmBonus = hasCheeseballCharmNecklace() ? Math.ceil(q.reward * 0.5) : 0;
+                  const totalReward = q.reward + charmBonus;
+                  wobCoins += totalReward;
                   q.status = 'done';
                   document.getElementById('wob-count').textContent = wobCoins;
-                  toastMsg   = `🎉 Quest complete! ${def.name} delivered! +${q.reward} 🪙`;
+                  toastMsg   = charmBonus > 0
+                    ? `🎉 They adore you! ${def.name} delivered! +${totalReward} 🪙 (+${charmBonus} charm bonus!)`
+                    : `🎉 Quest complete! ${def.name} delivered! +${totalReward} 🪙`;
                   toastTimer = 320;
                   saveProgress();
                 }
@@ -4970,12 +5228,15 @@
               ctx.globalAlpha = 1;
               if (keysJustPressed.has('KeyE')) {
                 keysJustPressed.delete('KeyE');
-                wobCoins += q.reward;
+                const charmBonusL = hasCheeseballCharmNecklace() ? Math.ceil(q.reward * 0.5) : 0;
+                wobCoins += q.reward + charmBonusL;
                 q.status = 'done';
                 document.getElementById('wob-count').textContent = wobCoins;
                 const doneLabel = q.locateType === 'toy' ? 'Toy returned!' :
                                   q.locateType === 'sister' ? 'Sister found!' : 'Quest complete!';
-                toastMsg   = `🎉 ${doneLabel} +${q.reward} 🪙`;
+                toastMsg   = charmBonusL > 0
+                  ? `🎉 ${doneLabel} +${q.reward + charmBonusL} 🪙 (+${charmBonusL} charm bonus!)`
+                  : `🎉 ${doneLabel} +${q.reward} 🪙`;
                 toastTimer = 320;
                 saveProgress();
               }
@@ -5015,7 +5276,8 @@
       if (dialogueCooldown > 0) dialogueCooldown--;
       // Meet Biscuit at the back fence (Biscuit is at x=0, z=36)
       if (dialogueCooldown === 0 && cbNpcPhase === 0 && Math.hypot(ds.x, ds.z - 30) < 5.5) {
-        activeDialogueArr = CB_NEIGHBOR_DLG;
+        // Charm necklace: Biscuit is immediately won over and extra enthusiastic
+        activeDialogueArr = hasCheeseballCharmNecklace() ? CB_NEIGHBOR_CHARM_DLG : CB_NEIGHBOR_DLG;
         dialogueIndex = 0; gameState = 'cutscene'; showDialogue(0);
       }
       // Pick up squeaky toy (at x=8.5, z=50.5)
@@ -5124,8 +5386,8 @@
     // camera follows behind dog
     camYawTarget = ds.yaw;
     cam.yaw = lerp(cam.yaw, camYawTarget, 0.08);
-    const CAM_DIST = (activeCharacter === 'bark' && !barkInVillage) ? 2.0 : 6.5;
-    const CAM_H    = (activeCharacter === 'bark' && !barkInVillage) ? 1.2 : 3.5;
+    const CAM_DIST = (activeCharacter === 'bark' && !barkInVillage) ? 3.5 : 6.5;
+    const CAM_H    = (activeCharacter === 'bark' && !barkInVillage) ? 1.6 : 3.5;
     const targetPos = v3(
       ds.x - sin(cam.yaw) * CAM_DIST,
       ds.y + CAM_H,
@@ -5134,7 +5396,7 @@
     cam.pos.x = lerp(cam.pos.x, targetPos.x, 0.08);
     cam.pos.y = lerp(cam.pos.y, targetPos.y, 0.08);
     cam.pos.z = lerp(cam.pos.z, targetPos.z, 0.08);
-    cam.pitch = 0.28;
+    cam.pitch = (activeCharacter === 'bark' && !barkInVillage) ? 0.36 : 0.28;
   }
 
   function buildArrivalNpcQuads() {
@@ -5430,6 +5692,47 @@
     if (isInVillage()) drawVillageSigns();
     if (isInVillage()) drawQuestObjLabels();
     drawLostPupBubbles();
+    // Bark emotion necklace — draw auras over NPCs
+    renderBarkEmotionAuras();
+    // Cheeseball charm necklace — floating hearts near NPCs
+    if (hasCheeseballCharmNecklace()) {
+      const ds2 = dogState;
+      const allNpcs = clearingNPCs;
+      let nearAny = false;
+      for (const n of allNpcs) {
+        const d = Math.hypot(ds2.x - n.wx, ds2.z - n.wz);
+        if (d < 8) { nearAny = true; break; }
+      }
+      if (nearAny) {
+        const now2 = performance.now() / 1000;
+        for (let hi = 0; hi < 5; hi++) {
+          const hx = W/2 + Math.cos(now2 * 1.8 + hi * 1.26) * (38 + hi * 9);
+          const hy = H/2 - 60 - Math.abs(Math.sin(now2 * 2.1 + hi * 0.9)) * 30;
+          ctx.globalAlpha = 0.70 - hi * 0.08;
+          ctx.font = `${14 - hi}px Arial`;
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText('💕', hx, hy);
+        }
+        ctx.globalAlpha = 0.80;
+        ctx.font = 'bold 11px Arial';
+        ctx.fillStyle = '#ff90c8';
+        ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
+        ctx.fillText('💕 Charm Active', W - 10, H - 28);
+      }
+      ctx.globalAlpha = 1;
+      ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+    }
+    // Scratch armour necklace — shield indicator
+    if (hasScratchArmourNecklace()) {
+      const now3 = performance.now() / 1000;
+      ctx.globalAlpha = 0.70 + 0.15 * Math.sin(now3 * 2.0);
+      ctx.font = 'bold 11px Arial';
+      ctx.fillStyle = '#e0e8ff';
+      ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
+      ctx.fillText('🛡️ Stone Armour · protected', W - 10, H - 10);
+      ctx.globalAlpha = 1;
+      ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+    }
     // toast pop message
     if (toastTimer > 0) {
       const ta = Math.min(1, toastTimer / 24);
@@ -5477,6 +5780,33 @@
       const sp = project(v3(npc.wx, DOG_FLOOR + 1.60 * npc.s, npc.wz), cam);
       if (!sp) return;
       const dist = Math.sqrt((npc.wx - dogState.x) ** 2 + (npc.wz - dogState.z) ** 2);
+
+      // ── Pack-member floating name tag — always visible up to 30 units ──
+      if (npc.type === 'packMember' && dist < 30) {
+        const tagAlpha = Math.max(0, Math.min(1, (28 - dist) / 10));
+        const tagSp = project(v3(npc.wx, DOG_FLOOR + 2.10 * npc.s, npc.wz), cam);
+        if (tagSp && tagAlpha > 0) {
+          ctx.save();
+          ctx.globalAlpha = tagAlpha;
+          ctx.font = 'bold 13px Arial';
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          const label = npc.label || npc.text;
+          const tw = ctx.measureText(label).width;
+          const pw = tw + 14, ph = 18, px = tagSp.x - pw / 2, py = tagSp.y - ph / 2;
+          // pill background
+          ctx.fillStyle = 'rgba(10,8,20,0.82)';
+          ctx.beginPath();
+          ctx.roundRect(px, py, pw, ph, 8);
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(200,180,255,0.55)';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+          ctx.fillStyle = '#e8d8ff';
+          ctx.fillText(label, tagSp.x, tagSp.y);
+          ctx.restore();
+        }
+      }
+
       if (dist > 13) return;
       const alpha = Math.max(0, Math.min(1, (11 - dist) / 3.5));
       const isAdult = npc.type === 'adult';
@@ -5722,49 +6052,14 @@
     { id:'bark',       x: 1.8, z:-18, s:1.0, fur:0xd4a860, ears:'triangle' },
   ];
 
-  // Prof. Maple stands near bed 7 (x=0, z=-22) facing the entrance.
+  // Pack-gather cutscene: Prof. Maple greets the final arriving pup.
+  // No pup introductions — just Maple (with Bramble + Sage flanking her).
   function buildPackGatherDlg(activeChar) {
-    // The six OTHER pups that were waiting
-    const others = PACK_GATHER_NPC.filter(n => n.id !== activeChar);
-    const dlg = [];
-    // Prof. Maple opens
-    dlg.push({ speaker: 'Prof. Maple 🍁', text: '…Here they come.' });
-    // Each waiting pup introduces themselves (in order, skip the active one)
-    const intros = {
-      wark:       { speaker: 'Wark 🐾',        text: "I'm Wark. I came from the forest. These pups are my lost pups — I found every one of them." },
-      newmoon:    { speaker: 'New Moon 🌙',     text: "I'm New Moon. I woke up here not long ago. I still don't know everything about this place." },
-      cheeseball: { speaker: 'Cheeseball 🧡',  text: "I'm Cheeseball! I came from a human home. Still not totally sure how I ended up here, but I love it." },
-      obsidian:   { speaker: 'Obsidian 🌑',    text: "I'm Obsidian. I came from the city. I'll admit — I didn't think I'd end up somewhere like this." },
-      scratch:    { speaker: 'Scratch 🐕',     text: "I'm Scratch. Obsidian found me. I follow them around — I can handle myself, though." },
-      ruff:       { speaker: 'Ruff 🍂',        text: "Name's Ruff. Got swept here by a river. Thought I was done for. Turns out… maybe not." },
-      bark:       { speaker: 'Bark 🐶',        text: "And I'm Bark! I've been sniffing around my little house wondering when everyone else would show up!" },
-    };
-    // Show each pup's intro except the active character
-    for (const npc of others) {
-      if (intros[npc.id]) dlg.push(intros[npc.id]);
-    }
-    // The active character introduces themselves last
-    if (intros[activeChar]) {
-      const self = { ...intros[activeChar] };
-      // Tweak slightly to feel like a response
-      const selfLines = {
-        wark:       "And me? I'm Wark. I built this pack — I'm glad everyone finally made it.",
-        newmoon:    "…And I'm New Moon. I wasn't expecting to find so many others like me.",
-        cheeseball: "And I'm Cheeseball! Wow, we're all really here! This is amazing!",
-        obsidian:   "I'm Obsidian. I didn't know there were so many of us.",
-        scratch:    "I'm Scratch. Didn't know what to expect. Still figuring it out.",
-        ruff:       "I'm Ruff. Didn't think I'd be standing here saying that to a room full of dogs.",
-        bark:       "I'm Bark. And honestly? I've been waiting for this moment.",
-      };
-      self.text = selfLines[activeChar] || self.text;
-      dlg.push(self);
-    }
-    // Prof. Maple has the last word before missions unlock
-    dlg.push(
-      { speaker: 'Prof. Maple 🍁', text: 'Seven pups… it\'s not enough for a pack, but…' },
-      { speaker: 'Prof. Maple 🍁', text: '…Anyways. I believe you are all ready.' },
-    );
-    return dlg;
+    return [
+      { speaker: 'Prof. Maple 🍁', text: '…And there you are.' },
+      { speaker: 'Prof. Maple 🍁', text: 'Seven pups. I\'ve been expecting you.' },
+      { speaker: 'Prof. Maple 🍁', text: 'The village is yours now. I believe you are all ready.' },
+    ];
   }
   const barkQuads         = [];   // Bark ground floor + back yard geometry
   const barkColliders     = [];   // Bark furniture / object colliders
@@ -7138,6 +7433,12 @@
     { speaker: 'Cheeseball 🐩', text: "I would love to help you, except... there is a fence here!" },
     { speaker: 'Biscuit 🐕', text: "Oh! Sorry — here, let me fix that!" },
   ];
+  const CB_NEIGHBOR_CHARM_DLG = [
+    { speaker: 'Biscuit 🐕', text: "Cheeseball! You look absolutely adorable today! 💕" },
+    { speaker: 'Biscuit 🐕', text: "Oh wait — I lost my squeaky toy! But YOU would know where it is, wouldn't you?" },
+    { speaker: 'Cheeseball 🐩', text: "I would love to help! But the fence..." },
+    { speaker: 'Biscuit 🐕', text: "Say no more! I'll dig a hole right now just for you! 💛" },
+  ];
   const CB_RETURN_DLG = [
     { speaker: 'Cheeseball 🐩', text: "I found it, Biscuit! Here’s your squeaky toy!" },
     { speaker: 'Biscuit 🐕', text: "My squeaky toy!! You found it! Thank you SO much, Cheeseball!! 💛" },
@@ -7378,10 +7679,12 @@
         updateSwitcherBar();
         return;
       }
-      if (activeDialogueArr === CB_NEIGHBOR_DLG) {
+      if (activeDialogueArr === CB_NEIGHBOR_DLG || activeDialogueArr === CB_NEIGHBOR_CHARM_DLG) {
         cbNpcPhase = 1;
         buildCbHole();
-        toastMsg   = 'Biscuit dug a hole under the fence! Go explore the neighborhood! 🐾';
+        toastMsg   = hasCheeseballCharmNecklace()
+          ? 'Biscuit dug a hole in record time! She just adores you! 💕🐾'
+          : 'Biscuit dug a hole under the fence! Go explore the neighborhood! 🐾';
         toastTimer = 320;
         saveProgress();
       } else if (activeDialogueArr === CB_RETURN_DLG) {
@@ -8007,7 +8310,12 @@
       const r = 3 + seedRng() * 22;
       const mx = Math.cos(a) * r, mz = Math.sin(a) * r - 5;
       if (isInRiver(mx, mz)) continue;  // mushrooms don't grow in the river
-      const def = weightedPick(MUSHROOMS, getTimeOfDay());
+      let def = weightedPick(MUSHROOMS, getTimeOfDay());
+      // Wark's Platinum/Quartz necklace: dramatically boosts mushroom rarity
+      if (hasWarkEnhancedNecklace() && def && RARITY_RANK[def.rarity] <= 1 && Math.random() < 0.72) {
+        const luckyPool = MUSHROOMS.filter(d => RARITY_RANK[d.rarity] >= 2);
+        if (luckyPool.length) def = weightedPick(luckyPool, getTimeOfDay()) || def;
+      }
       const defIdx = MUSHROOMS.indexOf(def);
       const sc = 0.18 + seedRng() * 0.14;
       const qStart = forestQuads.length;
@@ -8028,8 +8336,13 @@
       const r = 5 + seedRng() * 18;
       const ax = Math.cos(a) * r, az = Math.sin(a) * r - 5;
       if (isInRiver(ax, az)) continue;  // land animals stay dry
-      const def = weightedPick(ANIMALS.filter(an => !an.water), getTimeOfDay());
+      let def = weightedPick(ANIMALS.filter(an => !an.water), getTimeOfDay());
       if (!def) continue;
+      // Wark's Platinum/Quartz necklace: dramatically boosts animal rarity
+      if (hasWarkEnhancedNecklace() && RARITY_RANK[def.rarity] <= 1 && Math.random() < 0.72) {
+        const luckyAnimal = ANIMALS.filter(an => !an.water && RARITY_RANK[an.rarity] >= 2);
+        if (luckyAnimal.length) def = weightedPick(luckyAnimal, getTimeOfDay()) || def;
+      }
       const defIdx = ANIMALS.indexOf(def);
       const sc = 0.22 + seedRng() * 0.10;
       // Simple animal silhouette: body + head + 4 legs
@@ -10875,18 +11188,16 @@
       // White coat panel on his chest (the -x-facing side)
       pushBox(drStoneQ, 1.70, DOG_FLOOR + 0.60, -21.5, 0.04, 0.24, 0.32, 0xe6e8e2);
     }
-    // Pack gathering cutscene: show the OTHER 6 pups waiting in the cave
+    // Pack gathering cutscene: show Prof. Maple (centre), Bramble (left), Sage (right)
     const packNpcQ = [];
     const _gsRender = getGlobalSave();
     if (!_gsRender.packGatherDone && getVillageDogs().length >= 7 && activeDialogueArr === packGatherDlg && packGatherDlg.length > 0) {
-      const villageSet = new Set(getVillageDogs());
-      for (const npc of PACK_GATHER_NPC) {
-        if (npc.id === activeCharacter) continue;  // player is the one entering
-        if (!villageSet.has(npc.id)) continue;     // skip if not in village yet
-        addNpcDog(packNpcQ, npc.x, npc.z, npc.s, npc.fur, Math.PI, npc.ears);
-      }
-      // Prof. Maple — tan fur, triangle ears, faces entrance (south)
-      addNpcDog(packNpcQ, 0, -25.5, 1.55, 0xc07840, Math.PI, 'triangle');
+      // Prof. Maple — centre, facing entrance (south = Math.PI)
+      addNpcDog(packNpcQ,  0,   -25.5, 1.55, 0xc07840, Math.PI, 'triangle');
+      // Chef Bramble — left of Maple
+      addNpcDog(packNpcQ, -2.5, -25.0, 1.55, 0x9a5028, Math.PI, 'floppy');
+      // Dr. Sage — right of Maple
+      addNpcDog(packNpcQ,  2.5, -25.0, 1.50, 0x508868, Math.PI, 'floppy');
     }
     const allQ = [...caveQuads, ...dogQuads, ...drStoneQ, ...packNpcQ];
     const fogHex = 0x100c08;
@@ -10954,32 +11265,21 @@
         ctx.globalAlpha = 1;
       }
     }
-    // Pack gather: floating name labels above waiting pups
+    // Pack gather: name labels for Maple, Bramble, Sage
     if (!_gsRender.packGatherDone && activeDialogueArr === packGatherDlg && packGatherDlg.length > 0) {
-      const nameEmoji = { wark:'Wark 🐾', newmoon:'New Moon 🌙', cheeseball:'Cheeseball 🧡',
-        obsidian:'Obsidian 🌑', scratch:'Scratch 🐕', ruff:'Ruff 🍂', bark:'Bark 🐶' };
-      const nameColor = { wark:'#f0c870', newmoon:'#a8c8ff', cheeseball:'#ffb060',
-        obsidian:'#a090c8', scratch:'#c8a870', ruff:'#d8b878', bark:'#ffe090' };
-      for (const npc of PACK_GATHER_NPC) {
-        if (npc.id === activeCharacter) continue;
-        const lsp = project(v3(npc.x, DOG_FLOOR + npc.s * 1.5, npc.z), cam);
-        if (!lsp) continue;
-        ctx.globalAlpha = 0.90;
-        ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-        ctx.font = 'bold 12px Arial';
-        ctx.fillStyle = nameColor[npc.id] || 'rgba(220,200,160,0.90)';
-        ctx.fillText(nameEmoji[npc.id] || npc.id, lsp.x, lsp.y - 4);
+      const cutNpcs = [
+        { x:  0,   z: -25.5, label: 'Prof. Maple 🍁', color: 'rgba(200,230,160,0.94)' },
+        { x: -2.5, z: -25.0, label: 'Chef Bramble 🍖', color: 'rgba(220,160,100,0.90)' },
+        { x:  2.5, z: -25.0, label: 'Dr. Sage 🌿',    color: 'rgba(140,220,160,0.90)' },
+      ];
+      cutNpcs.forEach(({ x, z, label, color }) => {
+        const sp = project(v3(x, DOG_FLOOR + 2.3, z), cam);
+        if (!sp) return;
+        ctx.globalAlpha = 0.90; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+        ctx.font = 'bold 13px Arial'; ctx.fillStyle = color;
+        ctx.fillText(label, sp.x, sp.y - 4);
         ctx.globalAlpha = 1;
-      }
-      // Prof. Maple label
-      const mpSp = project(v3(0, DOG_FLOOR + 2.3, -25.5), cam);
-      if (mpSp) {
-        ctx.globalAlpha = 0.88;
-        ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-        ctx.font = 'bold 13px Arial'; ctx.fillStyle = 'rgba(200,230,160,0.94)';
-        ctx.fillText('Prof. Maple 🍁', mpSp.x, mpSp.y - 4);
-        ctx.globalAlpha = 1;
-      }
+      });
     }
     // Exit hint
     if (dogState.z > 0) {
@@ -12971,6 +13271,115 @@
     }, 900);  // delay so the area-enter toast has faded first
   }
 
+  // ── Character-specific signature necklaces ───────────────────────────────
+
+  // Scratch: Sandstone + Tin Ore → stone armour (can't be hurt)
+  function hasScratchArmourNecklace() {
+    if (activeCharacter !== 'scratch') return false;
+    if (equippedNecklace < 0 || equippedNecklace >= jewelryBox.length) return false;
+    const j = jewelryBox[equippedNecklace];
+    if (j.type !== 'necklace') return false;
+    const mDef = j.metalIdx >= 0 ? METALS[j.metalIdx] : null;
+    const rDef = j.rockIdx  >= 0 ? ROCKS[j.rockIdx]   : null;
+    return !!(mDef?.name === 'Tin Ore' && rDef?.name === 'Sandstone');
+  }
+
+  // Cheeseball: Ruby + Gold Ore → charm (50% better NPC approval)
+  function hasCheeseballCharmNecklace() {
+    if (activeCharacter !== 'cheeseball') return false;
+    if (equippedNecklace < 0 || equippedNecklace >= jewelryBox.length) return false;
+    const j = jewelryBox[equippedNecklace];
+    if (j.type !== 'necklace') return false;
+    const mDef = j.metalIdx >= 0 ? METALS[j.metalIdx] : null;
+    const rDef = j.rockIdx  >= 0 ? ROCKS[j.rockIdx]   : null;
+    const isGold = mDef && (mDef.name === 'Gold Ore');
+    const isRuby = rDef && (rDef.name === 'Ruby' || rDef.name === 'Fine Ruby' || rDef.name === 'Star Ruby');
+    return !!(isGold && isRuby);
+  }
+
+  // Ruff: Opal + Copper Ore → speed boost (very fast)
+  function hasRuffSpeedNecklace() {
+    if (activeCharacter !== 'ruff') return false;
+    if (equippedNecklace < 0 || equippedNecklace >= jewelryBox.length) return false;
+    const j = jewelryBox[equippedNecklace];
+    if (j.type !== 'necklace') return false;
+    const mDef = j.metalIdx >= 0 ? METALS[j.metalIdx] : null;
+    const rDef = j.rockIdx  >= 0 ? ROCKS[j.rockIdx]   : null;
+    const isCopper = mDef && mDef.name === 'Copper Ore';
+    const isOpal   = rDef && (rDef.name === 'Opal' || rDef.name === 'Fire Opal' ||
+                               rDef.name === 'Black Opal' || rDef.name === 'Chocolate Opal');
+    return !!(isCopper && isOpal);
+  }
+
+  // Bark: Opal + Bronze Ore → emotion sense (see aura colours around NPCs)
+  function hasBarkEmotionNecklace() {
+    if (activeCharacter !== 'bark') return false;
+    if (equippedNecklace < 0 || equippedNecklace >= jewelryBox.length) return false;
+    const j = jewelryBox[equippedNecklace];
+    if (j.type !== 'necklace') return false;
+    const mDef = j.metalIdx >= 0 ? METALS[j.metalIdx] : null;
+    const rDef = j.rockIdx  >= 0 ? ROCKS[j.rockIdx]   : null;
+    const isBronze = mDef && mDef.name === 'Bronze Ore';
+    const isOpal   = rDef && (rDef.name === 'Opal' || rDef.name === 'Fire Opal' ||
+                               rDef.name === 'Black Opal' || rDef.name === 'Chocolate Opal');
+    return !!(isBronze && isOpal);
+  }
+
+  // Emotion colour table for Bark's aura reading
+  const EMOTION_AURAS = [
+    { emotion: 'Loving',   color: '#ff80c0', hex: 0xff80c0 },
+    { emotion: 'Happy',    color: '#ffe84a', hex: 0xffe84a },
+    { emotion: 'Content',  color: '#60d870', hex: 0x60d870 },
+    { emotion: 'Peaceful', color: '#80d0ff', hex: 0x80d0ff },
+    { emotion: 'Curious',  color: '#d080ff', hex: 0xd080ff },
+    { emotion: 'Nervous',  color: '#ff9940', hex: 0xff9940 },
+    { emotion: 'Sad',      color: '#6090c8', hex: 0x6090c8 },
+    { emotion: 'Angry',    color: '#ff3030', hex: 0xff3030 },
+  ];
+
+  // Draw emotion aura halos over every visible NPC when Bark has the emotion necklace
+  function renderBarkEmotionAuras() {
+    if (!hasBarkEmotionNecklace()) return;
+    const now = performance.now() / 1000;
+    function drawAura(wx, wz, emoIdx) {
+      const emo = EMOTION_AURAS[emoIdx % EMOTION_AURAS.length];
+      const sp  = project(v3(wx, 0.9, wz), cam);
+      if (!sp) return;
+      const pulse = 0.72 + Math.sin(now * 2.2 + emoIdx) * 0.28;
+      ctx.save();
+      ctx.globalAlpha = 0.55 * pulse;
+      const grad = ctx.createRadialGradient(sp.x, sp.y, 4, sp.x, sp.y, 38);
+      grad.addColorStop(0, emo.color);
+      grad.addColorStop(1, 'transparent');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.ellipse(sp.x, sp.y, 38, 22, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 0.90;
+      ctx.font = 'bold 9px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = emo.color;
+      ctx.fillText(emo.emotion, sp.x, sp.y - 26);
+      ctx.restore();
+    }
+    if (!barkInVillage) {
+      // Bark's cave: mother dog and sleeping sibling
+      drawAura(-2.5, -3.5, 0);  // Loving (mother)
+      drawAura( 1.0, -1.5, 3);  // Peaceful (sleeping sibling)
+    } else {
+      // Village: clearing NPCs
+      clearingNPCs.forEach((n, i) => {
+        const hash = (Math.abs(Math.round(n.wx * 7 + n.wz * 13)) + i) % EMOTION_AURAS.length;
+        drawAura(n.wx, n.wz, hash);
+      });
+      // Village kids
+      villageKids.forEach((k, i) => {
+        const hash = (Math.abs(Math.round((k.x || 0) * 5 + (k.z || 0) * 11)) + i + 4) % EMOTION_AURAS.length;
+        drawAura(k.x || 0, k.z || 0, hash);
+      });
+    }
+  }
+
   // ── Jewelry Box UI ───────────────────────────────────────────────────────
   function openJewelryBox() {
     jewelryBoxOpen = true;
@@ -13054,6 +13463,58 @@
       if (isPlatinum && isQuartz) {
         setTimeout(() => {
           toastMsg   = '💙 "That\'s weird… I feel enhanced."';
+          toastTimer = 480;
+        }, 200);
+      }
+    }
+    // Scratch special reaction to Sandstone + Tin Ore necklace
+    if (activeCharacter === 'scratch' && j.type === 'necklace') {
+      const mDef = j.metalIdx >= 0 ? METALS[j.metalIdx] : null;
+      const rDef = j.rockIdx  >= 0 ? ROCKS[j.rockIdx]   : null;
+      if (mDef?.name === 'Tin Ore' && rDef?.name === 'Sandstone') {
+        setTimeout(() => {
+          toastMsg   = '🛡️ "Whoa… I feel like nothing can hurt me!"';
+          toastTimer = 480;
+        }, 200);
+      }
+    }
+    // Cheeseball special reaction to Ruby + Gold Ore necklace
+    if (activeCharacter === 'cheeseball' && j.type === 'necklace') {
+      const mDef = j.metalIdx >= 0 ? METALS[j.metalIdx] : null;
+      const rDef = j.rockIdx  >= 0 ? ROCKS[j.rockIdx]   : null;
+      const isGold = mDef?.name === 'Gold Ore';
+      const isRuby = rDef && (rDef.name === 'Ruby' || rDef.name === 'Fine Ruby' || rDef.name === 'Star Ruby');
+      if (isGold && isRuby) {
+        setTimeout(() => {
+          toastMsg   = '💕 "Ooh, I feel irresistibly charming right now!"';
+          toastTimer = 480;
+        }, 200);
+      }
+    }
+    // Ruff special reaction to Opal + Copper Ore necklace
+    if (activeCharacter === 'ruff' && j.type === 'necklace') {
+      const mDef = j.metalIdx >= 0 ? METALS[j.metalIdx] : null;
+      const rDef = j.rockIdx  >= 0 ? ROCKS[j.rockIdx]   : null;
+      const isCopper = mDef?.name === 'Copper Ore';
+      const isOpal   = rDef && (rDef.name === 'Opal' || rDef.name === 'Fire Opal' ||
+                                  rDef.name === 'Black Opal' || rDef.name === 'Chocolate Opal');
+      if (isCopper && isOpal) {
+        setTimeout(() => {
+          toastMsg   = '⚡ "Whoa — I feel SO fast all of a sudden!"';
+          toastTimer = 480;
+        }, 200);
+      }
+    }
+    // Bark special reaction to Opal + Bronze Ore necklace
+    if (activeCharacter === 'bark' && j.type === 'necklace') {
+      const mDef = j.metalIdx >= 0 ? METALS[j.metalIdx] : null;
+      const rDef = j.rockIdx  >= 0 ? ROCKS[j.rockIdx]   : null;
+      const isBronze = mDef?.name === 'Bronze Ore';
+      const isOpal   = rDef && (rDef.name === 'Opal' || rDef.name === 'Fire Opal' ||
+                                  rDef.name === 'Black Opal' || rDef.name === 'Chocolate Opal');
+      if (isBronze && isOpal) {
+        setTimeout(() => {
+          toastMsg   = '🌈 "I can… feel their feelings? This is incredible."';
           toastTimer = 480;
         }, 200);
       }
