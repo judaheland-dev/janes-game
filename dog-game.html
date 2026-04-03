@@ -84,7 +84,7 @@
       border-color: rgba(200,88,38,0.88);
       box-shadow: 0 12px 52px rgba(160,65,20,0.50);
     }
-    .canine-card--bark canvas { background: #d4c0a0; }
+    .canine-card--bark canvas { background: #b8a480; }
     .canine-name--bark { color: #d4905a !important; text-shadow: 0 0 14px rgba(210,115,45,0.55); }
     .canine-card canvas {
       border-radius: 14px;
@@ -3883,19 +3883,23 @@
     const _nj = (v, r, lo, hi) => Math.max(lo, Math.min(hi, v + (Math.random()*2-1)*r));
     const _ny = () => Math.random() * Math.PI * 2;
     const vNpcs = [
-      // Adults 0–7 — wander up to ±5 units from their home spot
-      { wx:_nj(  3,5,-19,19), wz:_nj( 30,5,-34,39), s:1.55, fur:0x9a7850, yaw:_ny(), text:'Welcome to the village!',           type:'adult', ears:'triangle' },
-      { wx:_nj( -9,5,-19,19), wz:_nj( 14,5,-34,39), s:1.45, fur:0x708068, yaw:_ny(), text:'Nice day today!',                    type:'adult', ears:'floppy'   },
-      { wx:_nj(  9,5,-19,19), wz:_nj( -1,5,-34,39), s:1.60, fur:0x4a3a28, yaw:_ny(), text:'Busy busy...',                        type:'adult', ears:'triangle' },
-      { wx:_nj(-12,5,-19,19), wz:_nj(  4,5,-34,39), s:1.50, fur:0x787870, yaw:_ny(), text:'Where is that pup?',                     type:'adult', ears:'floppy'   },
-      { wx:_nj(  8,5,-19,19), wz:_nj(-22,5,-34,39), s:1.45, fur:0xc09060, yaw:_ny(), text:'Hi there!',                           type:'adult', ears:'triangle' },
-      { wx:_nj(-10,5,-19,19), wz:_nj(-26,5,-34,39), s:1.60, fur:0x3a2a18, yaw:_ny(), text:'This is your cave.',                     type:'adult', ears:'floppy'   },
-      { wx:_nj( 19,4,-19,21), wz:_nj( -6,5,-34,39), s:1.55, fur:0x9a7058, yaw:_ny(), text:'Lovely view from the east side!',    type:'adult', ears:'triangle' },
-      { wx:_nj( -4,5,-19,19), wz:_nj(-13,5,-34,39), s:1.50, fur:0x5878a0, yaw:_ny(), text:'That well has been here forever...', type:'adult', ears:'floppy'   },
-      // Static kids 8–10 — smaller wander range
-      { wx:_nj(  4,3,-18,18), wz:_nj(-11,3,-34,38), s:1.12, fur:0xe07840, yaw:_ny(), text:'The water is so shiny!',              type:'kid',   ears:'floppy'   },
-      { wx:_nj( 17,3,-18,21), wz:_nj( -5,3,-34,38), s:1.08, fur:0x70a060, yaw:_ny(), text:'Where does the east path go?',        type:'kid',   ears:'triangle' },
-      { wx:_nj( -7,3,-18,18), wz:_nj( 24,3,-34,38), s:1.10, fur:0xa060b0, yaw:_ny(), text:'Come play with us!',                  type:'kid',   ears:'floppy'   },
+      // Adults 0–7 — named, wander up to ±4 units from home
+      { wx:_nj(  4,4,-18,18), wz:_nj( 30,4,-34,38), s:1.55, fur:0x9a7850, yaw:_ny(), name:'Wren',    text:'Fresh arrivals always brighten our day!',    type:'adult', ears:'triangle' },
+      { wx:_nj( -9,4,-18,18), wz:_nj( 16,4,-34,38), s:1.45, fur:0x708068, yaw:_ny(), name:'Boggy',   text:'The west trail has lovely old trees!',        type:'adult', ears:'floppy'   },
+      { wx:_nj(  9,4,-18,18), wz:_nj( -1,4,-34,38), s:1.60, fur:0x4a3a28, yaw:_ny(), name:'Fetlock', text:'Always something to do around here!',         type:'adult', ears:'triangle' },
+      { wx:_nj(-12,4,-18,18), wz:_nj(  5,4,-34,38), s:1.50, fur:0x787870, yaw:_ny(), name:'Clover',  text:'Have you explored all the paths yet?',        type:'adult', ears:'floppy'   },
+      { wx:_nj(  8,4,-18,21), wz:_nj(-22,4,-34,38), s:1.45, fur:0xc09060, yaw:_ny(), name:'Rustle',  text:'The Science Center smells wonderful today!',  type:'adult', ears:'triangle' },
+      { wx:_nj(-10,4,-18,18), wz:_nj(-26,4,-34,38), s:1.60, fur:0x3a2a18, yaw:_ny(), name:'Ember',   text:'The Pouch Factory never stops running!',      type:'adult', ears:'floppy'   },
+      { wx:_nj( 19,3,-18,22), wz:_nj( -6,4,-34,38), s:1.55, fur:0x9a7058, yaw:_ny(), name:'Sable',   text:'Beautiful view from the east side!',          type:'adult', ears:'triangle' },
+      { wx:_nj( -4,4,-18,18), wz:_nj(-13,4,-34,38), s:1.50, fur:0x5878a0, yaw:_ny(), name:'Thorn',   text:'The well water runs cold and clear!',         type:'adult', ears:'floppy'   },
+      // Kids 8–10 — smaller wander range
+      { wx:_nj(  5,3,-16,16), wz:_nj(-10,3,-34,36), s:1.12, fur:0xe07840, yaw:_ny(), name:'Pip',     text:'Catch me if you can!',                       type:'kid',   ears:'floppy'   },
+      { wx:_nj( 17,3,-18,22), wz:_nj( -5,3,-34,38), s:1.08, fur:0x70a060, yaw:_ny(), name:'Finch',   text:'I found something shiny over here!',          type:'kid',   ears:'triangle' },
+      { wx:_nj( -7,3,-18,16), wz:_nj( 24,3,-34,38), s:1.10, fur:0xa060b0, yaw:_ny(), name:'Dew',     text:'Come and play with us!',                     type:'kid',   ears:'floppy'   },
+      // New adults 11–13 — near garden, bakery, herbalist
+      { wx:_nj( -6.5,2,-8,-5), wz:_nj(21,2,18,25), s:1.52, fur:0x6a9448, yaw:_ny(), name:'Sage',    text:'The garden is growing beautifully!',          type:'adult', ears:'floppy'   },
+      { wx:_nj( 22,2,20,25),   wz:_nj(27,2,24,31), s:1.48, fur:0xd8b070, yaw:_ny(), name:'Oakley',  text:'Fresh bread from the bakery this morning!',   type:'adult', ears:'triangle' },
+      { wx:_nj(-23,2,-26,-20), wz:_nj(23,2,20,26), s:1.55, fur:0x5a7848, yaw:_ny(), name:'Briar',   text:'These herbs can heal all sorts of ailments!', type:'adult', ears:'floppy'   },
     ];
     vNpcs.forEach(n => {
       const _sp = outOfBuildings(n.wx, n.wz); n.wx = _sp.x; n.wz = _sp.z;
@@ -7794,106 +7798,233 @@
   // ── Canine portrait: Bark ────────────────────────────────────────────────
   function drawPreviewBark(pc, W, H) {
     const cx = W / 2;
-    // ── Warm indoor background (lamp light, wood floor) ──────────────────
+
+    // ── Background: warm blurred indoor scene ─────────────────────────────
     const bg = pc.createLinearGradient(0, 0, 0, H);
-    bg.addColorStop(0, '#c8b89a'); bg.addColorStop(0.60, '#baa880'); bg.addColorStop(1, '#a08860');
+    bg.addColorStop(0,    '#c8b898');
+    bg.addColorStop(0.55, '#b8a880');
+    bg.addColorStop(1,    '#8c7050');
     pc.fillStyle = bg; pc.fillRect(0, 0, W, H);
-    // Warm lamp glow top-right
-    const lamp = pc.createRadialGradient(W*0.88, H*0.06, 2, W*0.88, H*0.06, W*0.72);
-    lamp.addColorStop(0, 'rgba(255,225,150,0.55)');
-    lamp.addColorStop(0.5, 'rgba(220,170,70,0.18)');
-    lamp.addColorStop(1,   'rgba(0,0,0,0)');
-    pc.fillStyle = lamp; pc.fillRect(0, 0, W, H);
-    // Floor / baseboard
-    pc.fillStyle = '#a08050'; pc.fillRect(0, H*0.80, W, H*0.20);
-    pc.strokeStyle = 'rgba(130,90,35,0.30)'; pc.lineWidth = 1;
-    [H*0.84, H*0.90, H*0.96].forEach(ly => {
+
+    // Soft window light upper-left
+    const winLight = pc.createRadialGradient(W*0.08, H*0.05, 2, W*0.08, H*0.05, W*0.80);
+    winLight.addColorStop(0,   'rgba(255,248,220,0.55)');
+    winLight.addColorStop(0.4, 'rgba(240,225,180,0.18)');
+    winLight.addColorStop(1,   'rgba(0,0,0,0)');
+    pc.fillStyle = winLight; pc.fillRect(0, 0, W, H);
+
+    // Curtain panel top-left (vertical light drape)
+    pc.fillStyle = 'rgba(225,215,195,0.55)';
+    pc.beginPath();
+    pc.moveTo(0, 0); pc.lineTo(W*0.22, 0); pc.lineTo(W*0.18, H*0.68); pc.lineTo(0, H*0.72);
+    pc.closePath(); pc.fill();
+    // curtain folds
+    pc.strokeStyle = 'rgba(180,165,140,0.40)'; pc.lineWidth = 1;
+    [W*0.06, W*0.12, W*0.17].forEach(fx => {
+      pc.beginPath(); pc.moveTo(fx, 0); pc.bezierCurveTo(fx+W*0.02, H*0.25, fx-W*0.02, H*0.50, fx+W*0.01, H*0.68); pc.stroke();
+    });
+
+    // Small potted plant top-right
+    pc.fillStyle = '#6a4820'; pc.fillRect(W*0.76, H*0.10, W*0.14, H*0.16);
+    pc.fillStyle = '#3a6420'; pc.beginPath(); pc.ellipse(W*0.83, H*0.08, W*0.09, H*0.07, 0, 0, PI*2); pc.fill();
+    pc.fillStyle = '#2e5018'; pc.beginPath(); pc.ellipse(W*0.80, H*0.06, W*0.05, H*0.04, -0.4, 0, PI*2); pc.fill();
+    pc.fillStyle = '#2e5018'; pc.beginPath(); pc.ellipse(W*0.87, H*0.05, W*0.05, H*0.04,  0.4, 0, PI*2); pc.fill();
+
+    // Dresser/cabinet top-right background
+    pc.fillStyle = '#7a5828'; pc.fillRect(W*0.64, H*0.24, W*0.36, H*0.55);
+    pc.fillStyle = '#6a4a1e'; pc.fillRect(W*0.64, H*0.22, W*0.36, H*0.04);
+    // Dresser drawer lines
+    pc.strokeStyle = 'rgba(90,60,20,0.40)'; pc.lineWidth = 1;
+    [H*0.34, H*0.46, H*0.57].forEach(dy => {
+      pc.beginPath(); pc.moveTo(W*0.66, dy); pc.lineTo(W*0.98, dy); pc.stroke();
+    });
+    // Drawer handles
+    pc.fillStyle = '#b89050';
+    [[W*0.78, H*0.40],[W*0.78, H*0.52],[W*0.78, H*0.63]].forEach(([hx,hy]) => {
+      pc.beginPath(); pc.arc(hx, hy, W*0.018, 0, PI*2); pc.fill();
+    });
+
+    // Wood floor
+    pc.fillStyle = '#8c6838'; pc.fillRect(0, H*0.80, W, H*0.20);
+    pc.fillStyle = '#7a5a2e'; pc.fillRect(0, H*0.80, W, H*0.025);
+    pc.strokeStyle = 'rgba(100,70,25,0.28)'; pc.lineWidth = 0.8;
+    [H*0.85, H*0.90, H*0.95].forEach(ly => {
       pc.beginPath(); pc.moveTo(0, ly); pc.lineTo(W, ly); pc.stroke();
     });
-    // Hint of furniture / dresser top-right
-    pc.fillStyle = '#8a6030';
-    pc.fillRect(W*0.68, H*0.28, W*0.32, H*0.50);
-    pc.fillStyle = '#7a5020';
-    pc.fillRect(W*0.68, H*0.26, W*0.32, H*0.04);
-    // Curtain hint top-left
-    pc.fillStyle = 'rgba(210,200,180,0.40)';
-    pc.fillRect(0, 0, W*0.18, H*0.72);
-    // ── Round dog bed ─────────────────────────────────────────────────────
-    const bCX = cx, bCY = H * 0.83;
-    // Shadow under bed
-    pc.fillStyle = 'rgba(40,20,5,0.22)';
-    pc.beginPath(); pc.ellipse(bCX, bCY+H*0.050, W*0.46, H*0.038, 0, 0, PI*2); pc.fill();
-    // Bed rim (grey)
-    pc.fillStyle = '#8a8480'; pc.beginPath(); pc.ellipse(bCX, bCY, W*0.44, H*0.105, 0, 0, PI*2); pc.fill();
-    pc.fillStyle = '#6e6a66'; pc.beginPath(); pc.ellipse(bCX, bCY, W*0.37, H*0.088, 0, 0, PI*2); pc.fill();
-    // Bed cushion interior (cream/light grey)
-    pc.fillStyle = '#cec8c0'; pc.beginPath(); pc.ellipse(bCX, bCY+H*0.010, W*0.30, H*0.070, 0, 0, PI*2); pc.fill();
-    // ── Near-black body curled in bed ─────────────────────────────────────
-    const dCY = H * 0.770;
-    // Main body — very dark
-    pc.fillStyle = '#1e0e06';
-    pc.beginPath(); pc.ellipse(cx+W*0.04, dCY+H*0.012, W*0.26, H*0.088, 0.12, 0, PI*2); pc.fill();
-    // Body shadow layer
-    pc.fillStyle = '#140804';
-    pc.beginPath(); pc.ellipse(cx+W*0.04, dCY+H*0.036, W*0.20, H*0.058, 0.16, 0, PI*2); pc.fill();
-    // Curled Shiba tail over back (tan at tip)
-    pc.fillStyle = '#2a1408';
-    pc.beginPath(); pc.ellipse(cx+W*0.27, dCY+H*0.016, W*0.100, H*0.048, -0.55, 0, PI*2); pc.fill();
-    pc.fillStyle = '#eac880';  // cream tail tip
-    pc.beginPath(); pc.ellipse(cx+W*0.31, dCY+H*0.008, W*0.024, H*0.016, -0.55, 0, PI*2); pc.fill();
-    // Front paws — tan/amber lower legs stretched forward
-    pc.fillStyle = '#2a1408';
-    pc.beginPath(); pc.ellipse(cx-W*0.24, dCY+H*0.060, W*0.09, H*0.032, 0.06, 0, PI*2); pc.fill();
-    pc.fillStyle = '#c87828';  // amber paw colour
-    pc.beginPath(); pc.ellipse(cx-W*0.23, dCY+H*0.072, W*0.07, H*0.022, 0.06, 0, PI*2); pc.fill();
-    // Paw toe dots
-    pc.fillStyle = '#a86020';
-    [-0.28, -0.22, -0.17].forEach(ox => {
-      pc.beginPath(); pc.arc(cx+ox*W, dCY+H*0.076, W*0.011, 0, PI*2); pc.fill();
+    [W*0.18, W*0.42, W*0.66].forEach(lx => {
+      pc.beginPath(); pc.moveTo(lx, H*0.80); pc.lineTo(lx, H); pc.stroke();
     });
-    // ── Neck ──────────────────────────────────────────────────────────────
-    pc.fillStyle = '#1e0e06';
-    pc.beginPath(); pc.ellipse(cx-W*0.09, dCY-H*0.050, W*0.082, H*0.050, 0.46, 0, PI*2); pc.fill();
+
+    // ── Round dog bed ──────────────────────────────────────────────────────
+    const bCX = cx, bCY = H * 0.855;
+    // Bed shadow
+    pc.fillStyle = 'rgba(30,15,5,0.28)';
+    pc.beginPath(); pc.ellipse(bCX+W*0.02, bCY+H*0.040, W*0.48, H*0.040, 0, 0, PI*2); pc.fill();
+    // Outer rim — taupe/grey-brown like the photo
+    pc.fillStyle = '#7e7268';
+    pc.beginPath(); pc.ellipse(bCX, bCY, W*0.46, H*0.115, 0, 0, PI*2); pc.fill();
+    pc.fillStyle = '#6a6258';
+    pc.beginPath(); pc.ellipse(bCX, bCY, W*0.40, H*0.098, 0, 0, PI*2); pc.fill();
+    // Cushion surface — light cream/beige fleece
+    const cushion = pc.createRadialGradient(bCX-W*0.06, bCY-H*0.018, W*0.04, bCX, bCY+H*0.010, W*0.34);
+    cushion.addColorStop(0, '#e8e0d4');
+    cushion.addColorStop(0.6, '#d8d0c4');
+    cushion.addColorStop(1, '#c0b8ac');
+    pc.fillStyle = cushion;
+    pc.beginPath(); pc.ellipse(bCX, bCY+H*0.012, W*0.32, H*0.076, 0, 0, PI*2); pc.fill();
+    // Fleece texture marks
+    pc.strokeStyle = 'rgba(180,170,158,0.45)'; pc.lineWidth = 0.7;
+    for (let ti = 0; ti < 8; ti++) {
+      const ta = (ti / 8) * PI * 2, tr = W * 0.14;
+      pc.beginPath();
+      pc.moveTo(bCX + Math.cos(ta)*tr*0.4, bCY + H*0.012 + Math.sin(ta)*tr*0.22);
+      pc.lineTo(bCX + Math.cos(ta)*tr,     bCY + H*0.012 + Math.sin(ta)*tr*0.55);
+      pc.stroke();
+    }
+
+    // ── Curled body (dark choc/mahogany with amber flanks) ────────────────
+    const dCY = H * 0.780;
+
+    // Amber/tan flank visible behind body (right side)
+    pc.fillStyle = '#c8782a';
+    pc.beginPath(); pc.ellipse(cx+W*0.20, dCY+H*0.028, W*0.14, H*0.065, -0.30, 0, PI*2); pc.fill();
+    pc.fillStyle = '#e89040';
+    pc.beginPath(); pc.ellipse(cx+W*0.22, dCY+H*0.020, W*0.09, H*0.040, -0.30, 0, PI*2); pc.fill();
+
+    // Main body mass — very dark chocolate brown
+    pc.fillStyle = '#2a1208';
+    pc.beginPath(); pc.ellipse(cx+W*0.03, dCY+H*0.018, W*0.27, H*0.092, 0.10, 0, PI*2); pc.fill();
+    pc.fillStyle = '#1e0c04';
+    pc.beginPath(); pc.ellipse(cx+W*0.01, dCY+H*0.038, W*0.20, H*0.065, 0.14, 0, PI*2); pc.fill();
+
+    // Fluffy tail curled over rump (dark + amber fluff tip)
+    pc.fillStyle = '#3a1a08';
+    pc.beginPath(); pc.ellipse(cx+W*0.30, dCY-H*0.005, W*0.095, H*0.050, -0.60, 0, PI*2); pc.fill();
+    pc.fillStyle = '#2a1006';
+    pc.beginPath(); pc.ellipse(cx+W*0.28, dCY-H*0.012, W*0.065, H*0.034, -0.60, 0, PI*2); pc.fill();
+    // cream/amber tail tip
+    pc.fillStyle = '#d4946a';
+    pc.beginPath(); pc.ellipse(cx+W*0.33, dCY-H*0.022, W*0.030, H*0.020, -0.60, 0, PI*2); pc.fill();
+    pc.fillStyle = '#edd8b0';
+    pc.beginPath(); pc.ellipse(cx+W*0.35, dCY-H*0.028, W*0.016, H*0.012, -0.60, 0, PI*2); pc.fill();
+
+    // Front legs/paws stretched forward (tan amber)
+    pc.fillStyle = '#3a1a08';
+    pc.beginPath(); pc.ellipse(cx-W*0.20, dCY+H*0.068, W*0.110, H*0.036, 0.05, 0, PI*2); pc.fill();
+    pc.fillStyle = '#c87830';   // amber paw
+    pc.beginPath(); pc.ellipse(cx-W*0.18, dCY+H*0.080, W*0.085, H*0.026, 0.05, 0, PI*2); pc.fill();
+    // Second paw slightly behind
+    pc.fillStyle = '#2a1208';
+    pc.beginPath(); pc.ellipse(cx-W*0.08, dCY+H*0.072, W*0.095, H*0.030, 0.05, 0, PI*2); pc.fill();
+    pc.fillStyle = '#b87028';
+    pc.beginPath(); pc.ellipse(cx-W*0.07, dCY+H*0.082, W*0.072, H*0.022, 0.05, 0, PI*2); pc.fill();
+    // Toe details
+    pc.fillStyle = '#a06018';
+    [-0.26, -0.19, -0.13].forEach(ox => {
+      pc.beginPath(); pc.arc(cx+ox*W, dCY+H*0.086, W*0.010, 0, PI*2); pc.fill();
+    });
+
+    // ── Neck connecting to head ────────────────────────────────────────────
+    pc.fillStyle = '#2a1208';
+    pc.beginPath(); pc.ellipse(cx-W*0.06, dCY-H*0.045, W*0.088, H*0.055, 0.40, 0, PI*2); pc.fill();
+    // Amber chest/throat patch
+    pc.fillStyle = '#c87830';
+    pc.beginPath(); pc.ellipse(cx-W*0.08, dCY-H*0.024, W*0.050, H*0.032, 0.40, 0, PI*2); pc.fill();
+
     // ── Head ──────────────────────────────────────────────────────────────
-    const hCY = dCY - H*0.158;
-    pc.fillStyle = '#1e0e06';
-    pc.beginPath(); pc.arc(cx-W*0.082, hCY, W*0.155, 0, PI*2); pc.fill();
-    // ── Erect ears (wide-set, rounded tips, warm cinnamon inner) ──────────
-    // Left ear (viewer's right)
-    pc.fillStyle = '#160a04';
-    pc.beginPath(); pc.ellipse(cx-W*0.218, hCY-H*0.038, W*0.048, H*0.066, -0.20, 0, PI*2); pc.fill();
-    // Right ear (viewer's left)
-    pc.beginPath(); pc.ellipse(cx+W*0.038, hCY-H*0.036, W*0.044, H*0.062, 0.22, 0, PI*2); pc.fill();
-    // Cinnamon inner ear
-    pc.fillStyle = '#7a4020';
-    pc.beginPath(); pc.ellipse(cx-W*0.213, hCY-H*0.032, W*0.028, H*0.040, -0.20, 0, PI*2); pc.fill();
-    pc.beginPath(); pc.ellipse(cx+W*0.034, hCY-H*0.030, W*0.026, H*0.038, 0.22, 0, PI*2); pc.fill();
-    // ── Amber muzzle (wide, warm) ─────────────────────────────────────────
-    pc.fillStyle = '#c87828';
-    pc.beginPath(); pc.ellipse(cx-W*0.082, hCY+H*0.030, W*0.082, H*0.044, 0, 0, PI*2); pc.fill();
-    // Pale muzzle tip
-    pc.fillStyle = '#eac880';
-    pc.beginPath(); pc.ellipse(cx-W*0.082, hCY+H*0.036, W*0.050, H*0.028, 0, 0, PI*2); pc.fill();
-    // ── Distinct amber eyebrow spots ─────────────────────────────────────
-    pc.fillStyle = '#d08830';
-    pc.beginPath(); pc.ellipse(cx-W*0.148, hCY-H*0.022, W*0.030, H*0.018, 0, 0, PI*2); pc.fill();
-    pc.beginPath(); pc.ellipse(cx-W*0.026, hCY-H*0.022, W*0.026, H*0.016, 0, 0, PI*2); pc.fill();
-    // ── Nose ─────────────────────────────────────────────────────────────
-    pc.fillStyle = '#100806';
-    pc.beginPath(); pc.ellipse(cx-W*0.082, hCY+H*0.008, W*0.030, H*0.020, 0, 0, PI*2); pc.fill();
-    pc.fillStyle = 'rgba(255,220,200,0.32)';
-    pc.beginPath(); pc.arc(cx-W*0.094, hCY+H*0.003, W*0.008, 0, PI*2); pc.fill();
-    // ── Warm honey-amber eyes, looking forward ────────────────────────────
-    [[cx-W*0.148, hCY-H*0.008],[cx-W*0.028, hCY-H*0.008]].forEach(([ex,ey]) => {
-      pc.fillStyle = 'rgba(210,135,30,0.30)'; pc.beginPath(); pc.arc(ex, ey, W*0.040, 0, PI*2); pc.fill();
-      pc.fillStyle = '#d08820'; pc.beginPath(); pc.arc(ex, ey, W*0.028, 0, PI*2); pc.fill();
-      pc.fillStyle = '#a86010'; pc.beginPath(); pc.arc(ex, ey, W*0.018, 0, PI*2); pc.fill();
-      pc.fillStyle = '#100806'; pc.beginPath(); pc.arc(ex, ey, W*0.011, 0, PI*2); pc.fill();
-      pc.fillStyle = '#fff5d0'; pc.beginPath(); pc.arc(ex+W*0.009, ey-W*0.009, W*0.007, 0, PI*2); pc.fill();
+    const hCX = cx - W*0.072;
+    const hCY = dCY - H*0.175;
+
+    // Head base — dark chocolate
+    pc.fillStyle = '#2a1208';
+    pc.beginPath(); pc.arc(hCX, hCY, W*0.158, 0, PI*2); pc.fill();
+
+    // Amber/tan face mask (the warm tan on forehead + cheeks visible in photo)
+    pc.fillStyle = '#c87830';
+    pc.beginPath(); pc.ellipse(hCX, hCY+H*0.010, W*0.095, H*0.078, 0, 0, PI*2); pc.fill();
+    pc.fillStyle = '#d48838';
+    pc.beginPath(); pc.ellipse(hCX, hCY+H*0.020, W*0.078, H*0.060, 0, 0, PI*2); pc.fill();
+
+    // ── Pointed erect ears ─────────────────────────────────────────────────
+    // Left ear (viewer's right) — slightly tilted out
+    pc.fillStyle = '#1e0c04';
+    pc.beginPath();
+    pc.moveTo(hCX - W*0.13, hCY - H*0.02);
+    pc.lineTo(hCX - W*0.22, hCY - H*0.145);
+    pc.lineTo(hCX - W*0.06, hCY - H*0.110);
+    pc.closePath(); pc.fill();
+    // Inner ear left (cream-tan)
+    pc.fillStyle = '#c8906a';
+    pc.beginPath();
+    pc.moveTo(hCX - W*0.135, hCY - H*0.025);
+    pc.lineTo(hCX - W*0.205, hCY - H*0.125);
+    pc.lineTo(hCX - W*0.078, hCY - H*0.098);
+    pc.closePath(); pc.fill();
+
+    // Right ear (viewer's left) — slightly closer, more upright
+    pc.fillStyle = '#1e0c04';
+    pc.beginPath();
+    pc.moveTo(hCX + W*0.06, hCY - H*0.02);
+    pc.lineTo(hCX + W*0.07, hCY - H*0.155);
+    pc.lineTo(hCX + W*0.17, hCY - H*0.085);
+    pc.closePath(); pc.fill();
+    // Inner ear right
+    pc.fillStyle = '#c8906a';
+    pc.beginPath();
+    pc.moveTo(hCX + W*0.065, hCY - H*0.028);
+    pc.lineTo(hCX + W*0.074, hCY - H*0.132);
+    pc.lineTo(hCX + W*0.148, hCY - H*0.076);
+    pc.closePath(); pc.fill();
+
+    // Forehead dark cap (top of head is darker than face)
+    pc.fillStyle = 'rgba(26,10,4,0.55)';
+    pc.beginPath(); pc.ellipse(hCX, hCY - H*0.055, W*0.130, H*0.076, 0, 0, PI*2); pc.fill();
+
+    // ── Creamy white muzzle ────────────────────────────────────────────────
+    pc.fillStyle = '#ead8b0';
+    pc.beginPath(); pc.ellipse(hCX, hCY + H*0.045, W*0.075, H*0.038, 0, 0, PI*2); pc.fill();
+    pc.fillStyle = '#f0e4c4';
+    pc.beginPath(); pc.ellipse(hCX, hCY + H*0.052, W*0.052, H*0.026, 0, 0, PI*2); pc.fill();
+
+    // ── Nose ──────────────────────────────────────────────────────────────
+    pc.fillStyle = '#130a06';
+    pc.beginPath(); pc.ellipse(hCX, hCY + H*0.020, W*0.032, H*0.022, 0, 0, PI*2); pc.fill();
+    // Nose highlight
+    pc.fillStyle = 'rgba(255,215,195,0.38)';
+    pc.beginPath(); pc.arc(hCX - W*0.010, hCY + H*0.013, W*0.008, 0, PI*2); pc.fill();
+
+    // ── Eyes looking directly at viewer ───────────────────────────────────
+    // Eye whites/sclera (slight visible on outer corners)
+    [[hCX - W*0.078, hCY - H*0.020],[hCX + W*0.048, hCY - H*0.018]].forEach(([ex,ey]) => {
+      // Outer glow / almond shape
+      pc.fillStyle = 'rgba(80,50,20,0.35)';
+      pc.beginPath(); pc.ellipse(ex, ey, W*0.045, H*0.032, 0, 0, PI*2); pc.fill();
+      // Iris — dark warm brown with lighter ring
+      pc.fillStyle = '#6a4010'; pc.beginPath(); pc.arc(ex, ey, W*0.033, 0, PI*2); pc.fill();
+      pc.fillStyle = '#4a2c0a'; pc.beginPath(); pc.arc(ex, ey, W*0.024, 0, PI*2); pc.fill();
+      // Pupil
+      pc.fillStyle = '#0e0806'; pc.beginPath(); pc.arc(ex, ey, W*0.015, 0, PI*2); pc.fill();
+      // Catch-light (sharp white dot — the soulful look in the photo)
+      pc.fillStyle = '#ffffff'; pc.beginPath(); pc.arc(ex + W*0.008, ey - W*0.009, W*0.009, 0, PI*2); pc.fill();
+      pc.fillStyle = 'rgba(255,255,255,0.50)'; pc.beginPath(); pc.arc(ex - W*0.006, ey + W*0.006, W*0.004, 0, PI*2); pc.fill();
     });
-    // ── Subtle vignette ───────────────────────────────────────────────────
-    const vig = pc.createRadialGradient(cx, H*0.60, H*0.12, cx, H*0.60, H*0.52);
-    vig.addColorStop(0, 'rgba(0,0,0,0)'); vig.addColorStop(1, 'rgba(100,60,20,0.20)');
+
+    // Subtle eye outline
+    pc.strokeStyle = 'rgba(20,8,2,0.55)'; pc.lineWidth = 1;
+    [[hCX - W*0.078, hCY - H*0.020],[hCX + W*0.048, hCY - H*0.018]].forEach(([ex,ey]) => {
+      pc.beginPath(); pc.ellipse(ex, ey, W*0.036, H*0.028, 0, 0, PI*2); pc.stroke();
+    });
+
+    // Eyebrow marks (amber tan dots above each eye — very visible in the photo)
+    pc.fillStyle = '#d08030';
+    pc.beginPath(); pc.ellipse(hCX - W*0.075, hCY - H*0.060, W*0.028, H*0.016, 0, 0, PI*2); pc.fill();
+    pc.beginPath(); pc.ellipse(hCX + W*0.048, hCY - H*0.058, W*0.025, H*0.014, 0, 0, PI*2); pc.fill();
+
+    // ── Vignette & warmth overlay ─────────────────────────────────────────
+    const vig = pc.createRadialGradient(cx, H*0.55, H*0.08, cx, H*0.55, H*0.54);
+    vig.addColorStop(0,   'rgba(0,0,0,0)');
+    vig.addColorStop(0.7, 'rgba(40,20,5,0.10)');
+    vig.addColorStop(1,   'rgba(20,8,2,0.35)');
     pc.fillStyle = vig; pc.fillRect(0, 0, W, H);
   }
 
