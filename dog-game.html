@@ -214,7 +214,7 @@
     #reset-btn.hidden { display: none; }
     /* ── WOB Coins HUD ────────────────────────────────────────────── */
     #wob-coins {
-      position: fixed; top: 10px; left: 50%; transform: translateX(-50%);
+      position: fixed; top: 10px; left: 14px;
       z-index: 60;
       background: rgba(10,8,2,0.88);
       border: 1.5px solid rgba(255,200,50,0.55);
@@ -2051,6 +2051,57 @@
     pushBox(barkForestQuads,  7, 0.3,  -5, 0.6, 0.3, 0.5, ROCK_C);
   }
 
+  // ── Bark's Deep Forest ────────────────────────────────────────────────────
+  function buildBarkDeepForest() {
+    barkDeepForestQuads.length = 0;
+    const SOIL1 = 0x1a1008, SOIL2 = 0x221408, DIRT = 0x3a2410;
+    const BARK_C = 0x2a1808, BARK2 = 0x3a2010;
+    const LEAF1 = 0x1a3a10, LEAF2 = 0x142e0c, LEAF3 = 0x203818;
+    const ROOT = 0x2e1c0a, BUSH1 = 0x1e3010, MOSS2 = 0x283c14;
+
+    // ── Forest floor ──────────────────────────────────────────────────────
+    for (let fx = -6; fx <= 5; fx += 1.0) {
+      for (let fz = -25; fz <= 9; fz += 1.0) {
+        const g = ((Math.abs(Math.floor(fx)) + Math.abs(Math.floor(fz))) & 1);
+        barkDeepForestQuads.push({ verts:[v3(fx,0,fz),v3(fx+1,0,fz),v3(fx+1,0,fz+1),v3(fx,0,fz+1)],
+          color: g ? SOIL1 : SOIL2, normal:v3(0,1,0), isGround:true });
+      }
+    }
+    // Dirt path centre strip
+    for (let pz = -25; pz <= 9; pz += 0.9) {
+      barkDeepForestQuads.push({ verts:[v3(-1.2,0.01,pz),v3(1.2,0.01,pz),v3(1.2,0.01,pz+0.9),v3(-1.2,0.01,pz+0.9)],
+        color: DIRT, normal:v3(0,1,0), isGround:false });
+    }
+    // Gnarled root ridges crossing the path
+    for (const rz of [-3, -8, -13, -19]) {
+      pushBox(barkDeepForestQuads, 0, 0.12, rz, 2.8, 0.12, 0.16, ROOT);
+    }
+    // ── Dense trees — left bank ───────────────────────────────────────────
+    for (const [tx, tz] of [[-4.2,2],[-5.5,-3],[-4.0,-7],[-5.8,-11],[-4.5,-16],[-6.2,-20],[-4.2,-23],
+                             [-7.5,0],[-8.8,-5],[-7.2,-10],[-8.8,-15],[-7.5,-21],[-10,-3],[-11,-9],[-10,-17]]) {
+      const lc = [LEAF1,LEAF2,LEAF3][Math.abs(Math.floor(tx+tz))%3];
+      pushBox(barkDeepForestQuads, tx, 2.5, tz, 0.35, 2.5, 0.35, BARK_C);
+      pushBox(barkDeepForestQuads, tx, 5.4, tz, 1.9,  1.2, 1.9, lc);
+      pushBox(barkDeepForestQuads, tx, 6.8, tz, 1.1,  0.9, 1.1, LEAF2);
+    }
+    // ── Dense trees — right bank ──────────────────────────────────────────
+    for (const [tx, tz] of [[4.2,1],[5.5,-4],[4.2,-8],[5.8,-12],[4.5,-17],[6.2,-21],[4.2,-24],
+                             [7.5,-1],[8.8,-6],[7.2,-11],[8.8,-16],[7.5,-22],[10,-4],[11,-10],[10,-18]]) {
+      const lc = [LEAF1,LEAF2,LEAF3][Math.abs(Math.floor(tx+tz))%3];
+      pushBox(barkDeepForestQuads, tx, 2.5, tz, 0.35, 2.5, 0.35, BARK2);
+      pushBox(barkDeepForestQuads, tx, 5.4, tz, 1.9,  1.2, 1.9, lc);
+      pushBox(barkDeepForestQuads, tx, 6.8, tz, 1.1,  0.9, 1.1, LEAF3);
+    }
+    // ── Low undergrowth flanking path ─────────────────────────────────────
+    for (const [bx, bz] of [[-2.2,0],[-2.0,-5],[-2.4,-10],[-2.1,-15],[-2.3,-20],
+                              [2.2,-2],[2.0,-7],[2.4,-12],[2.1,-17],[2.3,-22]]) {
+      pushBox(barkDeepForestQuads, bx, 0.38, bz, 0.70, 0.38, 0.55, BUSH1);
+      pushBox(barkDeepForestQuads, bx, 0.20, bz, 0.70, 0.20, 0.55, MOSS2);
+    }
+    // ── Overhead canopy ───────────────────────────────────────────────────
+    pushBox(barkDeepForestQuads, 0, 7.8, -8, 6, 0.5, 18, LEAF2);
+  }
+
   // ── Bark Upstairs ─────────────────────────────────────────────────────────
   function buildBarkUpstairs() {
     barkUpstairsQuads.length = 0;
@@ -3846,7 +3897,7 @@
     // Growth scale: Obsidian slowly grows; Bark starts as a tiny newborn pup
     const dogGrowScale = (activeCharacter === 'obsidian' && obsidianShardPhase >= 3)
       ? 1.0 + Math.min(obsidianDaysPostNecklace * 0.14, 0.42)
-      : (activeCharacter === 'bark' && !barkInVillage && !barkInForest)
+      : (activeCharacter === 'bark' && !barkInVillage && !barkInForest && !barkDeepForest)
       ? 0.38
       : 1.0;
 
@@ -5156,7 +5207,7 @@
     }
 
     // Bark: den boundary clamping — opening at front (|x| < 1.4 at z=3.8)
-    if (activeCharacter === 'bark' && !barkInVillage && !barkInForest) {
+    if (activeCharacter === 'bark' && !barkInVillage && !barkInForest && !barkDeepForest) {
       ds.x = Math.max(-4.8, Math.min(4.8, ds.x));
       ds.z = Math.max(-6.8, ds.z);
       // Block the front wall except for the opening gap
@@ -5171,33 +5222,80 @@
       }
     }
 
-    // Bark: forest clearing boundary + north exit to village
-    if (activeCharacter === 'bark' && barkInForest) {
+    // Bark: forest clearing — hard bounds (butterfly is the only exit)
+    if (activeCharacter === 'bark' && barkInForest && !barkDeepForest) {
       ds.x = Math.max(-11.5, Math.min(11.5, ds.x));
       ds.z = Math.max(-22, Math.min(9, ds.z));
-      // Trigger village arrival when Bark walks far enough north
-      if (ds.z < -20 && gameState === 'playing') {
-        barkInVillage = true;
-        barkInForest  = false;
-        showEnterScreen('Venturing into the Village\u2026', () => {
-          buildVillage();
-          dogState.x = 0; dogState.z = 34; dogState.y = DOG_FLOOR;
-          dogState.yaw = Math.PI; dogState.velY = 0; dogState.grounded = true;
-          cam.yaw = Math.PI;
-          cam.pos.x = 0; cam.pos.y = DOG_FLOOR + 3.5; cam.pos.z = 34 + 6.5;
-          saveProgress();
-          const _gs = getGlobalSave();
-          _gs.warkArrivalCount = (_gs.warkArrivalCount || 0) + 1;
-          setGlobalSave(_gs);
-          BARK_ARRIVE_DLG = buildArrivalDlg('Bark', '\uD83D\uDC36', _gs.warkArrivalCount);
-          arrivalNpcsActive = true;
-          arrivalNpcWalking = false;
-          arrivalNpcWalkT   = 0;
-          gameState = 'cutscene';
-          activeDialogueArr = BARK_ARRIVE_DLG;
-          dialogueIndex = 0;
-          showDialogue(0);
-        });
+    }
+
+    // Bark: deep forest — narrow path bounds
+    if (activeCharacter === 'bark' && barkDeepForest) {
+      ds.x = Math.max(-5, Math.min(5, ds.x));
+      ds.z = Math.max(-25, Math.min(8, ds.z));
+    }
+
+    // Bark: butterfly chase — update world position and drive scene transitions
+    if (activeCharacter === 'bark' && barkButterflyChase) {
+      const btdx = barkButterflyTargetX - barkButterflyWx;
+      const btdz = barkButterflyTargetZ - barkButterflyWz;
+      const btd  = Math.hypot(btdx, btdz);
+      const btSpd = barkDeepForest ? 0.055 : (barkButterflyEscapePhase >= 1 ? 0.09 : 0.038);
+      if (btd > 0.05) { barkButterflyWx += (btdx/btd)*btSpd; barkButterflyWz += (btdz/btd)*btSpd; }
+      const pDist = Math.hypot(dogState.x - barkButterflyWx, dogState.z - barkButterflyWz);
+      if (!barkDeepForest) {
+        // ── Forest clearing: flutter, flee player, then lead off left edge ─────────────────
+        barkButterflyEscapeT++;
+        if (barkButterflyEscapePhase === 0 && btd < 0.5) {
+          // Pick new random flutter target
+          barkButterflyTargetX = (Math.random() - 0.5) * 16;
+          barkButterflyTargetZ = Math.random() * 20 - 18;
+        }
+        if (pDist < 2.8 && barkButterflyEscapePhase === 0) {
+          // Flee in opposite direction
+          const ang = Math.atan2(barkButterflyWz - dogState.z, barkButterflyWx - dogState.x);
+          barkButterflyTargetX = Math.max(-9.5, Math.min(9.5, barkButterflyWx + Math.cos(ang)*5.5));
+          barkButterflyTargetZ = Math.max(-19,  Math.min(5,   barkButterflyWz + Math.sin(ang)*5.5));
+        }
+        if (barkButterflyEscapeT === 440) {
+          // Start leading toward the left edge
+          barkButterflyEscapePhase = 1;
+          barkButterflyTargetX = -14; barkButterflyTargetZ = -3;
+          toastMsg = "It's getting away! Follow it!"; toastTimer = 220;
+        }
+        if (pDist < 2 && barkButterflyEscapePhase === 1) barkButterflyTargetX -= 2;
+        // Transition to deep forest when butterfly exits the left edge
+        if (barkButterflyWx < -11.5 && barkButterflyEscapePhase === 1 && gameState === 'playing') {
+          barkButterflyChase = false; barkButterflyEscapePhase = 0; barkButterflyEscapeT = 0;
+          barkInForest = false;
+          showEnterScreen('Deep in the forest\u2026', () => {
+            barkDeepForest = true; buildBarkDeepForest();
+            dogState.x = 0; dogState.z = 5; dogState.y = DOG_FLOOR;
+            dogState.yaw = Math.PI; dogState.velY = 0; dogState.grounded = true;
+            cam.yaw = Math.PI; cam.pos.x = 0; cam.pos.y = DOG_FLOOR+3.5; cam.pos.z = 11.5;
+            barkButterflyChase = true; barkButterflyEscapeT = 0;
+            barkButterflyWx = 0.5; barkButterflyWz = -2;
+            barkButterflyTargetX = 0; barkButterflyTargetZ = -5;
+            saveProgress();
+          });
+        }
+      } else {
+        // ── Deep forest: butterfly weaves north, player keeps chasing ───────────────────
+        barkButterflyEscapeT++;
+        barkButterflyTargetX = Math.sin(barkButterflyEscapeT * 0.022) * 3.0;
+        barkButterflyTargetZ = -5 - barkButterflyEscapeT * 0.020;
+        if (pDist < 3.5) barkButterflyTargetZ -= 5;
+        // Village entrance when butterfly reaches far north or timer runs long
+        if ((barkButterflyWz < -22 || barkButterflyEscapeT > 660) && gameState === 'playing') {
+          barkButterflyChase = false; barkDeepForest = false; barkInVillage = true;
+          barkButterflyFlyOff = true; barkButterflyFlyOffT = 0;
+          showEnterScreen('The trees thin out\u2026', () => {
+            buildVillage();
+            dogState.x = 0; dogState.z = 34; dogState.y = DOG_FLOOR;
+            dogState.yaw = Math.PI; dogState.velY = 0; dogState.grounded = true;
+            cam.yaw = Math.PI; cam.pos.x = 0; cam.pos.y = DOG_FLOOR+3.5; cam.pos.z = 40.5;
+            saveProgress(); gameState = 'playing';
+          });
+        }
       }
     }
 
@@ -5629,16 +5727,21 @@
       grad.addColorStop(0,   '#2a5090');
       grad.addColorStop(0.55,'#6898c8');
       grad.addColorStop(1,   '#a8c8e8');
-    } else if (activeCharacter === 'bark' && !barkInVillage && !barkInForest) {
+    } else if (activeCharacter === 'bark' && !barkInVillage && !barkInForest && !barkDeepForest) {
       // Warm indoor ceiling glow
       grad.addColorStop(0,   '#1a0e06');
       grad.addColorStop(0.45,'#2e1a0a');
       grad.addColorStop(1,   '#3e2010');
-    } else if (activeCharacter === 'bark' && barkInForest) {
+    } else if (activeCharacter === 'bark' && barkInForest && !barkDeepForest) {
       // Forest clearing — dappled green-sky morning
       grad.addColorStop(0,   '#1a3a18');
       grad.addColorStop(0.5, '#2e6628');
       grad.addColorStop(1,   '#78b870');
+    } else if (activeCharacter === 'bark' && barkDeepForest) {
+      // Deep forest — dark canopy, near twilight
+      grad.addColorStop(0,   '#060c04');
+      grad.addColorStop(0.5, '#0e1a08');
+      grad.addColorStop(1,   '#182810');
     } else if (activeCharacter === 'ruff' && !ruffInVillage) {
       if (ruffScene === 'battle') {
         grad.addColorStop(0,   '#030810');
@@ -5788,7 +5891,7 @@
       ...(activeCharacter === 'cheeseball' && !cbMapViewed ? cbQuads : []),
       ...(activeCharacter === 'cheeseball' && cbNpcPhase >= 1 && !cbMapViewed ? cbHoleQuads : []),
       ...(activeCharacter === 'ruff' && !ruffInVillage ? (ruffScene === 'battle' ? ruffBattleQuads : ruffScene === 'river' ? ruffRiverQuads : ruffQuads) : []),
-      ...(activeCharacter === 'bark' && !barkInVillage ? (barkInUpstairs ? barkUpstairsQuads : barkInForest ? barkForestQuads : barkQuads) : []),
+      ...(activeCharacter === 'bark' && !barkInVillage ? (barkInUpstairs ? barkUpstairsQuads : barkDeepForest ? barkDeepForestQuads : barkInForest ? barkForestQuads : barkQuads) : []),
       ...(isInVillage() ? villageQuads : []),
       ...(isInVillage() ? npcQuads : []),
       ...arrivalNpcQuads,
@@ -5964,6 +6067,8 @@
     if (activeCharacter === 'ruff' && ruffScene !== 'patio') renderRuffOverlay();
     // Bark: butterfly entry cutscene drawn on top of 3D forest clearing
     if (activeCharacter === 'bark' && barkButterflyActive) renderBarkButterflyScene();
+    // Bark: butterfly chase + fly-off-into-sun drawn on top of 3D world
+    if (activeCharacter === 'bark' && (barkButterflyChase || barkButterflyFlyOff)) renderBarkChaseButterfly();
 
     // hole approach hint (Wark, surface, phase 0 only)
     if (activeCharacter==='wark' && !inTunnel && warkPhase===0) {
@@ -6222,13 +6327,25 @@
   let barkInVillage    = false; // true after Bark finds the village
   let barkInForest     = false; // true while Bark is in the forest clearing outside the cave
   let barkInUpstairs   = false; // true while upstairs in Bark's house
-  let barkButterflyActive = false; // true while the entry butterfly cutscene is playing
-  let barkButterflyT      = 0;    // frame counter for butterfly animation
+  let barkButterflyActive      = false; // true while the entry butterfly cutscene is playing
+  let barkButterflyT           = 0;     // frame counter for butterfly animation
+  let barkButterflyChase       = false; // true while Bark is chasing the butterfly
+  let barkButterflyWx          = 0;     // butterfly world X
+  let barkButterflyWz          = 0;     // butterfly world Z
+  let barkButterflyTargetX     = 0;     // butterfly target X
+  let barkButterflyTargetZ     = 0;     // butterfly target Z
+  let barkButterflyFlapT       = 0;     // independent wing-flap counter
+  let barkButterflyEscapeT     = 0;     // frames elapsed in current chase phase
+  let barkButterflyEscapePhase = 0;     // 0=random flutter, 1=leading to edge
+  let barkDeepForest           = false; // true while in the deep forest
+  const barkDeepForestQuads    = [];
+  let barkButterflyFlyOff      = false; // true during butterfly-flies-into-sun animation
+  let barkButterflyFlyOffT     = 0;
   let BARK_ARRIVE_DLG  = [];
   let ruffPhase        = 0;     // 0 = hiding by bush (intro)
   let ruffInVillage    = false; // true after river sweep — Ruff wakes up in the village forest
   // Initialised from global save so the scene never re-fires after reload
-  let packGatherDone   = !!(JSON.parse(localStorage.getItem(SAVE_KEY_GLOBAL)||'{}').packGatherDone);
+  let packGatherDone   = !!(JSON.parse(localStorage.getItem(SAVE_KEY_GLOBAL)||'{}').packGatherV2Done);
   let packGatherDlg    = [];  // built fresh each time
 
   // Visual definitions for the 6 "waiting pups" shown in the gathering cutscene.
@@ -6570,8 +6687,9 @@
       save.ruffScene        = ruffScene;
     }
     if (activeCharacter === 'bark') {
-      save.barkInVillage = barkInVillage;
-      save.barkInForest  = barkInForest;
+      save.barkInVillage  = barkInVillage;
+      save.barkInForest   = barkInForest;
+      save.barkDeepForest = barkDeepForest;
     }
     if (activeCharacter === 'scratch') {
       save.wobCoins         = wobCoins;
@@ -6839,10 +6957,12 @@
         ruffScene       = s.ruffScene       ?? 'patio';
       }
       if (activeCharacter === 'bark') {
-        barkInVillage = s.barkInVillage ?? false;
-        barkInForest  = barkInVillage ? false : (s.barkInForest ?? false);
+        barkInVillage  = s.barkInVillage ?? false;
+        barkInForest   = barkInVillage ? false : (s.barkInForest ?? false);
+        barkDeepForest = (!barkInVillage && !barkInForest) ? (s.barkDeepForest ?? false) : false;
         if (barkInVillage) buildVillage();
         else if (barkInForest) buildBarkForest();
+        else if (barkDeepForest) buildBarkDeepForest();
       }
       if (activeCharacter === 'scratch') {
         wobCoins  = s.wobCoins  ?? 0;
@@ -7788,6 +7908,10 @@
   const BARK_WHAT_DLG = [
     { speaker: 'Bark 🐶', text: 'What is that…?' },
   ];
+  const BARK_BUTTERFLY_DLG = [
+    { speaker: 'Bark 🐶', text: 'Nooo!! Come back!!' },
+    { speaker: 'Bark 🐶', text: '…Uh oh. Where am I?' },
+  ];
   let WARK_ARRIVE_DLG = [];
   let OBS_ARRIVE_DLG  = [];
   let CB_ARRIVE_DLG   = [];
@@ -7950,11 +8074,28 @@
         });
         return;
       }
-      // Bark: 'What is that?' ends — free to roam
+      // Bark: 'What is that?' ends — butterfly quest begins
       if (activeDialogueArr === BARK_WHAT_DLG) {
-        barkButterflyActive = false;
+        barkButterflyActive      = false;
+        barkButterflyChase       = true;
+        barkButterflyWx          = 3.5;  barkButterflyWz      = -2.0;
+        barkButterflyTargetX     = 4.5;  barkButterflyTargetZ = -6.0;
+        barkButterflyEscapePhase = 0;    barkButterflyEscapeT = 0;
+        toastMsg   = '\uD83E\uDD8B Quest: Catch the butterfly!';
+        toastTimer = 380;
         gameState = 'playing';
         dialogueCooldown = 60;
+        return;
+      }
+      // Bark: chased butterfly into town — village arrival
+      if (activeDialogueArr === BARK_BUTTERFLY_DLG) {
+        const _gs = getGlobalSave();
+        _gs.warkArrivalCount = (_gs.warkArrivalCount || 0) + 1;
+        setGlobalSave(_gs);
+        BARK_ARRIVE_DLG   = buildArrivalDlg('Bark', '\uD83D\uDC36', _gs.warkArrivalCount);
+        arrivalNpcsActive = true; arrivalNpcWalking = false; arrivalNpcWalkT = 0;
+        activeDialogueArr = BARK_ARRIVE_DLG;
+        dialogueIndex     = 0; showDialogue(0);
         return;
       }
       gameState = 'playing';
@@ -8071,7 +8212,7 @@
       } else if (activeDialogueArr === packGatherDlg && packGatherDlg.length > 0) {
         // Pack gathering complete — show missions-unlocked card + permanently mark done
         const _gs = getGlobalSave();
-        setGlobalSave({ ..._gs, packGatherDone: true });
+        setGlobalSave({ ..._gs, packGatherV2Done: true });
         packGatherDone = true;
         gameState = 'cave';
         dialogueCooldown = 60;
@@ -8205,19 +8346,38 @@
     }},
     bark: { enterTitle: 'In the den\u2026', startX: 0, startZ: -1.5, onEnter: (restored) => {
       if (!restored) {
-        barkInVillage      = false;
-        barkInForest       = false;
-        barkInUpstairs     = false;
-        barkButterflyActive = false;
-        barkButterflyT      = 0;
+        barkInVillage            = false;
+        barkInForest             = false;
+        barkInUpstairs           = false;
+        barkDeepForest           = false;
+        barkButterflyActive      = false;
+        barkButterflyChase       = false;
+        barkButterflyEscapePhase = 0;
+        barkButterflyEscapeT     = 0;
+        barkButterflyFlyOff      = false;
+        barkButterflyT           = 0;
         buildBarkHouse();
         activeDialogueArr = BARK_INTRO_DLG;
       } else {
         barkInUpstairs      = false;  // always land on ground floor after reload
-        barkButterflyActive = false;  // never replay butterfly on restore
+        barkButterflyActive = false;  // never replay entry cutscene on restore
+        barkButterflyFlyOff = false;  // never resume fly-off on restore
         barkButterflyT      = 0;
         if (barkInVillage) { buildVillage(); }
-        else if (barkInForest) { buildBarkForest(); }
+        else if (barkDeepForest) {
+          buildBarkDeepForest();
+          barkButterflyChase = true;
+          barkButterflyWx = 0.5; barkButterflyWz = -2;
+          barkButterflyTargetX = 0; barkButterflyTargetZ = -5;
+          barkButterflyEscapePhase = 0; barkButterflyEscapeT = 0;
+        }
+        else if (barkInForest) {
+          buildBarkForest();
+          barkButterflyChase = true;
+          barkButterflyWx = 3.5; barkButterflyWz = -2;
+          barkButterflyTargetX = 4.5; barkButterflyTargetZ = -6;
+          barkButterflyEscapePhase = 0; barkButterflyEscapeT = 0;
+        }
         else { buildBarkHouse(); }
       }
       document.getElementById('wob-coins').classList.add('hidden');
@@ -8309,7 +8469,7 @@
       if (window._saveInterval) clearInterval(window._saveInterval);
       window._saveInterval = setInterval(saveProgress, 2000);   // save every 2 seconds
       window.addEventListener('beforeunload', saveProgress);
-      if (cfg.defaultState && !(activeCharacter === 'obsidian' && obsidianArea === 'village')) {
+      if (cfg.defaultState && !(activeCharacter === 'obsidian' && obsidianArea === 'village') && gameState !== 'cutscene') {
         gameState = cfg.defaultState;
       } else if (!restored && activeCharacter !== 'wark') {
         gameState     = 'cutscene';
@@ -11292,7 +11452,7 @@
   function enterCave() {
     // ── All-7 pack gathering scene (triggers once, first time all 7 are in village) ───
     const _gs = getGlobalSave();
-    if (!_gs.packGatherDone && getVillageDogs().length >= 7) {
+    if (!_gs.packGatherV2Done && getVillageDogs().length >= 7) {
       packGatherDlg = buildPackGatherDlg(activeCharacter);
       caveExitX = dogState.x; caveExitZ = dogState.z; caveExitYaw = dogState.yaw;
       showEnterScreen('Entering the Cave…', () => {
@@ -11503,7 +11663,7 @@
     // Pack gathering cutscene: all 6 other pack dogs + Prof. Maple at back
     const packNpcQ = [];
     const _gsRender = getGlobalSave();
-    if (!_gsRender.packGatherDone && getVillageDogs().length >= 7 && activeDialogueArr === packGatherDlg && packGatherDlg.length > 0) {
+    if (!_gsRender.packGatherV2Done && getVillageDogs().length >= 7 && activeDialogueArr === packGatherDlg && packGatherDlg.length > 0) {
       for (const npc of PACK_GATHER_NPC) {
         if (npc.id === activeCharacter) continue;
         drawPackMemberNpc(packNpcQ, npc.id, npc.x, npc.z, Math.PI);
@@ -11577,7 +11737,7 @@
       }
     }
     // Pack gather: floating name labels for each pack member + Prof. Maple
-    if (!_gsRender.packGatherDone && activeDialogueArr === packGatherDlg && packGatherDlg.length > 0) {
+    if (!_gsRender.packGatherV2Done && activeDialogueArr === packGatherDlg && packGatherDlg.length > 0) {
       const packNameLabel = {
         wark:'Wark 🐾', newmoon:'New Moon 🌙', cheeseball:'Cheeseball 🧡',
         obsidian:'Obsidian 🌑', scratch:'Scratch 🐕', ruff:'Ruff 🍂', bark:'Bark 🐶',
@@ -13827,6 +13987,116 @@
     ctx.beginPath(); ctx.arc( scale*0.18, -scale*0.52, scale*0.04, 0, Math.PI*2); ctx.fill();
 
     ctx.restore();  // butterfly group
+  }
+
+  // ── Butterfly chase + fly-off overlay ──────────────────────────────────────
+  function _drawBarkButterflyAt(cx, cy, scale, flapPhase, alpha) {
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.translate(cx, cy);
+    const flapAng = Math.abs(Math.sin(flapPhase)) * 0.9;
+    // Upper-left wing
+    ctx.save();
+    ctx.transform(Math.cos(flapAng), -Math.sin(flapAng) * 0.4, 0, 1, 0, 0);
+    ctx.beginPath();
+    ctx.ellipse(-scale * 0.52, -scale * 0.10, scale * 0.50, scale * 0.28, -0.3, 0, Math.PI * 2);
+    ctx.fillStyle = '#f07010'; ctx.fill();
+    ctx.strokeStyle = '#1a0800'; ctx.lineWidth = scale * 0.045; ctx.stroke();
+    ctx.restore();
+    // Upper-right wing
+    ctx.save();
+    ctx.transform(Math.cos(flapAng), Math.sin(flapAng) * 0.4, 0, 1, 0, 0);
+    ctx.beginPath();
+    ctx.ellipse(scale * 0.52, -scale * 0.10, scale * 0.50, scale * 0.28, 0.3, 0, Math.PI * 2);
+    ctx.fillStyle = '#f07010'; ctx.fill();
+    ctx.strokeStyle = '#1a0800'; ctx.lineWidth = scale * 0.045; ctx.stroke();
+    ctx.restore();
+    // Lower-left wing
+    const lfa = flapAng * 0.7;
+    ctx.save();
+    ctx.transform(Math.cos(lfa), -Math.sin(lfa) * 0.4, 0, 1, 0, 0);
+    ctx.beginPath();
+    ctx.ellipse(-scale * 0.40, scale * 0.12, scale * 0.32, scale * 0.18, -0.5, 0, Math.PI * 2);
+    ctx.fillStyle = '#cc5008'; ctx.fill();
+    ctx.strokeStyle = '#1a0800'; ctx.lineWidth = scale * 0.04; ctx.stroke();
+    ctx.restore();
+    // Lower-right wing
+    ctx.save();
+    ctx.transform(Math.cos(lfa), Math.sin(lfa) * 0.4, 0, 1, 0, 0);
+    ctx.beginPath();
+    ctx.ellipse(scale * 0.40, scale * 0.12, scale * 0.32, scale * 0.18, 0.5, 0, Math.PI * 2);
+    ctx.fillStyle = '#cc5008'; ctx.fill();
+    ctx.strokeStyle = '#1a0800'; ctx.lineWidth = scale * 0.04; ctx.stroke();
+    ctx.restore();
+    // Wing spots
+    ctx.fillStyle = 'rgba(255,240,180,0.75)';
+    ctx.beginPath(); ctx.arc(-scale * 0.40, -scale * 0.06, scale * 0.09, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc( scale * 0.40, -scale * 0.06, scale * 0.09, 0, Math.PI * 2); ctx.fill();
+    // Body
+    ctx.beginPath();
+    ctx.ellipse(0, scale * 0.04, scale * 0.065, scale * 0.26, 0, 0, Math.PI * 2);
+    ctx.fillStyle = '#1a0800'; ctx.fill();
+    ctx.restore();
+  }
+
+  function renderBarkChaseButterfly() {
+    barkButterflyFlapT++;
+    const W = canvas.width, H = canvas.height;
+
+    if (barkButterflyFlyOff) {
+      barkButterflyFlyOffT++;
+      const t = barkButterflyFlyOffT;
+      // Sun glow in upper-right
+      const sunX = W * 0.78, sunY = H * 0.10;
+      const glow = ctx.createRadialGradient(sunX, sunY, H * 0.01, sunX, sunY, H * 0.18);
+      glow.addColorStop(0, 'rgba(255,240,120,0.90)');
+      glow.addColorStop(0.4, 'rgba(255,200,60,0.45)');
+      glow.addColorStop(1, 'rgba(255,160,0,0)');
+      ctx.save();
+      ctx.fillStyle = glow;
+      ctx.beginPath(); ctx.arc(sunX, sunY, H * 0.18, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+      // Butterfly flies toward sun
+      const p = Math.min(1, t / 80);
+      const ep = p * p;
+      const bx = W * 0.5 + (sunX - W * 0.5) * ep;
+      const by = H * 0.44 + (sunY - H * 0.44) * ep;
+      const bScale = H * 0.055 * (1 - p * 0.65);
+      const bAlpha = t < 65 ? 1 : Math.max(0, 1 - (t - 65) / 25);
+      _drawBarkButterflyAt(bx, by, bScale, barkButterflyFlapT * 0.38, bAlpha);
+      // Trigger dialogue after fly-off completes
+      if (t >= 90) {
+        barkButterflyFlyOff = false;
+        barkButterflyFlyOffT = 0;
+        gameState = 'cutscene';
+        activeDialogueArr = BARK_BUTTERFLY_DLG;
+        dialogueIndex = 0;
+        showDialogue(0);
+      }
+      return;
+    }
+
+    if (barkButterflyChase) {
+      const bobY = Math.sin(barkButterflyFlapT * 0.08) * 0.18;
+      const sp = project(v3(barkButterflyWx, DOG_FLOOR + 0.75 + bobY, barkButterflyWz), cam);
+      if (!sp) return;
+      const dx = barkButterflyWx - dogState.x;
+      const dz = barkButterflyWz - dogState.z;
+      const dist = Math.sqrt(dx * dx + dz * dz);
+      const scale = Math.max(10, Math.min(H * 0.068, H * 0.068 * (5 / Math.max(4, dist))));
+      _drawBarkButterflyAt(sp.x, sp.y, scale, barkButterflyFlapT * 0.38, 1.0);
+      // Gold sparkle trail
+      ctx.save();
+      for (let i = 0; i < 2; i++) {
+        const sx = sp.x + (Math.random() - 0.5) * scale * 1.6;
+        const sy = sp.y + (Math.random() - 0.5) * scale * 1.6;
+        const sr = scale * (0.06 + Math.random() * 0.07);
+        ctx.globalAlpha = 0.55 + Math.random() * 0.3;
+        ctx.fillStyle = '#ffe87a';
+        ctx.beginPath(); ctx.arc(sx, sy, sr, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.restore();
+    }
   }
 
   // Draw emotion aura halos over every visible NPC when Bark has the emotion necklace
