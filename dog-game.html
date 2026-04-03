@@ -14724,17 +14724,20 @@
     // Update patrol positions + detection
     missionFieldDetected = false;
     missionFieldPatrols.forEach(p => {
-      p.t += 0.013;
+      p.t += p.tSpeed || 0.013;
       p.x = p.startX + Math.sin(p.t) * p.range * p.dx;
       p.z = p.startZ + Math.sin(p.t) * p.range * p.dz;
       // Patrol facing direction
       const pFacing = p.dx !== 0 ? (Math.sin(p.t) >= 0 ? Math.PI/2 : -Math.PI/2) : (Math.sin(p.t) >= 0 ? 0 : Math.PI);
       const tdx = ds.x - p.x, tdz = ds.z - p.z;
       const dist = Math.hypot(tdx, tdz);
-      if (dist < 7) {
+      const pt = p.patrolType || (p.isHuman ? 'human' : 'wolf');
+      const vRange = {cat:9, wraith:11, human:7, bat:5, wolf:7}[pt] || 7;
+      const vAngle = {cat:0.90, wraith:1.05, human:0.68, bat:0.45, wolf:0.65}[pt] || 0.65;
+      if (dist < vRange) {
         const angle = Math.atan2(tdx, tdz);
         const diff  = ((angle - pFacing) + Math.PI*3) % (Math.PI*2) - Math.PI;
-        if (Math.abs(diff) < 0.65) missionFieldDetected = true;
+        if (Math.abs(diff) < vAngle) missionFieldDetected = true;
       }
     });
 
@@ -14778,19 +14781,59 @@
     const { profIdx, mIdx } = activeMission;
     const m = PROFESSORS[profIdx].missions[mIdx];
 
-    const skyTop = {wolf_camp:'#12100a',human_lab:'#101820',nether:'#0a0004',forest:'#0a1408',village:'#181008'}[mapType]||'#0a0a0a';
-    const skyBot = {wolf_camp:'#201c10',human_lab:'#181c24',nether:'#1a0010',forest:'#101c08',village:'#241808'}[mapType]||'#0a0a0a';
+    const skyTop = {
+      wolf_camp:'#090e08',  human_lab:'#080c12',  nether:'#0a0002',
+      forest:'#04090a',     village:'#0e0c06',    cave:'#040404',
+      nether_ruins:'#0a0204', human_house:'#1a1208',
+    }[mapType]||'#080808';
+    const skyBot = {
+      wolf_camp:'#162018',  human_lab:'#101820',  nether:'#220608',
+      forest:'#0c1a10',     village:'#1e1608',    cave:'#060606',
+      nether_ruins:'#1a0608', human_house:'#281c10',
+    }[mapType]||'#101010';
     const g = ctx.createLinearGradient(0,0,0,H*0.55);
     g.addColorStop(0,skyTop); g.addColorStop(1,skyBot);
     ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+
+    // Atmospheric sky details
+    if (mapType === 'wolf_camp') {
+      // Stars + moon for night forest
+      const sr = mfRng(42); for (let si=0;si<70;si++) { ctx.globalAlpha=(0.3+sr()*0.6); ctx.fillStyle='#c8dce8'; ctx.fillRect(sr()*W, sr()*(H*0.38), 1.5, 1.5); } ctx.globalAlpha=1;
+      ctx.globalAlpha=0.65; ctx.fillStyle='#c8cead'; ctx.beginPath(); ctx.arc(W*0.82,H*0.14,14,0,Math.PI*2); ctx.fill(); ctx.globalAlpha=1;
+    } else if (mapType === 'forest') {
+      // Stars for deep forest
+      const sr = mfRng(99); for (let si=0;si<50;si++) { ctx.globalAlpha=(0.2+sr()*0.5); ctx.fillStyle='#b8d0c4'; ctx.fillRect(sr()*W, sr()*(H*0.36), 1.5, 1.5); } ctx.globalAlpha=1;
+    } else if (mapType === 'nether' || mapType === 'nether_ruins') {
+      // Lava glow on horizon
+      const lg=ctx.createLinearGradient(0,H*0.38,0,H*0.55);
+      lg.addColorStop(0,'rgba(180,30,5,0)'); lg.addColorStop(1,'rgba(180,30,5,0.28)');
+      ctx.fillStyle=lg; ctx.fillRect(0,H*0.38,W,H*0.17);
+    } else if (mapType === 'cave') {
+      // Occasional bioluminescent glow flicker at horizon
+      const bg=ctx.createLinearGradient(0,H*0.42,0,H*0.55);
+      bg.addColorStop(0,'rgba(20,30,80,0)'); bg.addColorStop(1,'rgba(20,30,80,0.20)');
+      ctx.fillStyle=bg; ctx.fillRect(0,H*0.42,W,H*0.13);
+    }
 
     // Patrols as quads
     const patrolQ = [];
     missionFieldPatrols.forEach(p => {
       const pFacing = p.dx!==0 ? (Math.sin(p.t)>=0?Math.PI/2:-Math.PI/2) : (Math.sin(p.t)>=0?0:Math.PI);
-      if (p.isHuman) {
+      const pt = p.patrolType || (p.isHuman ? 'human' : 'wolf');
+      if (pt === 'human') {
         pushBox(patrolQ, p.x, DOG_FLOOR+0.9, p.z, 0.38, 0.9, 0.32, 0x4060a0, pFacing);
         pushBox(patrolQ, p.x+sin(pFacing)*0.36, DOG_FLOOR+1.62, p.z+cos(pFacing)*0.36, 0.28, 0.28, 0.28, 0xf0d0b0, pFacing);
+      } else if (pt === 'cat') {
+        addNpcDog(patrolQ, p.x, p.z, 0.68, p.fur, pFacing, 'triangle'); // small pointy ears
+      } else if (pt === 'bat') {
+        const flyY = 2.8 + Math.sin(p.t * 3.5) * 0.5;
+        pushBox(patrolQ, p.x, flyY, p.z, 0.6, 0.18, 0.35, p.fur, pFacing);          // body
+        pushBox(patrolQ, p.x-0.55, flyY+0.05, p.z, 0.45, 0.07, 0.65, p.fur+0x080f0f, pFacing); // wing L
+        pushBox(patrolQ, p.x+0.55, flyY+0.05, p.z, 0.45, 0.07, 0.65, p.fur+0x080f0f, pFacing); // wing R
+      } else if (pt === 'wraith') {
+        const wY = DOG_FLOOR + 0.9 + Math.sin(p.t * 1.8) * 0.4;
+        pushBox(patrolQ, p.x, wY, p.z, 0.55, 1.1, 0.55, 0x2010a0, pFacing);         // ghostly body
+        pushBox(patrolQ, p.x, wY+1.2, p.z, 0.38, 0.42, 0.38, 0x5828d0, pFacing);   // head
       } else {
         addNpcDog(patrolQ, p.x, p.z, 1.0, p.fur, pFacing, p.ears);
       }
@@ -14799,7 +14842,11 @@
     missionFieldNpcs.forEach(n => addNpcDog(npcQ, n.x, n.z, 1.0, n.fur, 0, n.ears));
     buildDog();
 
-    const fogHex = {wolf_camp:0x100c04,human_lab:0x080c10,nether:0x0a0004,forest:0x081004,village:0x0c0a04}[mapType]||0x080804;
+    const fogHex = {
+      wolf_camp:0x080e06,  human_lab:0x080c12,  nether:0x0e0204,
+      forest:0x060c08,     village:0x0c0a04,    cave:0x060406,
+      nether_ruins:0x0e0404, human_house:0x100c06,
+    }[mapType]||0x080804;
     const allQ = [...missionFieldQuads, ...patrolQ, ...npcQ, ...dogQuads];
     const toRender = allQ.map(q => {
       const pts = projectClipped(q.verts, cam); if (!pts) return null;
@@ -14819,18 +14866,24 @@
     missionFieldPatrols.forEach(p => {
       const sp=project(v3(p.x,DOG_FLOOR+0.5,p.z),cam); if(!sp) return;
       const pFacing=p.dx!==0?(Math.sin(p.t)>=0?Math.PI/2:-Math.PI/2):(Math.sin(p.t)>=0?0:Math.PI);
-      const lx=sin(pFacing-0.65)*7, lz=cos(pFacing-0.65)*7;
-      const rx=sin(pFacing+0.65)*7, rz=cos(pFacing+0.65)*7;
+      const pt = p.patrolType || (p.isHuman ? 'human' : 'wolf');
+      const vRange = {cat:9, wraith:11, human:7, bat:5, wolf:7}[pt] || 7;
+      const vAngle = {cat:0.90, wraith:1.05, human:0.68, bat:0.45, wolf:0.65}[pt] || 0.65;
+      const coneCol = {cat:'#ff8800', wraith:'#aa00ff', human:'#ffcc00', bat:'#ff4400', wolf:'#ffcc00'}[pt] || '#ffcc00';
+      const lx=sin(pFacing-vAngle)*vRange, lz=cos(pFacing-vAngle)*vRange;
+      const rx=sin(pFacing+vAngle)*vRange, rz=cos(pFacing+vAngle)*vRange;
       const spL=project(v3(p.x+lx,DOG_FLOOR,p.z+lz),cam), spR=project(v3(p.x+rx,DOG_FLOOR,p.z+rz),cam);
       if (spL&&spR) {
-        ctx.globalAlpha=0.16; ctx.fillStyle='#ffcc00';
+        ctx.globalAlpha=0.16; ctx.fillStyle=coneCol;
         ctx.beginPath(); ctx.moveTo(sp.x,sp.y); ctx.lineTo(spL.x,spL.y); ctx.lineTo(spR.x,spR.y); ctx.closePath(); ctx.fill();
         ctx.globalAlpha=1;
       }
       // Patrol label
+      const labelCol = {cat:'#ffaa44', wraith:'#cc88ff', human:'#a0b8e0', bat:'#9988aa', wolf:'#d0a080'}[pt] || '#d0a080';
+      const label = {cat:'Cat 🐱', wraith:'Wraith 👻', human:'Guard 👮', bat:'Bat 🦇', wolf:'Patrol 🐺'}[pt] || 'Patrol 🐺';
       ctx.globalAlpha=0.82; ctx.textAlign='center'; ctx.textBaseline='bottom';
-      ctx.font='bold 11px Arial'; ctx.fillStyle = p.isHuman ? '#a0b8e0' : '#d0a080';
-      ctx.fillText(p.isHuman?'Guard 👮':'Patrol 🐺', sp.x, sp.y-4);
+      ctx.font='bold 11px Arial'; ctx.fillStyle=labelCol;
+      ctx.fillText(label, sp.x, sp.y-4);
       ctx.globalAlpha=1;
     });
 
