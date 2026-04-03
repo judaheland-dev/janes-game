@@ -3855,6 +3855,15 @@
       pushBox(villageQuads, sx, 0.09, sz, 0.28, 0.09, 0.28, 0x706458);
     });
 
+    // ── Tall mushroom cluster (north green, x≈5 z≈35) — landmark for locate quests ──
+    const TMUSH_STEM = 0xe8dfc0, TMUSH_CAP1 = 0xb83018, TMUSH_CAP2 = 0xa02810, TMUSH_SPOT = 0xf0f0e0;
+    [ [5.0, 35.0, 0.85], [6.6, 34.2, 0.70], [3.6, 35.8, 0.60], [5.8, 36.4, 0.50], [4.0, 34.0, 0.45] ].forEach(([mx, mz, ms]) => {
+      pushBox(villageQuads, mx, ms * 0.55, mz, ms * 0.16, ms * 0.55, ms * 0.16, TMUSH_STEM);    // tall stem
+      pushBox(villageQuads, mx, ms * 1.18, mz, ms * 0.72, ms * 0.18, ms * 0.72, TMUSH_CAP1);   // main cap
+      pushBox(villageQuads, mx, ms * 1.22, mz, ms * 0.50, ms * 0.10, ms * 0.50, TMUSH_CAP2);   // cap rim
+      pushBox(villageQuads, mx, ms * 1.30, mz, ms * 0.14, ms * 0.06, ms * 0.14, TMUSH_SPOT);   // top spot
+    });
+
     // Forest ring — two concentric rings with gaps for south entrance & north path
     // Ring 1 (r≈42)
     for (let i = 0; i < 64; i++) {
@@ -8237,6 +8246,7 @@
       ? 'I got caught in the current of a river, and it swept me here.'
       : charName === 'Bark'
       ? 'I uh... I don\'t know? I chased a butterfly all the way here!'
+      : 'I found a map and followed it here.';
     const dlg = [
       { speaker: 'Prof. Maple 🍁', text: 'Wait right there! Who are you?' },
       { speaker: ch,                   text: 'Um... my name is ' + charName + '.' },
@@ -13966,14 +13976,15 @@
   }
 
   // Map-type array: one entry per [profIdx*3 + mIdx]
+  // One map type per mission (profIdx*3 + mIdx) — controls geometry, sky, patrols
   const MISSION_MAP_TYPES = [
-    'wolf_camp','wolf_camp','human_lab',  // 0 Maple
-    'human_lab','nether','nether',        // 1 Birch
-    'forest','nether','wolf_camp',        // 2 Cedar
-    'village','wolf_camp','nether',       // 3 Ash
-    'human_lab','village','wolf_camp',    // 4 Flint
-    'forest','nether','wolf_camp',        // 5 Oak
-    'human_lab','village','forest',       // 6 Stone
+    'wolf_camp','wolf_camp','wolf_camp',    // 0 Maple  — scout perimeter, steal plans, sabotage tower
+    'human_lab','cave','nether',            // 1 Birch  — lab raid, cave prison, nether stream
+    'wolf_camp','nether','cave',            // 2 Cedar  — border cache, nether escort, cave ammo dump
+    'village','nether','nether_ruins',      // 3 Ash    — defend gate, capture lieutenant, retake outpost
+    'human_lab','wolf_camp','wolf_camp',    // 4 Flint  — lab data, raider camp, alpha territory
+    'human_house','nether_ruins','cave',    // 5 Slate  — house infiltration, ruins recon, seal vault
+    'nether','forest','wolf_camp',          // 6 Ember  — nether rescue, forest search, wolf extract
   ];
 
   function getMissionMapType() {
@@ -14320,7 +14331,7 @@
         missionFieldPatrols.push({ x:px, z:pz, startX:px, startZ:pz, dx:horiz?1:0, dz:horiz?0:1, t:rng()*Math.PI*2, range, fur:0x3a5820, ears:rng()<0.5?'floppy':'triangle', isHuman:false, spotted:false });
       });
 
-    } else { // village
+    } else if (mapType === 'village') {
       // Occupied enemy village — streets, houses, market stalls, suspicious guard dogs
 
       // Village ground — stone street tiles
@@ -14382,23 +14393,269 @@
       // Patrols — guard dogs patrolling the streets
       [[0,-28,9,true],[-16,-50,11,false],[14,-50,11,false],[0,-72,13,true],[-16,-90,10,false],[14,-90,10,false]].forEach(([px,pz,range,horiz],pi) => {
         if (pi > profIdx + 2) return;
-        missionFieldPatrols.push({ x:px, z:pz, startX:px, startZ:pz, dx:horiz?1:0, dz:horiz?0:1, t:rng()*Math.PI*2, range, fur:0x9a7050, ears:rng()<0.5?'floppy':'triangle', isHuman:false, spotted:false });
+        missionFieldPatrols.push({ x:px, z:pz, startX:px, startZ:pz, dx:horiz?1:0, dz:horiz?0:1, t:rng()*Math.PI*2, range, tSpeed:0.013, fur:0x9a7050, ears:rng()<0.5?'floppy':'triangle', patrolType:'wolf', isHuman:false, spotted:false });
       });
+
+    } else if (mapType === 'cave') {
+      // Underground cave — stalactite columns, underground lake, crystal chambers, bat patrols
+
+      // Overwrite floor with dark cave rock tiles
+      for (let fx=-FIELD_W; fx<FIELD_W; fx+=4) {
+        for (let fz=-FIELD_D; fz<10; fz+=4) {
+          const e=(((fx/4)+(fz/4))&1);
+          missionFieldQuads.push({ verts:[v3(fx,0.01,fz),v3(fx+4,0.01,fz),v3(fx+4,0.01,fz+4),v3(fx,0.01,fz+4)], color:e?0x221a18:0x1a1412, normal:v3(0,1,0), isGround:true });
+        }
+      }
+      // Dark cave ceiling slab (visual — makes the sky invisible)
+      missionFieldQuads.push({ verts:[v3(-FIELD_W,7,8),v3(FIELD_W,7,8),v3(FIELD_W,7,-FIELD_D),v3(-FIELD_W,7,-FIELD_D)], color:0x0e0c0c, normal:v3(0,-1,0), isGround:false });
+
+      // Rocky side walls tighten the cave passage and force navigation
+      // Entry channel walls (z=4 to z=-28, width ±12)
+      pushBox(missionFieldQuads, -29, 4, -12, 12, 4, 16, 0x2a2020); addWall(-29, -12, 12, 16);
+      pushBox(missionFieldQuads,  29, 4, -12, 12, 4, 16, 0x2a2020); addWall( 29, -12, 12, 16);
+      // Choke canyon (z=-35 to z=-50, width ±10)
+      pushBox(missionFieldQuads, -30, 3.5, -42, 11, 3.5, 8, 0x242018); addWall(-30, -42, 11, 8.5);
+      pushBox(missionFieldQuads,  30, 3.5, -42, 11, 3.5, 8, 0x242018); addWall( 30, -42, 11, 8.5);
+      // Second choke (z=-78 to z=-92, width ±10)
+      pushBox(missionFieldQuads, -30, 3.5, -85, 11, 3.5, 8, 0x242018); addWall(-30, -85, 11, 8.5);
+      pushBox(missionFieldQuads,  30, 3.5, -85, 11, 3.5, 8, 0x242018); addWall( 30, -85, 11, 8.5);
+
+      // Stalagmite / stalactite column pairs — solid obstacles throughout caverns
+      [[-16,-20,2.8,0.7],[18,-26,3.2,0.6],[-10,-18,2.2,0.5],[20,-38,2.5,0.6],
+       [-22,-55,3.0,0.8],[12,-62,3.5,0.7],[-14,-68,2.2,0.6],[18,-75,2.8,0.5],
+       [-8,-82,2.5,0.7],[14,-90,3.0,0.6],[-20,-98,2.8,0.7],[6,-104,2.5,0.5]].forEach(([sx,sz,sh,sw]) => {
+        pushBox(missionFieldQuads, sx, sh, sz, sw, sh, sw, 0x282020);           // stalagmite (up)
+        pushBox(missionFieldQuads, sx, sh*2+5.5, sz, sw*0.8, sh*0.7, sw*0.8, 0x201818); // stalactite (hanging)
+        addWall(sx, sz, sw+0.4, sw+0.4);
+      });
+
+      // Scattered cave boulders
+      for (let ri=0; ri<16; ri++) {
+        const rx=(rng()-0.5)*70, rz=-12-rng()*95;
+        if (Math.abs(rx)<8 && rz>-20) continue;
+        const rs=0.6+rng()*1.4;
+        pushBox(missionFieldQuads, rx, rs*0.55, rz, rs*1.3, rs*0.55, rs*1.1, ri%3?0x2a2018:0x201810);
+        addWall(rx, rz, rs*1.5, rs*1.3);
+      }
+
+      // Underground lake (z=-50 to z=-68 — visual water, walkable shallow pools)
+      for (let lx=-FIELD_W+4; lx<FIELD_W-4; lx+=2) {
+        for (let lz=-50; lz>-68; lz-=2) {
+          missionFieldQuads.push({ verts:[v3(lx,0.06,lz),v3(lx+2,0.06,lz),v3(lx+2,0.06,lz+2),v3(lx,0.06,lz+2)], color:(lx/2+lz/2&1)?0x0a1a30:0x0e2440, normal:v3(0,1,0), isGround:true });
+        }
+      }
+      // Lake accent ripple strips
+      [-52,-56,-60,-64].forEach(lz => {
+        missionFieldQuads.push({ verts:[v3(-28,0.08,lz),v3(28,0.08,lz),v3(28,0.08,lz+0.35),v3(-28,0.08,lz+0.35)], color:0x1a3860, normal:v3(0,1,0), isGround:true });
+      });
+
+      // Bioluminescent crystal clusters (blue-purple light sources)
+      [[-6,-38,0x2040c0],[14,-52,0x4020a0],[-22,-60,0x1030d0],[8,-75,0x3050b0],[-10,-88,0x5020c0],[4,-100,0x4040d0]].forEach(([cx,cz,col]) => {
+        for (let ci=0; ci<5; ci++) {
+          const a=(ci/5)*Math.PI*2, r=1.0+rng()*0.8;
+          const hh=0.6+rng()*1.4, hw=0.15+rng()*0.18;
+          pushBox(missionFieldQuads, cx+Math.cos(a)*r, hh, cz+Math.sin(a)*r, hw, hh, hw, (col + ci*0x001010)|0);
+        }
+        // Glow ring on floor
+        missionFieldQuads.push({ verts:[v3(cx-1.5,0.04,cz-1.5),v3(cx+1.5,0.04,cz-1.5),v3(cx+1.5,0.04,cz+1.5),v3(cx-1.5,0.04,cz+1.5)], color:(col>>1)&0x3f3f3f, normal:v3(0,1,0), isGround:true });
+      });
+
+      // Treasure chamber objective — ancient sarcophagus / artifact chest
+      pushBox(missionFieldQuads, 0, 0.65, -108, 2.2, 0.65, 3.5, 0x4a3a18);
+      pushBox(missionFieldQuads, 0, 1.38, -108, 2.0, 0.22, 3.2, 0xd0a820); // gold trim
+      pushBox(missionFieldQuads, 0, 2.0,  -108, 1.5, 0.8,  2.5, 0x3a2c10); // lid half-open
+      addWall(0, -108, 2.4, 3.7);
+      // Crystal glow around the chest
+      missionFieldQuads.push({ verts:[v3(-3,0.04,-111),v3(3,0.04,-111),v3(3,0.04,-105),v3(-3,0.04,-105)], color:0x201430, normal:v3(0,1,0), isGround:true });
+      missionFieldItems.push({ id:0, x:0, z:-108, type:'objective', label:m.objective, icon:'🔮', collected:false });
+
+      // Bat patrols — fast horizontal sweepers, small vision angle
+      for (let bi=0; bi<3+Math.ceil(profIdx/2); bi++) {
+        const bx=(rng()-0.5)*52, bz=-14-rng()*88;
+        const range=14+rng()*16;
+        missionFieldPatrols.push({ x:bx, z:bz, startX:bx, startZ:bz, dx:1, dz:0, t:rng()*Math.PI*2, range, tSpeed:0.038, fur:0x1a1018, ears:'triangle', patrolType:'bat', isHuman:false, spotted:false });
+      }
+
+    } else if (mapType === 'nether_ruins') {
+      // Ancient ruins in nether territory — crumbling labyrinth, lava cracks, wraith guardians
+
+      // Lava crack seams on the ground (visual)
+      for (let ci=0; ci<18; ci++) {
+        const cxr=(rng()-0.5)*72, czr=-12-rng()*95;
+        const cl = 3+rng()*8, horiz=rng()<0.5;
+        if (horiz) missionFieldQuads.push({ verts:[v3(cxr-cl,0.03,czr),v3(cxr+cl,0.03,czr),v3(cxr+cl,0.03,czr+0.4),v3(cxr-cl,0.03,czr+0.4)], color:0xc03808, normal:v3(0,1,0), isGround:true });
+        else       missionFieldQuads.push({ verts:[v3(cxr,0.03,czr-cl),v3(cxr+0.4,0.03,czr-cl),v3(cxr+0.4,0.03,czr+cl),v3(cxr,0.03,czr+cl)], color:0xc03808, normal:v3(0,1,0), isGround:true });
+      }
+
+      // Ruined outer wall sections (thick stone, crumbled gaps)
+      // N-S partial walls
+      [[-26,-22,14],[-26,-52,18],[24,-30,12],[22,-66,16],[-24,-82,14],[22,-95,10]].forEach(([wx,wz,wl],i) => {
+        pushBox(missionFieldQuads, wx, 3.5, wz, 0.9, 3.5, wl, 0x3a2428); addWall(wx, wz, 1.1, wl);
+        // Crumbled top sections (rubble piles)
+        pushBox(missionFieldQuads, wx+(rng()-0.5)*1.5, 0.5, wz+(rng()-0.5)*wl, 1.8, 0.5, 1.4, 0x3a2020);
+      });
+      // E-W partial walls
+      [[-4,-30,14],[6,-52,18],[-8,-68,16],[4,-88,14],[0,-102,10]].forEach(([wx,wz,wl],i) => {
+        pushBox(missionFieldQuads, wx, 3.5, wz, wl, 3.5, 0.9, 0x3a2428); addWall(wx, wz, wl, 1.1);
+      });
+
+      // Ancient pillars (standing)
+      [[-12,-35],[10,-40],[-20,-60],[16,-65],[-8,-80],[10,-95],[0,-105]].forEach(([px,pz]) => {
+        pushBox(missionFieldQuads, px, 4.5, pz, 1.2, 4.5, 1.2, 0x302020);
+        pushBox(missionFieldQuads, px, 9.5, pz, 1.6, 0.5, 1.6, 0x2a1a1a); // capital
+        addWall(px, pz, 1.4, 1.4);
+      });
+
+      // Fallen pillars (horizontal ground obstacles)
+      [[-18,-32,10,true],[14,-48,8,false],[-6,-60,12,true],[18,-72,8,false],[-22,-88,10,true],[6,-96,8,false]].forEach(([px,pz,pl,horiz]) => {
+        if (horiz) { pushBox(missionFieldQuads, px, 0.6, pz, pl, 0.6, 0.9, 0x362020); addWall(px,pz,pl+0.3,1.1); }
+        else       { pushBox(missionFieldQuads, px, 0.6, pz, 0.9, 0.6, pl, 0x362020); addWall(px,pz,1.1,pl+0.3); }
+      });
+
+      // Ancient archways (still standing — mark passage zones)
+      [-28, -62, -95].forEach(az => {
+        pushBox(missionFieldQuads, -4.5, 5, az, 0.5, 5, 0.5, 0x402828); addWall(-4.5, az, 0.7, 0.7);
+        pushBox(missionFieldQuads,  4.5, 5, az, 0.5, 5, 0.5, 0x402828); addWall( 4.5, az, 0.7, 0.7);
+        pushBox(missionFieldQuads,  0,  9.8, az, 5.5, 0.5, 0.5, 0x402828); // arch top
+      });
+
+      // Altar at the back — purple crystal artifact
+      pushBox(missionFieldQuads, 0, 1.5, -108, 4.0, 1.5, 2.5, 0x2a1820);
+      pushBox(missionFieldQuads, 0, 3.2, -108, 3.2, 0.3, 2.0, 0x501030); // altar slab
+      pushBox(missionFieldQuads, 0, 4.0, -108, 0.6, 2.0, 0.6, 0x8020d0); // crystal
+      pushBox(missionFieldQuads, 0, 6.2, -108, 0.4, 0.5, 0.4, 0xc040ff); // crystal tip
+      addWall(0, -108, 4.2, 2.7);
+      missionFieldQuads.push({ verts:[v3(-4,0.04,-111),v3(4,0.04,-111),v3(4,0.04,-105),v3(-4,0.04,-105)], color:0x280820, normal:v3(0,1,0), isGround:true });
+      missionFieldItems.push({ id:0, x:0, z:-108, type:'objective', label:m.objective, icon:'📜', collected:false });
+
+      // Wraith patrols — slow, but very wide vision cone
+      [[0,-25,8,true],[-16,-50,12,false],[14,-55,12,false],[0,-76,10,true],[-14,-95,9,false],[10,-100,9,false]].forEach(([px,pz,range,horiz],pi) => {
+        if (pi > profIdx + 1) return;
+        missionFieldPatrols.push({ x:px, z:pz, startX:px, startZ:pz, dx:horiz?1:0, dz:horiz?0:1, t:rng()*Math.PI*2, range, tSpeed:0.006, fur:0x3010a0, ears:'triangle', patrolType:'wraith', isHuman:false, spotted:false });
+      });
+
+    } else if (mapType === 'human_house') {
+      // Inside a human house — carpeted rooms, furniture obstacles, humans + a cat patrol
+
+      const wCol = 0xb8a890, wCol2 = 0xa89878; // plaster wall colors
+      // Warm carpet floor (overwrite base tiles inside rooms)
+      for (let fx=-20; fx<20; fx+=3) {
+        for (let fz=-115; fz<4; fz+=3) {
+          const e=((Math.floor(fx/3)+Math.floor(fz/3))&1);
+          missionFieldQuads.push({ verts:[v3(fx,0.01,fz),v3(fx+3,0.01,fz),v3(fx+3,0.01,fz+3),v3(fx,0.01,fz+3)], color:e?0x7a5848:0x6a4838, normal:v3(0,1,0), isGround:true });
+        }
+      }
+      // Ceiling slab (visual only — sells the indoors feeling)
+      missionFieldQuads.push({ verts:[v3(-22,4.2,8),v3(22,4.2,8),v3(22,4.2,-118),v3(-22,4.2,-118)], color:0xd8d0c0, normal:v3(0,-1,0), isGround:false });
+
+      // ── Structural walls ──────────────────────────────────────────────
+      const hwall = (cx,cz,hw,hd,col=wCol) => { pushBox(missionFieldQuads, cx, 2.5, cz, hw, 2.5, hd, col); addWall(cx,cz,hw+0.1,hd+0.1); };
+      // Outer house perimeter
+      hwall( 0,    -118, 20, 0.5);          // north wall
+      hwall(-20.5, -57,  0.5, 61);          // west wall full
+      hwall( 20.5, -57,  0.5, 61);          // east wall full
+      // Hallway inner walls (entry z=4 to z=-26, corridor ±8)
+      hwall(-14, -11, 6.5, 15);             // west corridor wall
+      hwall( 14, -11, 6.5, 15);             // east corridor wall
+      // Divider 1: hallway → living room at z=-26 (door gap x=[-3.5,3.5])
+      hwall(-12, -26, 8, 0.5);              // left of door
+      hwall( 12, -26, 8, 0.5);             // right of door
+      // Living room side walls (z=-26 to z=-70)
+      hwall(-20.5, -48, 0.5, 22);           // living west
+      hwall( 20.5, -48, 0.5, 22);           // living east
+      // Divider 2: living room → bedroom at z=-70 (door gap x=[-3.5,3.5])
+      hwall(-12, -70, 8, 0.5);             // left of door
+      hwall( 12, -70, 8, 0.5);             // right of door
+      // Bedroom side walls (z=-70 to z=-118)
+      hwall(-17, -94, 0.5, 24);             // bedroom west
+      hwall( 17, -94, 0.5, 24);             // bedroom east
+
+      // Door frames (decorative trim)
+      [[-3.5,-26,true],[3.5,-26,true],[-3.5,-70,true],[3.5,-70,true]].forEach(([dx,dz,v]) => {
+        pushBox(missionFieldQuads, dx, 2.5, dz, 0.2, 2.5, 0.2, 0x7a5830);
+      });
+
+      // ── Furnishings: Hallway ──────────────────────────────────────────
+      // Shoe rack at south end
+      pushBox(missionFieldQuads, 0, 0.4, 2.5, 2.5, 0.4, 0.7, 0x6a4820); addWall(0, 2.5, 2.7, 0.9);
+      // Coat rack post
+      pushBox(missionFieldQuads, -12, 1.5, -5, 0.2, 1.5, 0.2, 0x5a3810); addWall(-12, -5, 0.4, 0.4);
+      // Hallway rug
+      missionFieldQuads.push({ verts:[v3(-6,0.02,-8),v3(6,0.02,-8),v3(6,0.02,-22),v3(-6,0.02,-22)], color:0x904040, normal:v3(0,1,0), isGround:true });
+
+      // ── Furnishings: Living Room ──────────────────────────────────────
+      // Long sofa (west side)
+      pushBox(missionFieldQuads, -13, 0.8, -40, 5, 0.8, 2.0, 0x8a6858); addWall(-13, -40, 5.2, 2.2);
+      pushBox(missionFieldQuads, -13, 1.8, -41.8, 5, 1.0, 0.4, 0x7a5848); // sofa back
+      // Coffee table in front of sofa
+      pushBox(missionFieldQuads, -8,  0.4, -39, 2.0, 0.4, 1.2, 0x5a3a18); addWall(-8, -39, 2.2, 1.4);
+      // TV unit against living room south wall (faces north into room)
+      pushBox(missionFieldQuads, 4,   0.8, -28, 4.0, 0.8, 0.7, 0x202020); addWall(4, -28, 4.2, 0.9);
+      pushBox(missionFieldQuads, 4,   2.2, -27.8, 3.2, 1.2, 0.15, 0x101010); // TV screen
+      // Armchair
+      pushBox(missionFieldQuads, 14,  0.7, -36, 2.0, 0.7, 2.0, 0x9a7858); addWall(14, -36, 2.2, 2.2);
+      // Plant stand
+      pushBox(missionFieldQuads, 18,  1.0, -52, 0.6, 1.0, 0.6, 0x4a5030); addWall(18, -52, 0.8, 0.8);
+      // Dining table + chairs
+      pushBox(missionFieldQuads, 8,   0.8, -58, 4.0, 0.8, 2.5, 0x8a6030); addWall(8, -58, 4.2, 2.7);
+      [-1,1].forEach(s => { pushBox(missionFieldQuads, 8+s*5.5, 0.6, -58, 1.2, 0.6, 1.0, 0x6a4828); addWall(8+s*5.5, -58, 1.4, 1.2); });
+      // Bookshelf against east wall
+      pushBox(missionFieldQuads, 19,  1.8, -48, 0.5, 1.8, 5, 0x6a4820); addWall(19, -48, 0.7, 5.2);
+      // Kitchen counter / fridge near west wall
+      pushBox(missionFieldQuads, -18, 1.0, -55, 0.5, 1.0, 6, 0xe0e0d8); addWall(-18, -55, 0.7, 6.2); // fridge+counter
+      pushBox(missionFieldQuads, -14, 0.9, -62, 5, 0.9, 0.6, 0xd0c8b8); addWall(-14, -62, 5.2, 0.8); // counter surface
+      // Living room rug
+      missionFieldQuads.push({ verts:[v3(-18,0.02,-30),v3(8,0.02,-30),v3(8,0.02,-68),v3(-18,0.02,-68)], color:0x604850, normal:v3(0,1,0), isGround:true });
+
+      // ── Furnishings: Bedroom ─────────────────────────────────────────
+      // Double bed
+      pushBox(missionFieldQuads, -8,  0.5, -90, 4.5, 0.5, 6.5, 0xa090b0); addWall(-8, -90, 4.7, 6.7);
+      pushBox(missionFieldQuads, -8,  1.6, -93.8, 4.5, 1.2, 0.4, 0x5a4860); // headboard
+      // Bedside table
+      pushBox(missionFieldQuads, -4,  0.5, -93, 1.0, 0.5, 1.0, 0x7a5830); addWall(-4, -93, 1.2, 1.2);
+      // Wardrobe (against east wall)
+      pushBox(missionFieldQuads, 14,  2.5, -96, 2.5, 2.5, 4.0, 0x6a5040); addWall(14, -96, 2.7, 4.2);
+      // Desk (where objective is) on west side
+      pushBox(missionFieldQuads, -14, 0.8, -108, 3.0, 0.8, 1.8, 0x9a7040); addWall(-14, -108, 3.2, 2.0);
+      pushBox(missionFieldQuads, -14, 2.0, -107, 2.5, 1.0, 0.15, 0x181818); // monitor
+      // Bedroom rug
+      missionFieldQuads.push({ verts:[v3(-16,0.02,-74),v3(16,0.02,-74),v3(16,0.02,-116),v3(-16,0.02,-116)], color:0x4858a0, normal:v3(0,1,0), isGround:true });
+      // Overhead lights (ceiling lamps — warm spheres)
+      [[-8,-14],[0,-48],[-4,-92],[8,-92]].forEach(([lx,lz]) => pushBox(missionFieldQuads, lx, 3.9, lz, 0.5, 0.15, 0.5, 0xfff0d8));
+
+      // Objective — item on the desk in the bedroom
+      pushBox(missionFieldQuads, -14, 1.8, -109, 0.6, 0.4, 0.4, 0xc0a020); // glowing item
+      addWall(-14, -109, 0.8, 0.6);
+      missionFieldItems.push({ id:0, x:-14, z:-109, type:'objective', label:m.objective, icon:'🔑', collected:false });
+
+      // Patrols — humans walking room routes + a cat (extremely alert)
+      // Human in hallway pacing
+      missionFieldPatrols.push({ x:0, z:-14, startX:0, startZ:-14, dx:0, dz:1, t:rng()*Math.PI*2, range:9, tSpeed:0.012, fur:0x6080a0, ears:'floppy', patrolType:'human', isHuman:true, spotted:false });
+      // Human in living room
+      missionFieldPatrols.push({ x:0, z:-48, startX:0, startZ:-48, dx:1, dz:0, t:rng()*Math.PI*2, range:14, tSpeed:0.012, fur:0x6080a0, ears:'floppy', patrolType:'human', isHuman:true, spotted:false });
+      // Human in bedroom
+      if (profIdx >= 2) missionFieldPatrols.push({ x:0, z:-92, startX:0, startZ:-92, dx:1, dz:0, t:rng()*Math.PI*2, range:12, tSpeed:0.012, fur:0x6080a0, ears:'floppy', patrolType:'human', isHuman:true, spotted:false });
+      // The cat — patrols the living room, extremely wide vision, faster movement
+      missionFieldPatrols.push({ x:6, z:-44, startX:6, startZ:-44, dx:1, dz:0, t:rng()*Math.PI*2, range:12, tSpeed:0.020, fur:0xe07820, ears:'triangle', patrolType:'cat', isHuman:false, spotted:false });
+      // Extra cat in bedroom for higher professor levels
+      if (profIdx >= 3) missionFieldPatrols.push({ x:-2, z:-88, startX:-2, startZ:-88, dx:0, dz:1, t:rng()*Math.PI*2, range:10, tSpeed:0.022, fur:0xa05810, ears:'triangle', patrolType:'cat', isHuman:false, spotted:false });
     }
 
-    // ── Seeded random scatter walls (additional cover in any map) ─────────
-    const mazeCount = 4 + Math.floor(rng()*4);
-    const wallCol = { wolf_camp:0x3a2810, human_lab:0x606868, nether:0x1a0c1c, forest:0x3a2808, village:0x907868 }[mapType]||0x383028;
-    for (let mi2=0; mi2<mazeCount; mi2++) {
-      const mx=(rng()-0.5)*60, mz=-20-rng()*70;
-      if (Math.abs(mx) < 4 && mz > -18) continue; // keep entry clear
-      const mlen=6+rng()*12, mh=2.5+rng()*1.5, horiz=rng()<0.5;
-      if (horiz) {
-        pushBox(missionFieldQuads, mx, mh, mz, mlen, mh, 0.45, wallCol);
-        addWall(mx, mz, mlen, 0.6);
-      } else {
-        pushBox(missionFieldQuads, mx, mh, mz, 0.45, mh, mlen, wallCol);
-        addWall(mx, mz, 0.6, mlen);
+    // ── Seeded random scatter walls (bonus cover — skip for structured indoor maps) ──
+    if (mapType !== 'human_house') {
+      const mazeCount = 4 + Math.floor(rng()*4);
+      const wallCol = { wolf_camp:0x3a2810, human_lab:0x606868, nether:0x1a0c1c, forest:0x3a2808, village:0x907868, cave:0x2a2018, nether_ruins:0x3a2028 }[mapType]||0x383028;
+      for (let mi2=0; mi2<mazeCount; mi2++) {
+        const mx=(rng()-0.5)*60, mz=-20-rng()*70;
+        if (Math.abs(mx) < 4 && mz > -18) continue; // keep entry clear
+        const mlen=6+rng()*12, mh=2.5+rng()*1.5, horiz=rng()<0.5;
+        if (horiz) {
+          pushBox(missionFieldQuads, mx, mh, mz, mlen, mh, 0.45, wallCol);
+          addWall(mx, mz, mlen, 0.6);
+        } else {
+          pushBox(missionFieldQuads, mx, mh, mz, 0.45, mh, mlen, wallCol);
+          addWall(mx, mz, 0.6, mlen);
+        }
       }
     }
   }
