@@ -8235,7 +8235,8 @@
       ? 'I came from a human home. A dog I had never met before gave me a map, and it led here.'
       : charName === 'Ruff'
       ? 'I got caught in the current of a river, and it swept me here.'
-      : 'From a peace resistance in the forest. I came here after a strange pup I had never seen before gave me this map. And it led here.';
+      : charName === 'Bark'
+      ? 'I uh... I don\'t know? I chased a butterfly all the way here!'
     const dlg = [
       { speaker: 'Prof. Maple 🍁', text: 'Wait right there! Who are you?' },
       { speaker: ch,                   text: 'Um... my name is ' + charName + '.' },
