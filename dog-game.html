@@ -13964,11 +13964,10 @@
     });
     const npcQ = [];
     missionFieldNpcs.forEach(n => addNpcDog(npcQ, n.x, n.z, 1.0, n.fur, 0, n.ears));
-    const dogQ = [];
-    buildDog(dogQ);
+    buildDog();
 
     const fogHex = {wolf_camp:0x100c04,human_lab:0x080c10,nether:0x0a0004,forest:0x081004,village:0x0c0a04}[mapType]||0x080804;
-    const allQ = [...missionFieldQuads, ...patrolQ, ...npcQ, ...dogQ];
+    const allQ = [...missionFieldQuads, ...patrolQ, ...npcQ, ...dogQuads];
     const toRender = allQ.map(q => {
       const pts = projectClipped(q.verts, cam); if (!pts) return null;
       const cx=q.verts.reduce((s,v)=>s+v.x,0)/4, cy=q.verts.reduce((s,v)=>s+v.y,0)/4, cz=q.verts.reduce((s,v)=>s+v.z,0)/4;
@@ -13980,7 +13979,7 @@
     worldL.sort((a,b)=>b.avgZ-a.avgZ);
     [...groundL,...worldL].forEach(({pts,color,normal,fogT,fogHex,isGround})=>{
       ctx.beginPath(); pts.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y)); ctx.closePath();
-      ctx.fillStyle=blendFog(litColor(color,normal,isGround),fogT,fogHex); ctx.fill();
+      ctx.fillStyle=shade(color,normal,fogT,fogHex); ctx.fill();
     });
 
     // Patrol vision cones
