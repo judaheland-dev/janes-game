@@ -4903,6 +4903,10 @@
     if (inMissionHQ && gameState === 'missionHQ') {
       if (e.code === 'Escape') { exitMissionHQ(); return; }
     }
+    // Inside Mission Field: Escape aborts
+    if (inMissionField && gameState === 'missionField') {
+      if (e.code === 'Escape') { exitMissionField(false); return; }
+    }
     // Inside rock scrubland: Escape exits
     if (inRockScrub && gameState === 'rockScrub') {
       if (e.code === 'Escape') { exitRockScrub(); return; }
@@ -4917,10 +4921,7 @@
       if (e.code==='Escape'||e.code==='KeyM') {
         cbTreasureMapOpen = false;
         if (!cbMapViewed) {
-          gameState = 'cutscene';
-          activeDialogueArr = CB_LETSGO_DLG;
-          dialogueIndex = 0;
-          showDialogue(0);
+          cbArriveVillage();
         }
         return;
       }
@@ -4964,8 +4965,8 @@
         !inventoryOpen && !jewelryBoxOpen && !sciMenuOpen && !sciDonateOpen && !sciCollectionOpen &&
         (gameState === 'playing' || gameState === 'city' || gameState === 'forest' ||
          gameState === 'rockScrub' || gameState === 'cave' || gameState === 'missionHQ' ||
-         gameState === 'sciCenter' || gameState === 'factory' || gameState === 'academy' ||
-         gameState === 'obsidianWild' || gameState === 'foodcenter')) {
+         gameState === 'missionField' || gameState === 'sciCenter' || gameState === 'factory' ||
+         gameState === 'academy' || gameState === 'obsidianWild' || gameState === 'foodcenter')) {
       const _si = { 'Digit1':0, 'Digit2':1, 'Digit3':2, 'Digit4':3, 'Digit5':4, 'Digit6':5 };
       const _order = getSwitchOrder();
       if (e.code in _si && _si[e.code] < _order.length) {
@@ -5316,6 +5317,20 @@
           else         ds.z += Math.sign(ds.z - b.z) * (-oz);
         }
       }
+      // South path Mission Field exit — walk past z=42 on center path when mission active
+      if (activeMission && ds.z > 41.5 && Math.abs(ds.x) < 3.5 && gameState === 'playing') {
+        enterMissionField();
+        return;
+      }
+      // Show hint when near south exit with active mission
+      if (activeMission && ds.z > 37 && Math.abs(ds.x) < 5 && gameState === 'playing') {
+        const W = canvas.width, H = canvas.height;
+        ctx.globalAlpha = Math.max(0, Math.min(1, (ds.z - 37) / 4));
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.font = 'bold 14px Arial'; ctx.fillStyle = 'rgba(255,200,80,0.95)';
+        ctx.fillText('🎯  Walk south to deploy on mission', W/2, H - 120);
+        ctx.globalAlpha = 1;
+      }
       // North path forest entrance — walk past z=-48 on the dirt path
       if (!(activeCharacter === 'ruff' && !ruffInVillage) && ds.z < -48 && Math.abs(ds.x) < 3.5 && gameState === 'playing') {
         enterForest();
@@ -5564,7 +5579,7 @@
           arrivalNpcWalking = false;
         }
       }
-      updateVillageKids();
+      if (!arrivalNpcsActive) updateVillageKids();
       keysJustPressed.clear();
     } else {
       document.getElementById('wob-coins').classList.add('hidden');
@@ -5893,12 +5908,12 @@
       ...(activeCharacter === 'ruff' && !ruffInVillage ? (ruffScene === 'battle' ? ruffBattleQuads : ruffScene === 'river' ? ruffRiverQuads : ruffQuads) : []),
       ...(activeCharacter === 'bark' && !barkInVillage ? (barkInUpstairs ? barkUpstairsQuads : barkDeepForest ? barkDeepForestQuads : barkInForest ? barkForestQuads : barkQuads) : []),
       ...(isInVillage() ? villageQuads : []),
-      ...(isInVillage() ? npcQuads : []),
+      ...(isInVillage() && !arrivalNpcsActive ? npcQuads : []),
       ...arrivalNpcQuads,
       ...(isInVillage() ? villageScratchQuads : []),
       ...(isInVillage() ? squirrelQuads : []),
       ...(isInVillage() ? lostPupQuads : []),
-      ...(isInVillage() ? villageKidQuads : []),
+      ...(isInVillage() && !arrivalNpcsActive ? villageKidQuads : []),
       ...(isInVillage() ? questObjQuads : []),
       ...dogQuads,
     ];
@@ -6722,6 +6737,8 @@
     // Jewelry/necklaces are shared across all games
     _gcur.jewelryBox       = JSON.stringify(jewelryBox);
     _gcur.equippedNecklace = equippedNecklace;
+    // Time of day is shared across all dog games
+    _gcur.dayPhaseMs       = dayPhaseMs;
     // Village position — so other characters can see where we left off
     if (isInVillage()) {
       if (!_gcur.charVillagePos) _gcur.charVillagePos = {};
@@ -7002,6 +7019,8 @@
       // Shared coin pool: always restore from global save so all characters share coins
       const _gcoins = getGlobalSave();
       if (_gcoins.wobCoins != null) wobCoins = _gcoins.wobCoins;
+      // Time of day is shared — global value overrides per-character save
+      if (_gcoins.dayPhaseMs != null) dayPhaseMs = _gcoins.dayPhaseMs;
       // Restore shared mission state from global save
       if (Array.isArray(_gcoins.missionCompleted)) missionCompleted = _gcoins.missionCompleted;
       activeMission = _gcoins.activeMission || null;
@@ -8100,10 +8119,6 @@
       }
       gameState = 'playing';
       dialogueCooldown = 60;   // ~1 second at 60fps — prevents immediate re-trigger
-      if (activeDialogueArr === CB_LETSGO_DLG) {
-        cbArriveVillage();
-        return;
-      }
       if (activeDialogueArr === CB_VILLAGE_ARRIVE_DLG) {
         // Biscuit leaves — now Prof. Maple greets Cheeseball
         arrivalNpcsActive = true;
@@ -8462,6 +8477,7 @@
       const sf = document.getElementById('sleep-fade');
       if (sf) { sf.style.transition = 'none'; sf.classList.remove('visible'); }
       npcQuads.length = 0;
+      clearingNPCs.length = 0;
       if (cfg.onEnter) cfg.onEnter(restored);
       document.getElementById('hud').style.display = '';
       document.getElementById('reset-btn').classList.remove('hidden');
@@ -13458,15 +13474,19 @@
   }
 
   function acceptMission(profIdx, mIdx) {
+    if (activeMission) {
+      toastMsg   = '⚠️ Abandon your current mission first!';
+      toastTimer = 260;
+      return;
+    }
     activeMission = { profIdx, mIdx };
     const p = PROFESSORS[profIdx];
     const m = p.missions[mIdx];
     renderMissionHUD();
     saveProgress();
     showProfMissions(profIdx);
-    // Show confirmation toast
-    toastMsg = `🎯 Mission accepted: ${m.title}! Use pup: ${m.role}`;
-    toastTimer = 340;
+    toastMsg = `🎯 Mission accepted: ${m.title}! Head to the south village exit to deploy.`;
+    toastTimer = 380;
   }
 
   function completeMission(profIdx, mIdx, success) {
@@ -13634,6 +13654,394 @@
       ctx.font = '12px Arial'; ctx.fillStyle = 'rgba(200,170,80,0.65)';
       ctx.fillText('Esc / walk south to exit HQ', W/2, H - 56);
     }
+  }
+
+  // ── Mission Field ────────────────────────────────────────────────────────
+  // Procedurally generated outdoor map, unique per mission, deployed from south village exit.
+
+  let inMissionField  = false;
+  let missionFieldQuads = [];
+  let missionFieldPatrols = []; // [{x,z,startX,startZ,dx,dz,t,range,fur,ears,isHuman,spotted}]
+  let missionFieldItems  = []; // [{id,x,z,type,label,icon,collected}]
+  let missionFieldNpcs   = []; // [{x,z,label,color,fur,ears}]
+  let missionFieldWalls  = []; // axis-aligned wall segments [{x1,z1,x2,z2}]
+  let missionFieldObjectiveReady = false;
+  let missionFieldDetected = false;
+
+  // Seeded LCG RNG tied to mission key so each mission always generates the same map
+  function mfRng(seed) {
+    let s = seed >>> 0;
+    return () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 0x100000000; };
+  }
+
+  // Map-type array: one entry per [profIdx*3 + mIdx]
+  const MISSION_MAP_TYPES = [
+    'wolf_camp','wolf_camp','human_lab',  // 0 Maple
+    'human_lab','nether','nether',        // 1 Birch
+    'forest','nether','wolf_camp',        // 2 Cedar
+    'village','wolf_camp','nether',       // 3 Ash
+    'human_lab','village','wolf_camp',    // 4 Flint
+    'forest','nether','wolf_camp',        // 5 Oak
+    'human_lab','village','forest',       // 6 Stone
+  ];
+
+  function getMissionMapType() {
+    if (!activeMission) return 'forest';
+    return MISSION_MAP_TYPES[activeMission.profIdx * 3 + activeMission.mIdx] || 'forest';
+  }
+
+  function buildMissionField() {
+    missionFieldQuads.length  = 0;
+    missionFieldPatrols.length = 0;
+    missionFieldItems.length  = 0;
+    missionFieldNpcs.length   = 0;
+    missionFieldWalls.length  = 0;
+    missionFieldObjectiveReady = false;
+    missionFieldDetected = false;
+    if (!activeMission) return;
+
+    const { profIdx, mIdx } = activeMission;
+    const mKey  = profIdx * 3 + mIdx;
+    const rng   = mfRng(mKey * 9973 + 7);
+    const m     = PROFESSORS[profIdx].missions[mIdx];
+    const mapType = getMissionMapType();
+
+    const FIELD_W = 30, FIELD_D = 80; // half-width x, total depth z
+
+    // ── Floor ────────────────────────────────────────────────────────────
+    const fc = { wolf_camp:0x2a3018, human_lab:0x404040, nether:0x1a0808, forest:0x182810, village:0x706050 }[mapType]||0x284020;
+    const fa = { wolf_camp:0x222810, human_lab:0x383838, nether:0x120606, forest:0x1e3815, village:0x606040 }[mapType]||0x1e3010;
+    for (let fx = -FIELD_W; fx < FIELD_W; fx += 2) {
+      for (let fz = -FIELD_D; fz < 10; fz += 2) {
+        const e = ((fx/2+fz/2)&1);
+        missionFieldQuads.push({ verts:[v3(fx,0,fz),v3(fx+2,0,fz),v3(fx+2,0,fz+2),v3(fx,0,fz+2)], color:e?fc:fa, normal:v3(0,1,0), isGround:true });
+      }
+    }
+    // Entry path strip
+    for (let gz = -4; gz < 10; gz += 2) {
+      missionFieldQuads.push({ verts:[v3(-3,0.01,gz),v3(3,0.01,gz),v3(3,0.01,gz+2),v3(-3,0.01,gz+2)], color:0x6a5a38, normal:v3(0,1,0), isGround:true });
+    }
+
+    // ── Perimeter ────────────────────────────────────────────────────────
+    if (mapType === 'forest' || mapType === 'wolf_camp') {
+      for (let i = 0; i < 80; i++) {
+        const a = (i/80)*Math.PI*2, r = FIELD_W - 1 + rng()*4;
+        const tx = Math.cos(a)*r, tz = -FIELD_D*0.5 + Math.sin(a)*r*0.6;
+        if (tz > 6 && Math.abs(tx) < 5) continue;
+        addTree(tx, tz, 0.6+rng()*0.5, missionFieldQuads);
+      }
+    } else {
+      pushBox(missionFieldQuads,  0,      3, -FIELD_D-0.1, FIELD_W, 3, 0.3, 0x707070);
+      pushBox(missionFieldQuads, -FIELD_W-0.1, 3, -FIELD_D/2, 0.3, 3, FIELD_D*0.5+8, 0x707070);
+      pushBox(missionFieldQuads,  FIELD_W+0.1, 3, -FIELD_D/2, 0.3, 3, FIELD_D*0.5+8, 0x707070);
+    }
+
+    // ── Map-specific geometry + objective ────────────────────────────────
+    if (mapType === 'wolf_camp') {
+      [[-12,-28],[8,-28],[-5,-46],[14,-50],[-18,-50],[3,-18]].forEach(([tx,tz]) => {
+        pushBox(missionFieldQuads, tx, 1.0, tz, 4, 1.8, 5, 0x4a3420);
+        pushBox(missionFieldQuads, tx, 3.0, tz, 4.4, 0.3, 5.4, 0x6a4a28);
+        pushBox(missionFieldQuads, tx+4.5, 0.3, tz, 0.8, 0.3, 0.8, 0x802010);
+        pushBox(missionFieldQuads, tx+4.5, 0.7, tz, 0.4, 0.4, 0.4, 0xe06010);
+      });
+      for (let fi = 0; fi < 24; fi++) {
+        const fx = -17+fi*1.5, fz = -12;
+        if (Math.abs(fx) < 5) continue;
+        pushBox(missionFieldQuads, fx, 1.4, fz, 0.2, 1.4, 0.2, 0x3a2810);
+        if (fi%2===0) pushBox(missionFieldQuads, fx, 2.0, fz, 0.7, 0.15, 0.15, 0x3a2810);
+      }
+      pushBox(missionFieldQuads, 2, 5.0, -60, 0.15, 5.0, 0.15, 0x5a4020);
+      pushBox(missionFieldQuads, 2.1, 8.8, -60, 2.0, 0.7, 0.06, 0xc03020);
+      missionFieldItems.push({ id:0, x:2, z:-60, type:'objective', label:m.objective, icon:'🏴', collected:false });
+      for (let wi=0;wi<4;wi++) { const wx=(rng()-0.5)*22, wz=-18-rng()*38; missionFieldNpcs.push({x:wx,z:wz,label:'Wolf 🐺',color:'#c09080',fur:0x706060,ears:'triangle'}); }
+
+    } else if (mapType === 'human_lab') {
+      pushBox(missionFieldQuads,  0, 3, -38, 16, 3, 20, 0x909898);
+      [[0,-30],[0,-44]].forEach(([wx,wz]) => pushBox(missionFieldQuads, wx, 2.5, wz, 14, 2.5, 0.3, 0x606868));
+      [[-6,-34],[5,-34],[-6,-44],[5,-44]].forEach(([tx,tz]) => {
+        pushBox(missionFieldQuads, tx, 1.0, tz, 2, 1.0, 1, 0x4a5050);
+        pushBox(missionFieldQuads, tx, 2.2, tz, 0.6, 0.4, 0.5, 0x20e0a0);
+      });
+      pushBox(missionFieldQuads, -5, 2.5, -54, 1.5, 2.5, 1, 0x3060c0);
+      missionFieldItems.push({ id:0, x:-5, z:-54, type:'objective', label:m.objective, icon:'💾', collected:false });
+
+    } else if (mapType === 'nether') {
+      for (let ci=0;ci<18;ci++) {
+        const cx=(rng()-0.5)*50, cz=-10-rng()*55;
+        const ch=1.5+rng()*3.5, cw=0.8+rng()*2;
+        pushBox(missionFieldQuads, cx, ch, cz, cw, ch, cw, 0x2a1818);
+      }
+      for (let sz=-65;sz<-10;sz+=2) {
+        const sx=Math.sin(sz*0.12)*6;
+        missionFieldQuads.push({verts:[v3(sx-2,0.02,sz),v3(sx+2,0.02,sz),v3(sx+2,0.02,sz+2),v3(sx-2,0.02,sz+2)],color:0x0c1830,normal:v3(0,1,0),isGround:true});
+      }
+      pushBox(missionFieldQuads, 4, 2.5, -63, 0.8, 2.5, 0.8, 0xa020d0);
+      pushBox(missionFieldQuads, 4, 5.5, -63, 0.5, 0.8, 0.5, 0xe060ff);
+      missionFieldItems.push({ id:0, x:4, z:-63, type:'objective', label:m.objective, icon:'💎', collected:false });
+
+    } else if (mapType === 'forest') {
+      for (let i=0;i<14;i++) {
+        const a=rng()*Math.PI*2, r=6+rng()*18;
+        const tx=Math.cos(a)*r, tz=-15-rng()*55;
+        if (tz>0) continue;
+        addTree(tx, tz, 0.5+rng()*0.4, missionFieldQuads);
+      }
+      pushBox(missionFieldQuads, 4, 1.5, -58, 0.15, 1.5, 0.8, 0x5a3010);
+      pushBox(missionFieldQuads, 4, 2.4, -58, 1.4, 0.9, 0.1, 0xe8d090);
+      missionFieldItems.push({ id:0, x:4, z:-58, type:'objective', label:m.objective, icon:'📋', collected:false });
+
+    } else { // village
+      [[-16,-22],[8,-22],[-8,-40],[14,-40]].forEach(([hx,hz]) => {
+        pushBox(missionFieldQuads, hx, 2.0, hz, 5, 2.0, 5, 0xc09060);
+        pushBox(missionFieldQuads, hx, 4.5, hz, 5.5, 0.6, 5.5, 0x804020);
+        pushBox(missionFieldQuads, hx, 1.2, hz+2.6, 0.8, 1.2, 0.2, 0x4a2a10);
+      });
+      const fColors=[0xd4a060,0x8a6040,0xc0c0a0,0x706050];
+      for(let ni=0;ni<4;ni++){const nx=(rng()-0.5)*36,nz=-18-rng()*28;missionFieldNpcs.push({x:nx,z:nz,label:'Neighbor 🐾',color:'#e8d090',fur:fColors[ni%4],ears:rng()<0.5?'floppy':'triangle'});}
+      pushBox(missionFieldQuads, 0, 1.5, -53, 0.15, 1.5, 0.8, 0x5a3010);
+      pushBox(missionFieldQuads, 0, 2.5, -53, 1.2, 0.9, 0.1, 0xe8d090);
+      missionFieldItems.push({ id:0, x:0, z:-53, type:'objective', label:m.objective, icon:'📋', collected:false });
+    }
+
+    // ── Maze walls ───────────────────────────────────────────────────────
+    const mazeCount = 3 + Math.floor(rng()*3);
+    for (let mi2=0;mi2<mazeCount;mi2++) {
+      const mx=(rng()-0.5)*38, mz=-14-rng()*44;
+      const mlen=5+rng()*10, horiz=rng()<0.5;
+      if (horiz) {
+        pushBox(missionFieldQuads, mx, 2.2, mz, mlen, 2.2, 0.3, 0x383028);
+        missionFieldWalls.push({x1:mx-mlen,z1:mz-0.4,x2:mx+mlen,z2:mz+0.4});
+      } else {
+        pushBox(missionFieldQuads, mx, 2.2, mz, 0.3, 2.2, mlen, 0x383028);
+        missionFieldWalls.push({x1:mx-0.4,z1:mz-mlen,x2:mx+0.4,z2:mz+mlen});
+      }
+    }
+
+    // ── Patrols ──────────────────────────────────────────────────────────
+    const patrolCount = 2 + Math.floor(rng()*3) + Math.floor(profIdx*0.4);
+    const pFur = {wolf_camp:0x706060,human_lab:0x384050,nether:0x2a1818,forest:0x4a6a30,village:0x9a7050}[mapType]||0x706060;
+    for (let pi2=0;pi2<patrolCount;pi2++) {
+      const px=(rng()-0.5)*38, pz=-14-rng()*48;
+      const range=4+rng()*8, horiz=rng()<0.5;
+      missionFieldPatrols.push({ x:px, z:pz, startX:px, startZ:pz, dx:horiz?1:0, dz:horiz?0:1, t:rng()*Math.PI*2, range, fur:pFur, ears:rng()<0.5?'floppy':'triangle', isHuman:mapType==='human_lab', spotted:false });
+    }
+  }
+
+  function enterMissionField() {
+    if (!activeMission) return;
+    showEnterScreen('Deploying on mission…', () => {
+      inMissionField = true;
+      buildMissionField();
+      dogState.x = 0; dogState.z = 6; dogState.y = DOG_FLOOR;
+      dogState.yaw = Math.PI; dogState.velY = 0; dogState.grounded = true;
+      cam.yaw   = Math.PI;
+      cam.pos.x = 0; cam.pos.y = DOG_FLOOR+3.5; cam.pos.z = 6+6.5;
+      gameState = 'missionField';
+    });
+  }
+
+  function exitMissionField(completed) {
+    inMissionField = false;
+    const mission = activeMission;
+    if (completed && mission) {
+      completeMission(mission.profIdx, mission.mIdx, true);
+    }
+    showEnterScreen('Returning to village…', () => {
+      dogState.x = 0; dogState.z = 38; dogState.y = DOG_FLOOR;
+      dogState.yaw = Math.PI; dogState.velY = 0; dogState.grounded = true;
+      cam.yaw = Math.PI;
+      cam.pos.x = 0; cam.pos.y = DOG_FLOOR+3.5; cam.pos.z = 38+6.5;
+      gameState = 'playing';
+    });
+  }
+
+  let _mfSpottedFlashTimer = 0;
+
+  function updateMissionField() {
+    const ds = dogState;
+    if (keys['ArrowLeft']  || keys['KeyA']) ds.yaw += TURN_SPEED;
+    if (keys['ArrowRight'] || keys['KeyD']) ds.yaw -= TURN_SPEED;
+    let moved = false;
+    if (keys['ArrowUp']    || keys['KeyW']) { ds.x+=sin(ds.yaw)*MOVE_SPEED; ds.z+=cos(ds.yaw)*MOVE_SPEED; moved=true; }
+    if (keys['ArrowDown']  || keys['KeyS']) { ds.x-=sin(ds.yaw)*BACK_SPEED*0.6; ds.z-=cos(ds.yaw)*BACK_SPEED*0.6; }
+    if (moved) { ds.walkT+=0.14; const sw=Math.sin(ds.walkT)*0.55; ds.frontLegAngle=sw; ds.backLegAngle=-sw; }
+    ds.wagT += 0.05;
+    if (keysJustPressed.has('Space') && ds.grounded) { ds.velY=JUMP_VEL; ds.grounded=false; }
+    ds.velY+=GRAVITY; ds.y+=ds.velY;
+    if (ds.y<=DOG_FLOOR) { ds.y=DOG_FLOOR; ds.velY=0; ds.grounded=true; }
+
+    ds.x = Math.max(-28, Math.min(28, ds.x));
+    ds.z = Math.max(-78, Math.min(8,  ds.z));
+
+    // Wall collisions
+    const PAD = 0.65;
+    for (const w of missionFieldWalls) {
+      const cx=(w.x1+w.x2)/2, cz=(w.z1+w.z2)/2;
+      const hw=(w.x2-w.x1)/2+PAD, hd=(w.z2-w.z1)/2+PAD;
+      const ox=Math.abs(ds.x-cx)-hw, oz=Math.abs(ds.z-cz)-hd;
+      if (ox<0&&oz<0) { if(ox>oz) ds.x+=Math.sign(ds.x-cx)*(-ox); else ds.z+=Math.sign(ds.z-cz)*(-oz); }
+    }
+
+    // South walk-back to abort
+    if (ds.z > 7.5 && Math.abs(ds.x) < 4) { keysJustPressed.clear(); exitMissionField(false); return; }
+
+    // Escape to abort
+    if (keysJustPressed.has('Escape')) { keysJustPressed.clear(); exitMissionField(false); return; }
+
+    // Update patrol positions + detection
+    missionFieldDetected = false;
+    missionFieldPatrols.forEach(p => {
+      p.t += 0.013;
+      p.x = p.startX + Math.sin(p.t) * p.range * p.dx;
+      p.z = p.startZ + Math.sin(p.t) * p.range * p.dz;
+      // Patrol facing direction
+      const pFacing = p.dx !== 0 ? (Math.sin(p.t) >= 0 ? Math.PI/2 : -Math.PI/2) : (Math.sin(p.t) >= 0 ? 0 : Math.PI);
+      const tdx = ds.x - p.x, tdz = ds.z - p.z;
+      const dist = Math.hypot(tdx, tdz);
+      if (dist < 7) {
+        const angle = Math.atan2(tdx, tdz);
+        const diff  = ((angle - pFacing) + Math.PI*3) % (Math.PI*2) - Math.PI;
+        if (Math.abs(diff) < 0.65) missionFieldDetected = true;
+      }
+    });
+
+    if (missionFieldDetected && _mfSpottedFlashTimer <= 0) {
+      _mfSpottedFlashTimer = 80;
+      dogState.x = 0; dogState.z = 6;
+    }
+    if (_mfSpottedFlashTimer > 0) _mfSpottedFlashTimer--;
+
+    // Objective interaction
+    const obj = missionFieldItems.find(it => !it.collected && it.type === 'objective');
+    if (obj) {
+      const dist = Math.hypot(ds.x-obj.x, ds.z-obj.z);
+      missionFieldObjectiveReady = dist < 3.2;
+      if (missionFieldObjectiveReady && keysJustPressed.has('KeyE')) {
+        keysJustPressed.delete('KeyE');
+        obj.collected = true;
+        keysJustPressed.clear();
+        exitMissionField(true);
+        return;
+      }
+    } else {
+      missionFieldObjectiveReady = false;
+    }
+
+    keysJustPressed.clear();
+
+    // Camera
+    camYawTarget = ds.yaw;
+    cam.yaw  = lerp(cam.yaw, camYawTarget, 0.10);
+    cam.pos.x = lerp(cam.pos.x, ds.x - sin(cam.yaw)*6.5, 0.10);
+    cam.pos.y = lerp(cam.pos.y, ds.y + 3.5, 0.10);
+    cam.pos.z = lerp(cam.pos.z, ds.z - cos(cam.yaw)*6.5, 0.10);
+    cam.pitch = 0.28;
+  }
+
+  function renderMissionField() {
+    if (!activeMission) return;
+    const W = canvas.width, H = canvas.height;
+    const mapType = getMissionMapType();
+    const { profIdx, mIdx } = activeMission;
+    const m = PROFESSORS[profIdx].missions[mIdx];
+
+    const skyTop = {wolf_camp:'#12100a',human_lab:'#101820',nether:'#0a0004',forest:'#0a1408',village:'#181008'}[mapType]||'#0a0a0a';
+    const skyBot = {wolf_camp:'#201c10',human_lab:'#181c24',nether:'#1a0010',forest:'#101c08',village:'#241808'}[mapType]||'#0a0a0a';
+    const g = ctx.createLinearGradient(0,0,0,H*0.55);
+    g.addColorStop(0,skyTop); g.addColorStop(1,skyBot);
+    ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+
+    // Patrols as quads
+    const patrolQ = [];
+    missionFieldPatrols.forEach(p => {
+      const pFacing = p.dx!==0 ? (Math.sin(p.t)>=0?Math.PI/2:-Math.PI/2) : (Math.sin(p.t)>=0?0:Math.PI);
+      if (p.isHuman) {
+        pushBox(patrolQ, p.x, DOG_FLOOR+0.9, p.z, 0.38, 0.9, 0.32, 0x4060a0, pFacing);
+        pushBox(patrolQ, p.x+sin(pFacing)*0.36, DOG_FLOOR+1.62, p.z+cos(pFacing)*0.36, 0.28, 0.28, 0.28, 0xf0d0b0, pFacing);
+      } else {
+        addNpcDog(patrolQ, p.x, p.z, 1.0, p.fur, pFacing, p.ears);
+      }
+    });
+    const npcQ = [];
+    missionFieldNpcs.forEach(n => addNpcDog(npcQ, n.x, n.z, 1.0, n.fur, 0, n.ears));
+    const dogQ = [];
+    buildDog(dogQ);
+
+    const fogHex = {wolf_camp:0x100c04,human_lab:0x080c10,nether:0x0a0004,forest:0x081004,village:0x0c0a04}[mapType]||0x080804;
+    const allQ = [...missionFieldQuads, ...patrolQ, ...npcQ, ...dogQ];
+    const toRender = allQ.map(q => {
+      const pts = projectClipped(q.verts, cam); if (!pts) return null;
+      const cx=q.verts.reduce((s,v)=>s+v.x,0)/4, cy=q.verts.reduce((s,v)=>s+v.y,0)/4, cz=q.verts.reduce((s,v)=>s+v.z,0)/4;
+      const wd = len(sub(v3(cx,cy,cz),cam.pos));
+      const fogT = Math.min(1,Math.max(0,(wd-5)/22))*0.88*(q.isGround?0.2:1);
+      return { pts, avgZ:pts.reduce((s,p)=>s+p.z,0)/pts.length, color:q.color, normal:q.normal, fogT, fogHex, isGround:q.isGround };
+    }).filter(Boolean);
+    const groundL=toRender.filter(q=>q.isGround), worldL=toRender.filter(q=>!q.isGround);
+    worldL.sort((a,b)=>b.avgZ-a.avgZ);
+    [...groundL,...worldL].forEach(({pts,color,normal,fogT,fogHex,isGround})=>{
+      ctx.beginPath(); pts.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y)); ctx.closePath();
+      ctx.fillStyle=blendFog(litColor(color,normal,isGround),fogT,fogHex); ctx.fill();
+    });
+
+    // Patrol vision cones
+    missionFieldPatrols.forEach(p => {
+      const sp=project(v3(p.x,DOG_FLOOR+0.5,p.z),cam); if(!sp) return;
+      const pFacing=p.dx!==0?(Math.sin(p.t)>=0?Math.PI/2:-Math.PI/2):(Math.sin(p.t)>=0?0:Math.PI);
+      const lx=sin(pFacing-0.65)*7, lz=cos(pFacing-0.65)*7;
+      const rx=sin(pFacing+0.65)*7, rz=cos(pFacing+0.65)*7;
+      const spL=project(v3(p.x+lx,DOG_FLOOR,p.z+lz),cam), spR=project(v3(p.x+rx,DOG_FLOOR,p.z+rz),cam);
+      if (spL&&spR) {
+        ctx.globalAlpha=0.16; ctx.fillStyle='#ffcc00';
+        ctx.beginPath(); ctx.moveTo(sp.x,sp.y); ctx.lineTo(spL.x,spL.y); ctx.lineTo(spR.x,spR.y); ctx.closePath(); ctx.fill();
+        ctx.globalAlpha=1;
+      }
+      // Patrol label
+      ctx.globalAlpha=0.82; ctx.textAlign='center'; ctx.textBaseline='bottom';
+      ctx.font='bold 11px Arial'; ctx.fillStyle = p.isHuman ? '#a0b8e0' : '#d0a080';
+      ctx.fillText(p.isHuman?'Guard 👮':'Patrol 🐺', sp.x, sp.y-4);
+      ctx.globalAlpha=1;
+    });
+
+    // Spotted flash
+    if (_mfSpottedFlashTimer > 0) {
+      ctx.globalAlpha = Math.min(1, _mfSpottedFlashTimer/30);
+      ctx.fillStyle = 'rgba(255,40,20,0.30)'; ctx.fillRect(0,0,W,H);
+      ctx.globalAlpha = 1;
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.font='bold 28px Arial'; ctx.fillStyle='rgba(255,80,40,0.95)';
+      ctx.fillText('🚨 SPOTTED — reset to entry!', W/2, H*0.3);
+    }
+
+    // NPC labels
+    missionFieldNpcs.forEach(n => {
+      const sp=project(v3(n.x,DOG_FLOOR+2.2,n.z),cam); if(!sp) return;
+      ctx.globalAlpha=0.88; ctx.textAlign='center'; ctx.textBaseline='bottom';
+      ctx.font='bold 11px Arial'; ctx.fillStyle=n.color;
+      ctx.fillText(n.label, sp.x, sp.y-3); ctx.globalAlpha=1;
+    });
+
+    // Objective marker
+    const obj=missionFieldItems.find(it=>!it.collected&&it.type==='objective');
+    if (obj) {
+      const sp=project(v3(obj.x,DOG_FLOOR+3.0,obj.z),cam);
+      if (sp) {
+        ctx.globalAlpha=0.92; ctx.textAlign='center'; ctx.textBaseline='bottom';
+        ctx.font='bold 13px Arial';
+        ctx.fillStyle=missionFieldObjectiveReady?'#60ff80':'#ffdd60';
+        ctx.fillText(`${obj.icon} ${missionFieldObjectiveReady?'E · Complete objective':'Objective'}`, sp.x, sp.y-3);
+        ctx.globalAlpha=1;
+      }
+    }
+
+    // HUD banner
+    ctx.textAlign='left'; ctx.textBaseline='top';
+    ctx.font='bold 13px Arial'; ctx.fillStyle='rgba(255,220,80,0.92)';
+    ctx.fillText(`🎯 ${m.title}`, 14, 14);
+    ctx.font='12px Arial'; ctx.fillStyle='rgba(200,180,120,0.80)';
+    ctx.fillText(m.objective, 14, 32);
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.font='12px Arial'; ctx.fillStyle='rgba(200,180,150,0.50)';
+    ctx.fillText('Walk/Esc south to abort', W/2, H-52);
   }
 
   // ── Science Center ──────────────────────────────────────────────────────────
@@ -14789,7 +15197,8 @@
       else if (gameState === 'foodcenter'){ updateFoodCenter(); renderFoodCenter(); }
       else if (gameState === 'cave')       { updateCave();        renderCave();        }
       else if (gameState === 'academy')    { updateAcademy();     renderAcademy();     }
-      else if (gameState === 'missionHQ')   { updateMissionHQ();   renderMissionHQScene(); }
+      else if (gameState === 'missionHQ')     { updateMissionHQ();   renderMissionHQScene(); }
+      else if (gameState === 'missionField')   { updateMissionField(); renderMissionField();   }
       else if (gameState === 'rockScrub')  { updateRockScrub();   renderRockScrub();   }
       else if (gameState === 'sciCenter')  { updateSciCenter();   renderSciCenter();   }
       else if (gameState === 'city')       { updateCity();        renderCity();        }
