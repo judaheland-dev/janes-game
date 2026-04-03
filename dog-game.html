@@ -13997,124 +13997,409 @@
     const m     = PROFESSORS[profIdx].missions[mIdx];
     const mapType = getMissionMapType();
 
-    const FIELD_W = 30, FIELD_D = 80; // half-width x, total depth z
+    // Field is wide and deep — player enters at z=6, objective is near z=-110
+    const FIELD_W = 45, FIELD_D = 120;
 
-    // ── Floor ────────────────────────────────────────────────────────────
-    const fc = { wolf_camp:0x2a3018, human_lab:0x404040, nether:0x1a0808, forest:0x182810, village:0x706050 }[mapType]||0x284020;
-    const fa = { wolf_camp:0x222810, human_lab:0x383838, nether:0x120606, forest:0x1e3815, village:0x606040 }[mapType]||0x1e3010;
-    for (let fx = -FIELD_W; fx < FIELD_W; fx += 2) {
-      for (let fz = -FIELD_D; fz < 10; fz += 2) {
-        const e = ((fx/2+fz/2)&1);
-        missionFieldQuads.push({ verts:[v3(fx,0,fz),v3(fx+2,0,fz),v3(fx+2,0,fz+2),v3(fx,0,fz+2)], color:e?fc:fa, normal:v3(0,1,0), isGround:true });
+    // Helper: register a solid box as a wall collider (cx,cz = centre, hw,hd = half-extents)
+    function addWall(cx, cz, hw, hd) {
+      missionFieldWalls.push({ x1: cx-hw, z1: cz-hd, x2: cx+hw, z2: cz+hd });
+    }
+
+    // ── Floor tiles ──────────────────────────────────────────────────────
+    const fc = { wolf_camp:0x2a3018, human_lab:0x3c3c3c, nether:0x180606, forest:0x182810, village:0x6a5848 }[mapType]||0x282820;
+    const fa = { wolf_camp:0x201e10, human_lab:0x303030, nether:0x100404, forest:0x142010, village:0x5a4838 }[mapType]||0x1e1e18;
+    // Ground in 4-unit tiles for performance
+    for (let fx = -FIELD_W; fx < FIELD_W; fx += 4) {
+      for (let fz = -FIELD_D; fz < 10; fz += 4) {
+        const e = (((fx/4)+(fz/4))&1);
+        missionFieldQuads.push({ verts:[v3(fx,0,fz),v3(fx+4,0,fz),v3(fx+4,0,fz+4),v3(fx,0,fz+4)], color:e?fc:fa, normal:v3(0,1,0), isGround:true });
       }
     }
-    // Entry path strip
-    for (let gz = -4; gz < 10; gz += 2) {
-      missionFieldQuads.push({ verts:[v3(-3,0.01,gz),v3(3,0.01,gz),v3(3,0.01,gz+2),v3(-3,0.01,gz+2)], color:0x6a5a38, normal:v3(0,1,0), isGround:true });
+    // Entry path
+    for (let gz = -6; gz < 10; gz += 2) {
+      missionFieldQuads.push({ verts:[v3(-3.5,0.01,gz),v3(3.5,0.01,gz),v3(3.5,0.01,gz+2),v3(-3.5,0.01,gz+2)], color:0x6a5a38, normal:v3(0,1,0), isGround:true });
     }
 
-    // ── Perimeter ────────────────────────────────────────────────────────
-    if (mapType === 'forest' || mapType === 'wolf_camp') {
-      for (let i = 0; i < 80; i++) {
-        const a = (i/80)*Math.PI*2, r = FIELD_W - 1 + rng()*4;
-        const tx = Math.cos(a)*r, tz = -FIELD_D*0.5 + Math.sin(a)*r*0.6;
-        if (tz > 6 && Math.abs(tx) < 5) continue;
-        addTree(tx, tz, 0.6+rng()*0.5, missionFieldQuads);
-      }
-    } else {
-      pushBox(missionFieldQuads,  0,      3, -FIELD_D-0.1, FIELD_W, 3, 0.3, 0x707070);
-      pushBox(missionFieldQuads, -FIELD_W-0.1, 3, -FIELD_D/2, 0.3, 3, FIELD_D*0.5+8, 0x707070);
-      pushBox(missionFieldQuads,  FIELD_W+0.1, 3, -FIELD_D/2, 0.3, 3, FIELD_D*0.5+8, 0x707070);
-    }
+    // ── Map-specific geometry ─────────────────────────────────────────────
 
-    // ── Map-specific geometry + objective ────────────────────────────────
     if (mapType === 'wolf_camp') {
-      [[-12,-28],[8,-28],[-5,-46],[14,-50],[-18,-50],[3,-18]].forEach(([tx,tz]) => {
-        pushBox(missionFieldQuads, tx, 1.0, tz, 4, 1.8, 5, 0x4a3420);
-        pushBox(missionFieldQuads, tx, 3.0, tz, 4.4, 0.3, 5.4, 0x6a4a28);
-        pushBox(missionFieldQuads, tx+4.5, 0.3, tz, 0.8, 0.3, 0.8, 0x802010);
-        pushBox(missionFieldQuads, tx+4.5, 0.7, tz, 0.4, 0.4, 0.4, 0xe06010);
-      });
-      for (let fi = 0; fi < 24; fi++) {
-        const fx = -17+fi*1.5, fz = -12;
-        if (Math.abs(fx) < 5) continue;
-        pushBox(missionFieldQuads, fx, 1.4, fz, 0.2, 1.4, 0.2, 0x3a2810);
-        if (fi%2===0) pushBox(missionFieldQuads, fx, 2.0, fz, 0.7, 0.15, 0.15, 0x3a2810);
+      // Dense forest perimeter — tall trees ringing the map edge
+      for (let i = 0; i < 120; i++) {
+        const side = i < 60 ? -1 : 1;
+        const tz = -8 - (i % 60) * (FIELD_D / 60);
+        const tx = side * (FIELD_W - 0.5 + rng() * 3);
+        addTree(tx, tz, 0.7 + rng() * 0.7, missionFieldQuads);
       }
-      pushBox(missionFieldQuads, 2, 5.0, -60, 0.15, 5.0, 0.15, 0x5a4020);
-      pushBox(missionFieldQuads, 2.1, 8.8, -60, 2.0, 0.7, 0.06, 0xc03020);
-      missionFieldItems.push({ id:0, x:2, z:-60, type:'objective', label:m.objective, icon:'🏴', collected:false });
-      for (let wi=0;wi<4;wi++) { const wx=(rng()-0.5)*22, wz=-18-rng()*38; missionFieldNpcs.push({x:wx,z:wz,label:'Wolf 🐺',color:'#c09080',fur:0x706060,ears:'triangle'}); }
+      // Back tree line
+      for (let bx = -FIELD_W+2; bx < FIELD_W-2; bx += 4) {
+        addTree(bx + rng()*2-1, -FIELD_D + 4 + rng()*5, 0.6+rng()*0.5, missionFieldQuads);
+      }
+
+      // Dirt paths criss-crossing the camp
+      const pathCol1 = 0x4a3820, pathCol2 = 0x3e3018;
+      [[0, -FIELD_D/2, 3.5, FIELD_D/2+4], [-16, -FIELD_D*0.45, 3.0, FIELD_D*0.3]].forEach(([px,pz,pw,pl]) => {
+        for (let gz=pz-pl; gz<pz+pl; gz+=2)
+          missionFieldQuads.push({ verts:[v3(px-pw,0.01,gz),v3(px+pw,0.01,gz),v3(px+pw,0.01,gz+2),v3(px-pw,0.01,gz+2)], color:(gz/2&1)?pathCol1:pathCol2, normal:v3(0,1,0), isGround:true });
+      });
+
+      // Wolf camp layout — main compound with palisade fence
+      // Outer palisade fence segments (N, S, E-partial, W-partial) with a gap entry at south
+      const pFZ = -25, pFW = 22, pFD = 40; // fence south edge z, half-width, depth
+      // South fence (two halves with gate gap at x=0 ±3)
+      pushBox(missionFieldQuads, -(pFW/2+1.5), 2.5, pFZ,    pFW/2-3, 2.5, 0.4, 0x3a2810); addWall(-(pFW/2+1.5), pFZ, pFW/2-3, 0.55);
+      pushBox(missionFieldQuads,  (pFW/2+1.5), 2.5, pFZ,    pFW/2-3, 2.5, 0.4, 0x3a2810); addWall( (pFW/2+1.5), pFZ, pFW/2-3, 0.55);
+      // Gate posts
+      pushBox(missionFieldQuads, -3, 3.0, pFZ, 0.4, 3.0, 0.4, 0x2e1e0c); addWall(-3, pFZ, 0.55, 0.55);
+      pushBox(missionFieldQuads,  3, 3.0, pFZ, 0.4, 3.0, 0.4, 0x2e1e0c); addWall( 3, pFZ, 0.55, 0.55);
+      // North fence
+      pushBox(missionFieldQuads, 0, 2.5, pFZ-pFD, pFW, 2.5, 0.4, 0x3a2810); addWall(0, pFZ-pFD, pFW, 0.55);
+      // East/West fences
+      pushBox(missionFieldQuads,  pFW, 2.5, pFZ-pFD/2, 0.4, 2.5, pFD/2, 0x3a2810); addWall( pFW, pFZ-pFD/2, 0.55, pFD/2);
+      pushBox(missionFieldQuads, -pFW, 2.5, pFZ-pFD/2, 0.4, 2.5, pFD/2, 0x3a2810); addWall(-pFW, pFZ-pFD/2, 0.55, pFD/2);
+      // Fence posts along perimeter
+      for (let fi=-pFW; fi<=pFW; fi+=4) {
+        pushBox(missionFieldQuads, fi, 3.2, pFZ, 0.3, 3.2, 0.3, 0x2a1808);
+        pushBox(missionFieldQuads, fi, 3.2, pFZ-pFD, 0.3, 3.2, 0.3, 0x2a1808);
+      }
+
+      // Inside camp: wolf dens (rough log huts)
+      [[-14,-36],[10,-36],[-6,-50],[14,-52],[-18,-54],[4,-42]].forEach(([tx,tz],i) => {
+        const hw=3.5+rng(), hd=3+rng();
+        pushBox(missionFieldQuads, tx, 1.8, tz, hw, 1.8, hd, 0x4a3420);          // walls
+        pushBox(missionFieldQuads, tx, 3.8, tz, hw+0.5, 0.4, hd+0.5, 0x6a4428); // roof
+        pushBox(missionFieldQuads, tx, 1.0, tz+hd, 0.7, 1.0, 0.15, 0x1a1008);   // door
+        // Campfire outside
+        pushBox(missionFieldQuads, tx+hw+1.2, 0.2, tz, 0.5, 0.2, 0.5, 0x382010);
+        pushBox(missionFieldQuads, tx+hw+1.2, 0.5, tz, 0.2, 0.5, 0.2, 0xd05010);
+        addWall(tx, tz, hw+0.3, hd+0.3);
+      });
+
+      // Watchtowers at SE/SW/NE/NW corners of compound
+      [[-pFW+2, pFZ-2],[ pFW-2, pFZ-2],[-pFW+2, pFZ-pFD+2],[ pFW-2, pFZ-pFD+2]].forEach(([tx,tz]) => {
+        pushBox(missionFieldQuads, tx, 2.0, tz, 1.0, 2.0, 1.0, 0x3a2810);
+        pushBox(missionFieldQuads, tx, 4.5, tz, 1.8, 0.4, 1.8, 0x2a1808);
+        addWall(tx, tz, 1.2, 1.2);
+      });
+
+      // Scattered trees inside compound for cover
+      for (let si=0; si<10; si++) {
+        const sx = -pFW+4 + rng()*(pFW*2-8);
+        const sz = pFZ-6 - rng()*(pFD-10);
+        addTree(sx, sz, 0.45+rng()*0.3, missionFieldQuads);
+      }
+
+      // Decorative: skulls, bones stacked at fence posts
+      for (let bi=0; bi<8; bi++) {
+        const bx = (rng()-0.5)*38, bz = pFZ-8 - rng()*26;
+        pushBox(missionFieldQuads, bx, 0.15, bz, 0.5, 0.15, 0.3, 0xc8c0a8);
+      }
+
+      // Objective: enemy flag on tall pole at back of camp
+      pushBox(missionFieldQuads, 0, 6.5, -108, 0.18, 6.5, 0.18, 0x5a4020);
+      pushBox(missionFieldQuads, 0.1, 12.5, -108, 2.5, 0.8, 0.08, 0xc03020); // flag
+      addWall(0, -108, 0.4, 0.4);
+      missionFieldItems.push({ id:0, x:0, z:-108, type:'objective', label:m.objective, icon:'🏴', collected:false });
+
+      // Patrols — wolf guards in two zones
+      const pFur = 0x706060;
+      [[0,-30,12,true],[0,-60,15,false],[0,-85,10,true]].forEach(([px,pz,range,horiz],pi) => {
+        const ox=(rng()-0.5)*16, oz=(rng()-0.5)*8;
+        missionFieldPatrols.push({ x:px+ox, z:pz+oz, startX:px+ox, startZ:pz+oz, dx:horiz?1:0, dz:horiz?0:1, t:rng()*Math.PI*2, range, fur:pFur, ears:'triangle', isHuman:false, spotted:false });
+      });
+      // Extra patrols scaled with professor
+      for (let pi2=0; pi2<profIdx; pi2++) {
+        const px=(rng()-0.5)*36, pz=-18-rng()*80;
+        missionFieldPatrols.push({ x:px, z:pz, startX:px, startZ:pz, dx:rng()<0.5?1:0, dz:rng()<0.5?0:1, t:rng()*Math.PI*2, range:6+rng()*6, fur:pFur, ears:'triangle', isHuman:false, spotted:false });
+      }
 
     } else if (mapType === 'human_lab') {
-      pushBox(missionFieldQuads,  0, 3, -38, 16, 3, 20, 0x909898);
-      [[0,-30],[0,-44]].forEach(([wx,wz]) => pushBox(missionFieldQuads, wx, 2.5, wz, 14, 2.5, 0.3, 0x606868));
-      [[-6,-34],[5,-34],[-6,-44],[5,-44]].forEach(([tx,tz]) => {
-        pushBox(missionFieldQuads, tx, 1.0, tz, 2, 1.0, 1, 0x4a5050);
-        pushBox(missionFieldQuads, tx, 2.2, tz, 0.6, 0.4, 0.5, 0x20e0a0);
+      // Mostly indoors — a large facility with corridors, labs, security guards
+
+      // Main building outer shell
+      const BW=36, BD=90, BZ=-60;
+      pushBox(missionFieldQuads, 0, 4.0, BZ, BW, 4.0, BD, 0x6a7070); // bulk fill (rendered, not solid — walls handle this)
+      // Outer walls (floor to ceiling visible slabs)
+      pushBox(missionFieldQuads, 0,   3.5, BZ-BD, BW, 3.5, 0.5, 0x909898); addWall(0,   BZ-BD, BW,   0.7); // north wall
+      pushBox(missionFieldQuads, 0,   3.5, BZ+BD, BW, 3.5, 0.5, 0x909898); addWall(0,   BZ+BD, BW,   0.7); // south wall (behind entry)
+      pushBox(missionFieldQuads,  BW, 3.5, BZ,    0.5, 3.5, BD+1, 0x808888); addWall( BW, BZ, 0.7, BD+1); // east wall
+      pushBox(missionFieldQuads, -BW, 3.5, BZ,    0.5, 3.5, BD+1, 0x808888); addWall(-BW, BZ, 0.7, BD+1); // west wall
+      // Ceiling slab (visual only — so outside looks like a building)
+      missionFieldQuads.push({ verts:[v3(-BW,8,BZ-BD),v3(BW,8,BZ-BD),v3(BW,8,BZ+BD),v3(-BW,8,BZ+BD)], color:0x585e5e, normal:v3(0,1,0), isGround:false });
+
+      // Interior corridor dividers (horizontal)
+      const iWall = (cx,cz,hw,hd,col=0x707878) => { pushBox(missionFieldQuads, cx, 3.5, cz, hw, 3.5, hd, col); addWall(cx,cz,hw+0.1,hd+0.1); };
+      // Corridor walls creating rooms
+      iWall(0,   -18, BW, 0.4);          // entry reception divider
+      iWall(-12, -35, 0.4, 10);          // lab wall west
+      iWall( 12, -35, 0.4, 10);          // lab wall east
+      iWall( 0,  -46, 14, 0.4);          // lab back wall (with door gap)
+      iWall(-BW+10, -65, 0.4, 20);       // server room west wall
+      iWall( BW-10, -65, 0.4, 20);       // server room east wall  
+      iWall( 0,   -78, BW, 0.4);         // deep corridor
+
+      // Floor markings — checkered tiles inside building
+      for (let fx=-BW+1; fx<BW-1; fx+=3) {
+        for (let fz=BZ-BD+1; fz<BZ+BD-1; fz+=3) {
+          const e=((Math.floor(fx/3)+Math.floor(fz/3))&1);
+          missionFieldQuads.push({ verts:[v3(fx,0.01,fz),v3(fx+3,0.01,fz),v3(fx+3,0.01,fz+3),v3(fx,0.01,fz+3)], color:e?0x454d4d:0x383e3e, normal:v3(0,1,0), isGround:true });
+        }
+      }
+
+      // Lab benches & equipment (visual + collision)
+      [[-16,-28],[0,-28],[16,-28], [-16,-42],[16,-42]].forEach(([tx,tz]) => {
+        pushBox(missionFieldQuads, tx, 0.9, tz, 3.5, 0.9, 1.0, 0x4a5050); addWall(tx,tz,3.7,1.2);
+        pushBox(missionFieldQuads, tx, 2.0, tz, 1.0, 0.5, 0.8, 0x20d098); // monitor
       });
-      pushBox(missionFieldQuads, -5, 2.5, -54, 1.5, 2.5, 1, 0x3060c0);
-      missionFieldItems.push({ id:0, x:-5, z:-54, type:'objective', label:m.objective, icon:'💾', collected:false });
+      // Server racks in back room
+      for (let ri=0; ri<8; ri++) {
+        const rx = -BW+12 + ri*5, rz = -70;
+        pushBox(missionFieldQuads, rx, 2.0, rz, 1.0, 2.0, 0.6, 0x303840); addWall(rx,rz,1.2,0.8);
+        pushBox(missionFieldQuads, rx, 3.5, rz, 0.8, 0.2, 0.5, 0x20e0a0+ri*0x001000); // LEDs
+      }
+      // Security desk at entry
+      pushBox(missionFieldQuads, 0, 1.2, -20, 4.0, 1.2, 1.0, 0x505858); addWall(0,-20,4.2,1.2);
+      // Glowing hazard stripes on floor
+      for (let si=0; si<6; si++) {
+        const sz = -16 - si*2;
+        missionFieldQuads.push({ verts:[v3(-BW+1,0.02,sz),v3(-BW+3,0.02,sz),v3(-BW+3,0.02,sz+1),v3(-BW+1,0.02,sz+1)], color:si%2?0xd4a000:0x181818, normal:v3(0,1,0), isGround:true });
+        missionFieldQuads.push({ verts:[v3( BW-3,0.02,sz),v3( BW-1,0.02,sz),v3( BW-1,0.02,sz+1),v3( BW-3,0.02,sz+1)], color:si%2?0xd4a000:0x181818, normal:v3(0,1,0), isGround:true });
+      }
+      // Overhead lights (small bright boxes attached to ceiling)
+      for (let li=0; li<12; li++) {
+        const lx=(li%4-1.5)*14, lz=-20-Math.floor(li/4)*22;
+        pushBox(missionFieldQuads, lx, 7.5, lz, 1.0, 0.15, 1.0, 0xe0f0e8);
+      }
+
+      // Objective — data terminal in the deepest server room
+      pushBox(missionFieldQuads, -BW+14, 2.0, -108, 1.5, 2.0, 0.8, 0x3060c0);
+      pushBox(missionFieldQuads, -BW+14, 4.5, -108, 1.2, 0.4, 0.6, 0x20e0a0);
+      addWall(-BW+14, -108, 1.7, 1.0);
+      missionFieldItems.push({ id:0, x:-BW+14, z:-108, type:'objective', label:m.objective, icon:'💾', collected:false });
+
+      // Patrols — human guards in corridors
+      [[0,-22,8,true],[18,-38,10,false],[-18,-38,10,false],[0,-60,12,true],[14,-82,8,false],[-14,-82,8,false]].forEach(([px,pz,range,horiz],pi) => {
+        if (pi > profIdx + 1) return;
+        missionFieldPatrols.push({ x:px, z:pz, startX:px, startZ:pz, dx:horiz?1:0, dz:horiz?0:1, t:rng()*Math.PI*2, range, fur:0x6080a0, ears:'floppy', isHuman:true, spotted:false });
+      });
 
     } else if (mapType === 'nether') {
-      for (let ci=0;ci<18;ci++) {
-        const cx=(rng()-0.5)*50, cz=-10-rng()*55;
-        const ch=1.5+rng()*3.5, cw=0.8+rng()*2;
-        pushBox(missionFieldQuads, cx, ch, cz, cw, ch, cw, 0x2a1818);
+      // Dark volcanic underworld — glowing lava rivers, obsidian pillars, bone arches
+
+      // Lava river (runs east-west around z=-40 and z=-80)
+      [-40, -80].forEach(lz => {
+        for (let lx=-FIELD_W+2; lx<FIELD_W-2; lx+=2) {
+          const lavZ = lz + Math.sin(lx*0.35)*3;
+          missionFieldQuads.push({ verts:[v3(lx,0.06,lavZ-1.5),v3(lx+2,0.06,lavZ-1.5),v3(lx+2,0.06,lavZ+1.5),v3(lx,0.06,lavZ+1.5)], color:(lx/2&1)?0xd04010:0xe06000, normal:v3(0,1,0), isGround:true });
+          // Lava banks
+          missionFieldQuads.push({ verts:[v3(lx,0.02,lavZ-3),v3(lx+2,0.02,lavZ-3),v3(lx+2,0.02,lavZ-1.5),v3(lx,0.02,lavZ-1.5)], color:0x1a0808, normal:v3(0,1,0), isGround:true });
+          missionFieldQuads.push({ verts:[v3(lx,0.02,lavZ+1.5),v3(lx+2,0.02,lavZ+1.5),v3(lx+2,0.02,lavZ+3),v3(lx,0.02,lavZ+3)], color:0x1a0808, normal:v3(0,1,0), isGround:true });
+        }
+        // Lava crossing bridges (2 per river) — flat walkable, no wall
+        [-16, 14].forEach(bx => {
+          pushBox(missionFieldQuads, bx, 0.12, lz, 3.5, 0.12, 4.0, 0x2a2018);
+          // Bridge guard rails (solid)
+          pushBox(missionFieldQuads, bx-1.6, 0.8, lz, 0.15, 0.8, 4.0, 0x3a2010); addWall(bx-1.6, lz, 0.2, 4.0);
+          pushBox(missionFieldQuads, bx+1.6, 0.8, lz, 0.15, 0.8, 4.0, 0x3a2010); addWall(bx+1.6, lz, 0.2, 4.0);
+        });
+        // Lava river collision — block crossing except at the two bridges
+        // Left section: x=-43 to -19.5 (before west bridge at x=-16)
+        addWall(-31.5, lz, 11.5, 1.8);
+        // Gap between bridges: x=-12.5 to 10.5 (between x=-16 and x=14 bridges)
+        addWall(-1, lz, 11.5, 1.8);
+        // Right section: x=17.5 to 43 (after east bridge at x=14)
+        addWall(30.5, lz, 12.5, 1.8);
+      });
+
+      // Obsidian pillar clusters
+      for (let ci=0; ci<30; ci++) {
+        const cx=(rng()-0.5)*76, cz=-10-rng()*98;
+        const ch=2+rng()*5, cw=0.6+rng()*1.4;
+        if (Math.abs(cx) < 4 && cz > -22) continue; // clear entry path
+        pushBox(missionFieldQuads, cx, ch, cz, cw, ch, cw, 0x0e0a10);
+        pushBox(missionFieldQuads, cx, ch*2+0.2, cz, cw*0.7, cw*0.4, cw*0.7, 0x2a1040); // crystal tip
+        addWall(cx, cz, cw+0.3, cw+0.3);
       }
-      for (let sz=-65;sz<-10;sz+=2) {
-        const sx=Math.sin(sz*0.12)*6;
-        missionFieldQuads.push({verts:[v3(sx-2,0.02,sz),v3(sx+2,0.02,sz),v3(sx+2,0.02,sz+2),v3(sx-2,0.02,sz+2)],color:0x0c1830,normal:v3(0,1,0),isGround:true});
+
+      // Bone arch gates (mark passage zones)
+      [-30, -60, -90].forEach(az => {
+        pushBox(missionFieldQuads, -3.5, 4.5, az, 0.4, 4.5, 0.4, 0xc8c0a8); addWall(-3.5, az, 0.6, 0.6);
+        pushBox(missionFieldQuads,  3.5, 4.5, az, 0.4, 4.5, 0.4, 0xc8c0a8); addWall( 3.5, az, 0.6, 0.6);
+        pushBox(missionFieldQuads,  0,   8.6, az, 4.2, 0.5, 0.4, 0xc8c0a8); // arch top
+      });
+
+      // Ancient portal / objective at the back — gemstone in a summoning circle
+      // Circle of pillars
+      for (let pi2=0; pi2<8; pi2++) {
+        const a = (pi2/8)*Math.PI*2;
+        const px=Math.cos(a)*6, pz=-108+Math.sin(a)*4;
+        pushBox(missionFieldQuads, px, 2.5, pz, 0.5, 2.5, 0.5, 0x5a1090); addWall(px,pz,0.7,0.7);
       }
-      pushBox(missionFieldQuads, 4, 2.5, -63, 0.8, 2.5, 0.8, 0xa020d0);
-      pushBox(missionFieldQuads, 4, 5.5, -63, 0.5, 0.8, 0.5, 0xe060ff);
-      missionFieldItems.push({ id:0, x:4, z:-63, type:'objective', label:m.objective, icon:'💎', collected:false });
+      pushBox(missionFieldQuads, 0, 0.15, -108, 7, 0.04, 5, 0x3a1060); // portal floor glow
+      pushBox(missionFieldQuads, 0, 3.0, -108, 1.2, 3.0, 1.2, 0xa020d0);
+      pushBox(missionFieldQuads, 0, 6.5, -108, 0.8, 0.8, 0.8, 0xe060ff);
+      addWall(0, -108, 1.4, 1.4);
+      missionFieldItems.push({ id:0, x:0, z:-108, type:'objective', label:m.objective, icon:'💎', collected:false });
+
+      // Patrols — nether spirits (glowing dark dogs)
+      const nFur = 0x2a1040;
+      [[0,-20,8,true],[-20,-45,10,false],[16,-55,10,false],[0,-70,14,true],[-18,-90,10,false],[10,-95,10,false]].forEach(([px,pz,range,horiz],pi) => {
+        if (pi > profIdx + 1) return;
+        missionFieldPatrols.push({ x:px, z:pz, startX:px, startZ:pz, dx:horiz?1:0, dz:horiz?0:1, t:rng()*Math.PI*2, range, fur:nFur, ears:'triangle', isHuman:false, spotted:false });
+      });
 
     } else if (mapType === 'forest') {
-      for (let i=0;i<14;i++) {
-        const a=rng()*Math.PI*2, r=6+rng()*18;
-        const tx=Math.cos(a)*r, tz=-15-rng()*55;
-        if (tz>0) continue;
-        addTree(tx, tz, 0.5+rng()*0.4, missionFieldQuads);
+      // Deep old-growth forest — winding paths, dense undergrowth, fallen logs
+
+      // Thick forest perimeter
+      for (let i=0; i<160; i++) {
+        const side = i < 80 ? -1 : 1;
+        const tz = -6 - (i % 80) * (FIELD_D/80);
+        const tx = side * (FIELD_W - 1 + rng() * 4);
+        addTree(tx, tz, 0.8+rng()*0.8, missionFieldQuads);
       }
-      pushBox(missionFieldQuads, 4, 1.5, -58, 0.15, 1.5, 0.8, 0x5a3010);
-      pushBox(missionFieldQuads, 4, 2.4, -58, 1.4, 0.9, 0.1, 0xe8d090);
-      missionFieldItems.push({ id:0, x:4, z:-58, type:'objective', label:m.objective, icon:'📋', collected:false });
+      for (let bx=-FIELD_W+2; bx<FIELD_W-2; bx+=3.5) {
+        addTree(bx+rng()*2-1, -FIELD_D+2+rng()*4, 0.7+rng()*0.5, missionFieldQuads);
+      }
+
+      // Interior forest — dense asymmetric tree clusters
+      for (let i=0; i<60; i++) {
+        const tx=(rng()-0.5)*(FIELD_W*2-12), tz=-12-rng()*FIELD_D*0.85;
+        if (Math.abs(tx) < 5 && tz > -20) continue;
+        const ts = 0.5+rng()*0.7;
+        addTree(tx, tz, ts, missionFieldQuads);
+        addWall(tx, tz, ts*1.1+0.3, ts*1.1+0.3); // trunk collision
+      }
+
+      // Dirt path wind through forest
+      const pathNodes = [[0,-10],[4,-20],[-5,-32],[3,-44],[-8,-55],[2,-66],[6,-78],[-4,-90],[-2,-105]];
+      for (let ni=0; ni<pathNodes.length-1; ni++) {
+        const [ax,az]= pathNodes[ni], [bx,bz]=pathNodes[ni+1];
+        const steps=8, pw=2.5;
+        for (let si=0; si<steps; si++) {
+          const t2=si/steps, px=ax+(bx-ax)*t2, pz=az+(bz-az)*t2;
+          missionFieldQuads.push({ verts:[v3(px-pw,0.01,pz-1),v3(px+pw,0.01,pz-1),v3(px+pw,0.01,pz+1),v3(px-pw,0.01,pz+1)], color:(si&1)?0x4a3820:0x3c2e18, normal:v3(0,1,0), isGround:true });
+        }
+      }
+
+      // Fallen logs (solid obstacles)
+      [[-16,-28,12,false],[10,-38,10,true],[-8,-55,14,false],[18,-70,10,true],[-20,-88,12,false],[8,-98,10,false]].forEach(([lx,lz,ll,horiz]) => {
+        if (horiz) { pushBox(missionFieldQuads, lx, 0.5, lz, ll, 0.5, 0.8, 0x4a3018); addWall(lx,lz,ll+0.2,1.0); }
+        else       { pushBox(missionFieldQuads, lx, 0.5, lz, 0.8, 0.5, ll, 0x4a3018); addWall(lx,lz,1.0,ll+0.2); }
+      });
+
+      // Mossy boulders for cover
+      for (let bi=0; bi<18; bi++) {
+        const bx=(rng()-0.5)*72, bz=-14-rng()*95;
+        const bs=0.5+rng()*1.2;
+        if (Math.abs(bx)<4 && bz>-18) continue;
+        pushBox(missionFieldQuads, bx, bs*0.5, bz, bs*1.4, bs*0.5, bs*1.1, 0x4a5038);
+        addWall(bx, bz, bs*1.6, bs*1.3);
+      }
+
+      // Mushroom circles (visual)
+      for (let mi2=0; mi2<10; mi2++) {
+        const mx=(rng()-0.5)*60, mz=-20-rng()*80;
+        for (let mi3=0; mi3<6; mi3++) {
+          const ma=(mi3/6)*Math.PI*2, mr=1.5+rng()*0.5;
+          const spx=mx+Math.cos(ma)*mr, spz=mz+Math.sin(ma)*mr;
+          pushBox(missionFieldQuads, spx, 0.2, spz, 0.12, 0.2, 0.12, 0x4a3010); // stem
+          pushBox(missionFieldQuads, spx, 0.52, spz, 0.28, 0.08, 0.28, 0xc03020); // cap
+        }
+      }
+
+      // Objective: ancient notice board deep in the forest
+      const [ox,oz] = [-4, -108];
+      pushBox(missionFieldQuads, ox, 2.0, oz, 0.18, 2.0, 0.18, 0x5a3810);
+      pushBox(missionFieldQuads, ox, 3.6, oz, 1.8, 1.2, 0.12, 0xe0d090);
+      addWall(ox, oz, 0.4, 0.4);
+      missionFieldItems.push({ id:0, x:ox, z:oz, type:'objective', label:m.objective, icon:'📋', collected:false });
+
+      // Patrols — forest rangers / poachers
+      [[0,-25,10,true],[-16,-45,12,false],[14,-48,12,false],[-6,-68,14,true],[18,-85,10,false],[-14,-92,12,false]].forEach(([px,pz,range,horiz],pi) => {
+        if (pi > profIdx + 2) return;
+        missionFieldPatrols.push({ x:px, z:pz, startX:px, startZ:pz, dx:horiz?1:0, dz:horiz?0:1, t:rng()*Math.PI*2, range, fur:0x3a5820, ears:rng()<0.5?'floppy':'triangle', isHuman:false, spotted:false });
+      });
 
     } else { // village
-      [[-16,-22],[8,-22],[-8,-40],[14,-40]].forEach(([hx,hz]) => {
-        pushBox(missionFieldQuads, hx, 2.0, hz, 5, 2.0, 5, 0xc09060);
-        pushBox(missionFieldQuads, hx, 4.5, hz, 5.5, 0.6, 5.5, 0x804020);
-        pushBox(missionFieldQuads, hx, 1.2, hz+2.6, 0.8, 1.2, 0.2, 0x4a2a10);
-      });
-      const fColors=[0xd4a060,0x8a6040,0xc0c0a0,0x706050];
-      for(let ni=0;ni<4;ni++){const nx=(rng()-0.5)*36,nz=-18-rng()*28;missionFieldNpcs.push({x:nx,z:nz,label:'Neighbor 🐾',color:'#e8d090',fur:fColors[ni%4],ears:rng()<0.5?'floppy':'triangle'});}
-      pushBox(missionFieldQuads, 0, 1.5, -53, 0.15, 1.5, 0.8, 0x5a3010);
-      pushBox(missionFieldQuads, 0, 2.5, -53, 1.2, 0.9, 0.1, 0xe8d090);
-      missionFieldItems.push({ id:0, x:0, z:-53, type:'objective', label:m.objective, icon:'📋', collected:false });
-    }
+      // Occupied enemy village — streets, houses, market stalls, suspicious guard dogs
 
-    // ── Maze walls ───────────────────────────────────────────────────────
-    const mazeCount = 3 + Math.floor(rng()*3);
-    for (let mi2=0;mi2<mazeCount;mi2++) {
-      const mx=(rng()-0.5)*38, mz=-14-rng()*44;
-      const mlen=5+rng()*10, horiz=rng()<0.5;
-      if (horiz) {
-        pushBox(missionFieldQuads, mx, 2.2, mz, mlen, 2.2, 0.3, 0x383028);
-        missionFieldWalls.push({x1:mx-mlen,z1:mz-0.4,x2:mx+mlen,z2:mz+0.4});
-      } else {
-        pushBox(missionFieldQuads, mx, 2.2, mz, 0.3, 2.2, mlen, 0x383028);
-        missionFieldWalls.push({x1:mx-0.4,z1:mz-mlen,x2:mx+0.4,z2:mz+mlen});
+      // Village ground — stone street tiles
+      for (let fx=-FIELD_W; fx<FIELD_W; fx+=3) {
+        for (let fz=-FIELD_D; fz<8; fz+=3) {
+          const e=((Math.floor(fx/3)+Math.floor(fz/3))&1);
+          missionFieldQuads.push({ verts:[v3(fx,0.01,fz),v3(fx+3,0.01,fz),v3(fx+3,0.01,fz+3),v3(fx,0.01,fz+3)], color:e?0x6a6050:0x5a5040, normal:v3(0,1,0), isGround:true });
+        }
       }
+      // Main streets (N-S and E-W)
+      for (let gz=-FIELD_D; gz<8; gz+=2) {
+        missionFieldQuads.push({ verts:[v3(-3.5,0.02,gz),v3(3.5,0.02,gz),v3(3.5,0.02,gz+2),v3(-3.5,0.02,gz+2)], color:(gz/2&1)?0x807060:0x706050, normal:v3(0,1,0), isGround:true });
+      }
+      [-25,-50,-80].forEach(ez => {
+        for (let ex=-FIELD_W; ex<FIELD_W; ex+=2)
+          missionFieldQuads.push({ verts:[v3(ex,0.02,ez-1.5),v3(ex+2,0.02,ez-1.5),v3(ex+2,0.02,ez+1.5),v3(ex,0.02,ez+1.5)], color:(ex/2&1)?0x807060:0x706050, normal:v3(0,1,0), isGround:true });
+      });
+
+      // Houses in rows
+      const houses = [
+        [-22,-20,5,4],[ 10,-20,6,4], [-22,-38,5,5],[ 12,-38,5,5], [-24,-60,6,4],[ 10,-60,5,4],
+        [-20,-78,5,5],[ 14,-78,4,5], [-22,-96,6,4],[ 10,-96,5,4],
+      ];
+      houses.forEach(([hx,hz,hw,hd]) => {
+        pushBox(missionFieldQuads, hx, 2.5, hz, hw, 2.5, hd, 0xb09070);   // walls
+        pushBox(missionFieldQuads, hx, 5.5, hz, hw+0.6, 0.8, hd+0.6, 0x7a3820); // roof
+        pushBox(missionFieldQuads, hx, 1.4, hz+hd, 0.8, 1.4, 0.15, 0x2a1808); // door
+        addWall(hx, hz, hw+0.2, hd+0.2);
+      });
+
+      // Market stalls (open canopies — only posts are solid)
+      [[-12,-26],[8,-26],[-12,-55],[8,-55],[-12,-84],[8,-84]].forEach(([sx,sz]) => {
+        pushBox(missionFieldQuads, sx, 2.5, sz, 4, 0.15, 3, 0xd09840); // canopy
+        [[-1.5,-1],[1.5,-1],[-1.5,1],[1.5,1]].forEach(([dx,dz]) => {
+          pushBox(missionFieldQuads, sx+dx*2, 1.3, sz+dz*1.4, 0.2, 1.3, 0.2, 0x6a4820); addWall(sx+dx*2,sz+dz*1.4,0.4,0.4);
+        });
+        pushBox(missionFieldQuads, sx, 0.5, sz, 3.5, 0.5, 1.5, 0x9a7050); // table
+        addWall(sx, sz, 3.7, 1.7);
+      });
+
+      // Town well at centre-ish
+      pushBox(missionFieldQuads, 0, 0.5, -64, 2.0, 0.5, 2.0, 0x7a7268);
+      pushBox(missionFieldQuads, 0, 1.2, -64, 1.5, 0.3, 1.5, 0x6c6460);
+      addWall(0, -64, 2.2, 2.2);
+
+      // Objective: notice board / target house at back
+      pushBox(missionFieldQuads, 0, 1.6, -108, 0.18, 1.6, 0.18, 0x5a3810);
+      pushBox(missionFieldQuads, 0, 2.8, -108, 1.4, 1.0, 0.12, 0xe8d090);
+      addWall(0, -108, 0.4, 0.4);
+      missionFieldItems.push({ id:0, x:0, z:-108, type:'objective', label:m.objective, icon:'📋', collected:false });
+
+      // Village residents (unfriendly lookouts)
+      const fColors=[0xd4a060,0x8a6040,0xb09070,0x706050,0xc0a880];
+      for (let ni=0; ni<6; ni++) {
+        const nx=(rng()-0.5)*58, nz=-18-rng()*70;
+        missionFieldNpcs.push({ x:nx, z:nz, label:'Lookout 👀', color:'#e8d090', fur:fColors[ni%5], ears:rng()<0.5?'floppy':'triangle' });
+      }
+
+      // Patrols — guard dogs patrolling the streets
+      [[0,-28,9,true],[-16,-50,11,false],[14,-50,11,false],[0,-72,13,true],[-16,-90,10,false],[14,-90,10,false]].forEach(([px,pz,range,horiz],pi) => {
+        if (pi > profIdx + 2) return;
+        missionFieldPatrols.push({ x:px, z:pz, startX:px, startZ:pz, dx:horiz?1:0, dz:horiz?0:1, t:rng()*Math.PI*2, range, fur:0x9a7050, ears:rng()<0.5?'floppy':'triangle', isHuman:false, spotted:false });
+      });
     }
 
-    // ── Patrols ──────────────────────────────────────────────────────────
-    const patrolCount = 2 + Math.floor(rng()*3) + Math.floor(profIdx*0.4);
-    const pFur = {wolf_camp:0x706060,human_lab:0x384050,nether:0x2a1818,forest:0x4a6a30,village:0x9a7050}[mapType]||0x706060;
-    for (let pi2=0;pi2<patrolCount;pi2++) {
-      const px=(rng()-0.5)*38, pz=-14-rng()*48;
-      const range=4+rng()*8, horiz=rng()<0.5;
-      missionFieldPatrols.push({ x:px, z:pz, startX:px, startZ:pz, dx:horiz?1:0, dz:horiz?0:1, t:rng()*Math.PI*2, range, fur:pFur, ears:rng()<0.5?'floppy':'triangle', isHuman:mapType==='human_lab', spotted:false });
+    // ── Seeded random scatter walls (additional cover in any map) ─────────
+    const mazeCount = 4 + Math.floor(rng()*4);
+    const wallCol = { wolf_camp:0x3a2810, human_lab:0x606868, nether:0x1a0c1c, forest:0x3a2808, village:0x907868 }[mapType]||0x383028;
+    for (let mi2=0; mi2<mazeCount; mi2++) {
+      const mx=(rng()-0.5)*60, mz=-20-rng()*70;
+      if (Math.abs(mx) < 4 && mz > -18) continue; // keep entry clear
+      const mlen=6+rng()*12, mh=2.5+rng()*1.5, horiz=rng()<0.5;
+      if (horiz) {
+        pushBox(missionFieldQuads, mx, mh, mz, mlen, mh, 0.45, wallCol);
+        addWall(mx, mz, mlen, 0.6);
+      } else {
+        pushBox(missionFieldQuads, mx, mh, mz, 0.45, mh, mlen, wallCol);
+        addWall(mx, mz, 0.6, mlen);
+      }
     }
   }
 
@@ -14161,8 +14446,8 @@
     ds.velY+=GRAVITY; ds.y+=ds.velY;
     if (ds.y<=DOG_FLOOR) { ds.y=DOG_FLOOR; ds.velY=0; ds.grounded=true; }
 
-    ds.x = Math.max(-28, Math.min(28, ds.x));
-    ds.z = Math.max(-78, Math.min(8,  ds.z));
+    ds.x = Math.max(-44, Math.min(44, ds.x));
+    ds.z = Math.max(-118, Math.min(8,  ds.z));
 
     // Wall collisions
     const PAD = 0.65;
@@ -14263,7 +14548,7 @@
       const pts = projectClipped(q.verts, cam); if (!pts) return null;
       const cx=q.verts.reduce((s,v)=>s+v.x,0)/4, cy=q.verts.reduce((s,v)=>s+v.y,0)/4, cz=q.verts.reduce((s,v)=>s+v.z,0)/4;
       const wd = len(sub(v3(cx,cy,cz),cam.pos));
-      const fogT = Math.min(1,Math.max(0,(wd-5)/22))*0.88*(q.isGround?0.2:1);
+      const fogT = Math.min(1,Math.max(0,(wd-8)/45))*0.88*(q.isGround?0.2:1);
       return { pts, avgZ:pts.reduce((s,p)=>s+p.z,0)/pts.length, color:q.color, normal:q.normal, fogT, fogHex, isGround:q.isGround };
     }).filter(Boolean);
     const groundL=toRender.filter(q=>q.isGround), worldL=toRender.filter(q=>!q.isGround);
