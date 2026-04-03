@@ -3399,6 +3399,16 @@
           else if (k.z <= k.paceA) { k.z = k.paceA; k.dir =  1; }
           k.yaw = k.dir > 0 ? 0 : Math.PI;
         }
+        // Push out of any building the pacer clipped into
+        const NPC_PAD = 0.65;
+        for (const b of VBUILDINGS) {
+          const ox = Math.abs(k.x - b.x) - (b.hw + NPC_PAD);
+          const oz = Math.abs(k.z - b.z) - (b.hd + NPC_PAD);
+          if (ox < 0 && oz < 0) {
+            if (ox > oz) k.x += Math.sign(k.x - b.x) * (-ox);
+            else         k.z += Math.sign(k.z - b.z) * (-oz);
+          }
+        }
         k.walkT += 0.20;
         k.legAngle = sin(k.walkT) * 0.65;
         k.wagAngle = sin(k.walkT * 1.2) * 0.42;
@@ -3901,11 +3911,34 @@
       { wx:_nj( 22,2,20,25),   wz:_nj(27,2,24,31), s:1.48, fur:0xd8b070, yaw:_ny(), name:'Oakley',  text:'Fresh bread from the bakery this morning!',   type:'adult', ears:'triangle' },
       { wx:_nj(-23,2,-26,-20), wz:_nj(23,2,20,26), s:1.55, fur:0x5a7848, yaw:_ny(), name:'Briar',   text:'These herbs can heal all sorts of ailments!', type:'adult', ears:'floppy'   },
     ];
+    // Spawn pass 1: push each NPC out of buildings, collect positions
     vNpcs.forEach(n => {
       const _sp = outOfBuildings(n.wx, n.wz); n.wx = _sp.x; n.wz = _sp.z;
       clearingNPCs.push(n);
-      addNpcDog(npcQuads, n.wx, n.wz, n.s, n.fur, n.yaw, n.ears || 'triangle');
     });
+    // Spawn pass 2: prevent NPCs from overlapping each other
+    const NPC_MIN_SEP = 2.2;
+    for (let i = 1; i < clearingNPCs.length; i++) {
+      for (let attempt = 0; attempt < 14; attempt++) {
+        let moved = false;
+        for (let j = 0; j < i; j++) {
+          const ddx = clearingNPCs[i].wx - clearingNPCs[j].wx;
+          const ddz = clearingNPCs[i].wz - clearingNPCs[j].wz;
+          const dd = Math.hypot(ddx, ddz);
+          if (dd < NPC_MIN_SEP && dd > 0.001) {
+            const push = (NPC_MIN_SEP - dd + 0.15) / dd;
+            clearingNPCs[i].wx += ddx * push;
+            clearingNPCs[i].wz += ddz * push;
+            const _ss = outOfBuildings(clearingNPCs[i].wx, clearingNPCs[i].wz);
+            clearingNPCs[i].wx = _ss.x; clearingNPCs[i].wz = _ss.z;
+            moved = true; break;
+          }
+        }
+        if (!moved) break;
+      }
+    }
+    // Spawn pass 3: build quads now that positions are finalised
+    clearingNPCs.forEach(n => addNpcDog(npcQuads, n.wx, n.wz, n.s, n.fur, n.yaw, n.ears || 'triangle'));
 
     // ── Animated kid NPCs ────────────────────────────────────────────────
     villageKids.length = 0;
@@ -15517,7 +15550,7 @@
       bbk.textContent = '▶ Continue'; bbk.classList.add('has-save');
     }
     const barkCvs = document.getElementById('preview-bark');
-    if (barkCvs) { drawPreviewBark(barkCvs.getContext('2d'), 190, 190); }
+    if (barkCvs && barkCvs.getContext) { drawPreviewBark(barkCvs.getContext('2d'), 190, 190); }
     // Fade loader out, then hide it so pick screen is fully interactive
     const ls = document.getElementById('loading-screen');
     ls.classList.add('fade-out');
