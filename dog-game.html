@@ -6891,6 +6891,22 @@
       save.barkInVillage  = barkInVillage;
       save.barkInForest   = barkInForest;
       save.barkDeepForest = barkDeepForest;
+      save.wobCoins         = wobCoins;
+      save.warkPouch        = warkPouch;
+      save.inventory        = inventory.map(it => ({ type: it.type, defIdx: it.defIdx, count: it.count || 1 }));
+      save.collectionLog    = { mushroom:[...collectionLog.mushroom], animal:[...collectionLog.animal], rock:[...collectionLog.rock], metal:[...collectionLog.metal] };
+      save.donateCount      = { mushroom:{...donateCount.mushroom}, animal:{...donateCount.animal}, rock:{...donateCount.rock}, metal:{...donateCount.metal} };
+      save.freeDonateDay    = freeDonateDay;
+      save.freeDonateMushr  = freeDonateMushr;
+      save.freeDonateAnimal = freeDonateAnimal;
+      save.jewelryBox        = JSON.stringify(jewelryBox);
+      save.equippedNecklace  = equippedNecklace;
+      save.lifetimeCollected = { rock:{...lifetimeCollected.rock}, metal:{...lifetimeCollected.metal} };
+      save.dayPhaseMs        = dayPhaseMs;
+      if (barkInVillage) {
+        save.dailyQuestSeed    = dailyQuestSeed;
+        save.villageQuestsFull = JSON.stringify(villageQuests);
+      }
     }
     if (activeCharacter === 'scratch') {
       save.wobCoins         = wobCoins;
@@ -7163,6 +7179,38 @@
         barkInVillage  = s.barkInVillage ?? false;
         barkInForest   = barkInVillage ? false : (s.barkInForest ?? false);
         barkDeepForest = (!barkInVillage && !barkInForest) ? (s.barkDeepForest ?? false) : false;
+        wobCoins  = s.wobCoins  ?? 0;
+        warkPouch = s.warkPouch ?? null;
+        inventory.length = 0;
+        if (s.inventory) s.inventory.forEach(it => inventory.push({ type: it.type, defIdx: it.defIdx, count: it.count || 1 }));
+        if (s.collectionLog) {
+          collectionLog.mushroom = new Set(s.collectionLog.mushroom || []);
+          collectionLog.animal   = new Set(s.collectionLog.animal   || []);
+          collectionLog.rock     = new Set(s.collectionLog.rock     || []);
+          collectionLog.metal    = new Set(s.collectionLog.metal    || []);
+        }
+        if (s.donateCount) {
+          donateCount.mushroom = s.donateCount.mushroom || {};
+          donateCount.animal   = s.donateCount.animal   || {};
+          donateCount.rock     = s.donateCount.rock     || {};
+          donateCount.metal    = s.donateCount.metal    || {};
+        }
+        if (s.freeDonateDay === new Date().toDateString()) {
+          freeDonateDay    = s.freeDonateDay;
+          freeDonateMushr  = s.freeDonateMushr  || 0;
+          freeDonateAnimal = s.freeDonateAnimal || 0;
+        }
+        jewelryBox       = s.jewelryBox ? JSON.parse(s.jewelryBox) : [];
+        equippedNecklace = s.equippedNecklace ?? -1;
+        if (s.lifetimeCollected) {
+          lifetimeCollected.rock  = s.lifetimeCollected.rock  || {};
+          lifetimeCollected.metal = s.lifetimeCollected.metal || {};
+        }
+        if (s.dayPhaseMs != null) dayPhaseMs = s.dayPhaseMs;
+        if (barkInVillage && s.dailyQuestSeed && s.villageQuestsFull && s.dailyQuestSeed === new Date().toDateString()) {
+          dailyQuestSeed = s.dailyQuestSeed;
+          try { _restoredQuestsFull = JSON.parse(s.villageQuestsFull); } catch(e) {}
+        }
         if (barkInVillage) buildVillage();
         else if (barkInForest) buildBarkForest();
         else if (barkDeepForest) buildBarkDeepForest();
