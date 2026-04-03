@@ -2863,7 +2863,7 @@
   const QUEST_SPOTS = [
     { name:'the old oak tree',     x: 18,  z: 28  },
     { name:'the big rock',         x:-20,  z: 22  },
-    { name:'the flower patch',     x:-16,  z:-10  },
+    { name:'the flower patch',     x:-12,  z:-10  },
     { name:'the east clearing',    x: 20,  z:-16  },
     { name:'the tall mushrooms',   x:  5,  z: 35  },
     { name:'the south path',       x:  2,  z:-22  },
@@ -2873,6 +2873,9 @@
     { name:'the west path end',    x:-34,  z:  0  },
     { name:'the cave entrance',    x:  0,  z:-26  },
     { name:'the torchlit corner',  x: -5,  z:  0  },
+    { name:'the garden',           x:-12,  z: 21  },
+    { name:'the bakery',           x: 22,  z: 28  },
+    { name:'the herbalist',        x:-23,  z: 24  },
   ];
   // Emoji shown in the on-screen quest hint for each locate sub-type
   const LOCATE_EMOJIS = { sister:'🐾', toy:'🎾', investigate:'🔍', hide_seek:'👀', treasure:'🦴', errand:'📋', flower:'🌸', berries:'🫐' };
@@ -2892,6 +2895,8 @@
     { x:  -12,  z: -35,   hw: 5.8, hd: 3.5 },  // Cave hill — rear wall (blocks interior behind arch)
     { x: -24, z: -20, hw: 6.0, hd: 4.5 },  // W.O.B. Academy
     { x:   0, z:  -8, hw: 2.0, hd: 2.0 },  // village well
+    { x:  26, z:  30, hw: 4.5, hd: 3.0 },  // Village Bakery
+    { x: -26, z:  26, hw: 5.0, hd: 3.5 },  // Herbalist Shop
   ];
   function buildTunnelGeometry() {
     tunnelQuads.length = 0;
@@ -3541,7 +3546,7 @@
 
     // Fill up to 4 quests total; skip NPCs that already have an active quest
     const usedNpcs = new Set(villageQuests.map(q => q.npcIdx));
-    const pool     = [0,1,2,3,4,5,6,7,8,9,10].filter(i => !usedNpcs.has(i));
+    const pool     = [0,1,2,3,4,5,6,7,8,9,10,11,12,13].filter(i => !usedNpcs.has(i));
     const slots    = Math.min(4 - villageQuests.length, pool.length);
     if (slots <= 0) return;
 
@@ -3571,7 +3576,7 @@
     const SISTER_FURS  = [0xe07840, 0x70a060, 0xa060b0, 0x4a7090, 0xc08040, 0x608040, 0x904060, 0xd06050];
 
     chosen.forEach(npcIdx => {
-      const isKid = npcIdx >= 8; // indices 8–10 are kid NPCs
+      const isKid = npcIdx >= 8 && npcIdx <= 10; // indices 8–10 are kid NPCs
       const qRoll = Math.floor(Math.random() * 10); // 0–1 fetch, 2–9 locate
       const quest  = { npcIdx, status: 'active' };
 
@@ -3640,8 +3645,8 @@
       }
     }
     // Grass village centre (y=0.010, slightly raised so it sits above the base dirt)
-    for (let gx = -22; gx < 22; gx += 3) {
-      for (let gz = -38; gz < 42; gz += 3) {
+    for (let gx = -32; gx < 32; gx += 3) {
+      for (let gz = -42; gz < 46; gz += 3) {
         villageQuads.push({ verts:[v3(gx,0.010,gz),v3(gx+3,0.010,gz),v3(gx+3,0.010,gz+3),v3(gx,0.010,gz+3)],
           color:((Math.floor(gx/3)+Math.floor(gz/3))&1)?0x3d6e1e:0x2e5814, normal:v3(0,1,0), isGround:true });
       }
@@ -3661,12 +3666,21 @@
     // Village well landmark (x=0, z=-8) — all boxes start at y=0.02 to clear ground
     pushBox(villageQuads,  0, 0.42,  -8, 2.0, 0.42, 2.0, 0x7a7268);  // stone base
     pushBox(villageQuads,  0, 1.12,  -8, 1.5, 0.34, 1.5, 0x6c6460);  // rim
-    villageQuads.push({ verts:[v3(-1.1,1.52,-9.1),v3(1.1,1.52,-9.1),v3(1.1,1.52,-6.9),v3(-1.1,1.52,-6.9)],
-      color:0x2450a8, normal:v3(0,1,0), isGround:true });             // water (isGround avoids z-fight)
+    // Layered well water — dark deep level, mid level, bright surface shimmer
+    villageQuads.push({ verts:[v3(-1.0,1.06,-9.0),v3(1.0,1.06,-9.0),v3(1.0,1.06,-7.0),v3(-1.0,1.06,-7.0)],
+      color:0x0c2860, normal:v3(0,1,0), isGround:true });             // deep dark water
+    villageQuads.push({ verts:[v3(-0.80,1.28,-8.80),v3(0.80,1.28,-8.80),v3(0.80,1.28,-7.20),v3(-0.80,1.28,-7.20)],
+      color:0x1848a8, normal:v3(0,1,0), isGround:true });             // mid water
+    villageQuads.push({ verts:[v3(-0.55,1.44,-8.55),v3(0.55,1.44,-8.55),v3(0.55,1.44,-7.45),v3(-0.55,1.44,-7.45)],
+      color:0x2c68d8, normal:v3(0,1,0), isGround:true });             // bright surface shimmer
     pushBox(villageQuads, -1.4, 2.82,  -8, 0.09, 1.72, 0.09, 0x6a4820); // post L
     pushBox(villageQuads,  1.4, 2.82,  -8, 0.09, 1.72, 0.09, 0x6a4820); // post R
     pushBox(villageQuads,  0,   4.56,  -8, 1.55, 0.09, 0.09, 0x5a3c18); // crossbeam
     pushBox(villageQuads,  0,   3.22,  -8, 0.05, 1.2,  0.05, 0x483828); // rope
+    // Wooden bucket hanging on rope
+    pushBox(villageQuads,  0, 2.08,  -8, 0.24, 0.30, 0.20, 0x7a4c1c); // bucket body
+    pushBox(villageQuads,  0, 2.40,  -8, 0.28, 0.04, 0.24, 0x5a3810); // bucket rim
+    pushBox(villageQuads,  0, 2.26,  -8, 0.21, 0.07, 0.04, 0x2040b0); // water in bucket
 
     // Helper: build a simple building with stone walls + coloured roof + door + optional detail
     // cy offset: bottom face at y=0.02 so it clears the ground tile
@@ -3731,6 +3745,27 @@
     pushBox(villageQuads, CB5.x, wa1top+CB5.h2*0.55, CB5.z - CB5.wd - 0.02, CB5.ww*0.38, CB5.h2*0.40, 0.06, 0x94b8e8); // 2F win back
     pushBox(villageQuads, CB5.x, wa2top+0.40, CB5.z+CB5.wd+0.02, 1.3, 0.42, 0.06, 0x1040a8); // academy banner
 
+    // Building 6: Village Bakery (east, x=26, z=30) — warm sandy walls, brown roof, chimney
+    const CB6 = { x:26, z:30, ww:4.5, wh:1.9, wd:3.0 };
+    vBuilding(CB6.x, CB6.z, CB6.ww, CB6.wh, CB6.wd, 0xd4a868, 0x7c4020, CB6.z - CB6.wd - 0.02);
+    pushBox(villageQuads, CB6.x+1.5, CB6.wh*2+1.10, CB6.z+CB6.wd*0.4, 0.34, 0.80, 0.34, 0x4a3828); // chimney shaft
+    pushBox(villageQuads, CB6.x+1.5, CB6.wh*2+1.94, CB6.z+CB6.wd*0.4, 0.42, 0.06, 0.42, 0x302018); // chimney cap
+    pushBox(villageQuads, CB6.x-CB6.ww-0.02, CB6.wh+0.22+0.02, CB6.z, 0.06, CB6.wh*0.44, 0.70, 0xf0c870); // warm window (west face)
+    pushBox(villageQuads, CB6.x, CB6.wh*2+0.18, CB6.z-CB6.wd-0.04, 0.65, 0.20, 0.06, 0xb06830); // sign panel
+
+    // Building 7: Herbalist Shop (west, x=-26, z=26) — mossy green walls, dark roof
+    const CB7 = { x:-26, z:26, ww:5.0, wh:1.8, wd:3.5 };
+    vBuilding(CB7.x, CB7.z, CB7.ww, CB7.wh, CB7.wd, 0x5a7848, 0x243c18, CB7.z - CB7.wd - 0.02);
+    [CB7.x-1.2, CB7.x, CB7.x+1.2].forEach(hx => {
+      pushBox(villageQuads, hx, CB7.wh*2+0.08, CB7.z-CB7.wd-0.02, 0.12, 0.40, 0.12, 0x4a6030); // dried herb bundles
+    });
+    pushBox(villageQuads, CB7.x+CB7.ww+0.02, CB7.wh+0.22+0.02, CB7.z, 0.06, CB7.wh*0.44, 0.68, 0x90b878); // green window (east face)
+    pushBox(villageQuads, CB7.x, CB7.wh*2+0.18, CB7.z-CB7.wd-0.04, 0.44, 0.44, 0.06, 0x3c7028); // round sign
+    pushBox(villageQuads, CB7.x-2.0, 0.22, CB7.z-CB7.wd-0.12, 0.50, 0.22, 0.50, 0x5c3c20); // planter L
+    pushBox(villageQuads, CB7.x+2.0, 0.22, CB7.z-CB7.wd-0.12, 0.50, 0.22, 0.50, 0x5c3c20); // planter R
+    pushBox(villageQuads, CB7.x-2.0, 0.52, CB7.z-CB7.wd-0.12, 0.40, 0.12, 0.40, 0x2c5018); // herbs L
+    pushBox(villageQuads, CB7.x+2.0, 0.52, CB7.z-CB7.wd-0.12, 0.40, 0.12, 0.40, 0x386020); // herbs R
+
     // Entrance arch (south at z=41)
     pushBox(villageQuads, -5.4, 2.38, 41, 0.44, 2.38, 0.44, 0x686060); // left pillar
     pushBox(villageQuads,  5.4, 2.38, 41, 0.44, 2.38, 0.44, 0x686060); // right pillar
@@ -3755,6 +3790,61 @@
       pushBox(villageQuads, lx, 1.96, lz, 0.05, 0.08, 0.05, 0xffe060); // flame tip
     });
 
+    // ── Garden (NW open grass, x=-16.8..−7.2, z=14.8..28.2) ─────────────────────────────
+    // Fence corner posts
+    [[-16.8,14.8],[-16.8,28.2],[-7.2,14.8],[-7.2,28.2]].forEach(([fx,fz]) => {
+      pushBox(villageQuads, fx, 0.55, fz, 0.12, 0.55, 0.12, 0x7a5030);  // post
+      pushBox(villageQuads, fx, 1.12, fz, 0.14, 0.06, 0.14, 0x5a3820);  // cap
+    });
+    // Fence rails
+    pushBox(villageQuads, -12, 0.80, 14.8, 4.8, 0.06, 0.08, 0x8a6038);  // N top
+    pushBox(villageQuads, -12, 0.44, 14.8, 4.8, 0.06, 0.08, 0x8a6038);  // N bottom
+    pushBox(villageQuads, -12, 0.80, 28.2, 4.8, 0.06, 0.08, 0x8a6038);  // S top
+    pushBox(villageQuads, -12, 0.44, 28.2, 4.8, 0.06, 0.08, 0x8a6038);  // S bottom
+    pushBox(villageQuads, -16.8, 0.80, 21.5, 0.08, 0.06, 6.7, 0x8a6038); // W top
+    pushBox(villageQuads, -16.8, 0.44, 21.5, 0.08, 0.06, 6.7, 0x8a6038); // W bottom
+    pushBox(villageQuads,  -7.2, 0.80, 21.5, 0.08, 0.06, 6.7, 0x8a6038); // E top
+    pushBox(villageQuads,  -7.2, 0.44, 21.5, 0.08, 0.06, 6.7, 0x8a6038); // E bottom
+    // 4 raised beds in 2x2 grid
+    [[-14,18.5],[-10,18.5],[-14,24.0],[-10,24.0]].forEach(([bx,bz],bi) => {
+      pushBox(villageQuads, bx, 0.26, bz, 2.4, 0.26, 2.5, 0x7a5030);  // wooden frame
+      villageQuads.push({ verts:[v3(bx-2.2,0.54,bz-2.2),v3(bx+2.2,0.54,bz-2.2),v3(bx+2.2,0.54,bz+2.2),v3(bx-2.2,0.54,bz+2.2)],
+        color:0x1e110a, normal:v3(0,1,0), isGround:true });            // dark soil top
+      const CROP = [0x2e6010,0x3a7818,0x3e8020,0x508020];
+      for (let ci = 0; ci < 3; ci++)
+        pushBox(villageQuads, bx-1.4+ci*1.4, 0.74+(ci%2)*0.06, bz, 0.28, 0.20, 2.0, CROP[(bi+ci)%4]);
+    });
+    // Watering can by the gate
+    pushBox(villageQuads, -8.0, 0.26, 15.5, 0.24, 0.26, 0.36, 0x608048); // can body
+    pushBox(villageQuads, -7.76, 0.32, 15.2, 0.08, 0.08, 0.24, 0x486030); // spout
+    pushBox(villageQuads, -8.0, 0.56, 15.5, 0.26, 0.05, 0.08, 0x486030); // handle
+
+    // ── Flower patch (southwest of well: x=-16..−6, z=-14..−5) ──────────────────────────
+    // Brighter patch grass base
+    for (let fpx = -17; fpx < -5; fpx += 2) {
+      for (let fpz = -14; fpz < -4; fpz += 2) {
+        villageQuads.push({ verts:[v3(fpx,0.012,fpz),v3(fpx+2,0.012,fpz),v3(fpx+2,0.012,fpz+2),v3(fpx,0.012,fpz+2)],
+          color:((Math.floor(fpx/2)+Math.floor(fpz/2))&1)?0x3a6e1a:0x2c5c10, normal:v3(0,1,0), isGround:true });
+      }
+    }
+    // Flowers — stem + coloured head + yellow centre
+    const _FC = [0xe04040,0xf0d020,0xec6090,0x9040c0,0xd8d8c0,0xe08030,0xff80a0,0xf060d0];
+    let _fci = 0;
+    [[-15.5,-12.5],[-13.5,-11.5],[-11.5,-12.0],[-9.5,-11.5],[-8.0,-12.5],
+     [-15.0, -9.0],[-13.0, -8.5],[-11.0, -9.0],[-9.0, -8.5],[-7.0, -9.0],
+     [-15.5, -6.5],[-13.5, -6.0],[-11.5, -6.5],[-9.5, -6.0],[-7.5, -6.5]].forEach(([fx,fz]) => {
+      const col = _FC[_fci++ % _FC.length];
+      pushBox(villageQuads, fx, 0.30, fz, 0.06, 0.30, 0.06, 0x286018); // stem
+      pushBox(villageQuads, fx, 0.66, fz, 0.25, 0.08, 0.25, col);      // head
+      pushBox(villageQuads, fx, 0.76, fz, 0.10, 0.05, 0.10, 0xffe870); // centre
+    });
+    // Border stones
+    [[-16.5,-14.5],[-14.0,-14.5],[-11.5,-14.5],[-9.0,-14.5],[-6.5,-14.5],
+     [-6.0,-11.5], [-6.0, -8.5], [-6.0, -5.5],
+     [-16.5,-11.5],[-16.5, -8.5],[-16.5, -5.5]].forEach(([sx,sz]) => {
+      pushBox(villageQuads, sx, 0.09, sz, 0.28, 0.09, 0.28, 0x706458);
+    });
+
     // Forest ring — two concentric rings with gaps for south entrance & north path
     // Ring 1 (r≈42)
     for (let i = 0; i < 64; i++) {
@@ -3776,6 +3866,19 @@
     }
 
     // Village NPCs — indices in clearingNPCs (0–10) used by the daily quest system
+    // Push a position outside all VBUILDINGS with body-size padding so NPCs don't clip walls
+    function outOfBuildings(x, z) {
+      const PAD = 1.5;
+      for (const b of VBUILDINGS) {
+        const ox = Math.abs(x - b.x) - (b.hw + PAD);
+        const oz = Math.abs(z - b.z) - (b.hd + PAD);
+        if (ox < 0 && oz < 0) {
+          if (ox > oz) x += Math.sign(x - b.x) * (-ox);
+          else         z += Math.sign(z - b.z) * (-oz);
+        }
+      }
+      return { x, z };
+    }
     // Helper: random offset clamped to village bounds — NPCs wander each cave exit after sleeping
     const _nj = (v, r, lo, hi) => Math.max(lo, Math.min(hi, v + (Math.random()*2-1)*r));
     const _ny = () => Math.random() * Math.PI * 2;
@@ -3795,6 +3898,7 @@
       { wx:_nj( -7,3,-18,18), wz:_nj( 24,3,-34,38), s:1.10, fur:0xa060b0, yaw:_ny(), text:'Come play with us!',                  type:'kid',   ears:'floppy'   },
     ];
     vNpcs.forEach(n => {
+      const _sp = outOfBuildings(n.wx, n.wz); n.wx = _sp.x; n.wz = _sp.z;
       clearingNPCs.push(n);
       addNpcDog(npcQuads, n.wx, n.wz, n.s, n.fur, n.yaw, n.ears || 'triangle');
     });
@@ -3814,6 +3918,12 @@
     // Pacers: wander back and forth
     villageKids.push({ type:'pacer', x:10,  z:-1.5, yaw:Math.PI*0.5, paceA:6,  paceB:22, axisX:true,  s:1.06, fur:0xd04828, earType:'triangle', walkT:0, legAngle:0, wagAngle:0, dir:1, text:'Exploring!' });
     villageKids.push({ type:'pacer', x:-16, z:9,    yaw:0,           paceA:4,  paceB:20, axisX:false, s:1.10, fur:0x4890d0, earType:'floppy',   walkT:0, legAngle:0, wagAngle:0, dir:1, text:'On a very important walk.' });
+    // Bakery-side pacer (east, north path section)
+    villageKids.push({ type:'pacer', x:22,  z:27,   yaw:0,           paceA:24, paceB:34, axisX:false, s:1.08, fur:0xd4a868, earType:'floppy',   walkT:0, legAngle:0, wagAngle:0, dir:1, text:'I can smell the bread!' });
+    // Flower-sniffer resting near the flower patch
+    villageKids.push({ type:'sleeper', x:-12, z:-9.5, yaw:0.7, s:1.04, fur:0xe0a060, earType:'triangle', wagAngle:0, wagT:0, text:'Sniff sniff...' });
+    // Garden watcher pacing outside east fence
+    villageKids.push({ type:'pacer', x:-6.5, z:16,  yaw:0,           paceA:15, paceB:27, axisX:false, s:1.10, fur:0x70c060, earType:'floppy',   walkT:0, legAngle:0, wagAngle:0, dir:1, text:'Almost harvest time!' });
 
     // ── Forest river (north gap, z=-42 to -56, runs E-W through the tree gap) ────
     const STREAM = 0x2050b8, STREAM2 = 0x2860cc, FOAM = 0x3868aa;
@@ -3864,13 +3974,14 @@
       if (npc.id === activeCharacter) continue;              // don't render self
       if (!getVillageDogs().includes(npc.id)) continue;     // not in village yet
       const pos = _cvp[npc.id] || PACK_DEFAULT_POS[npc.id] || { x: 0, z: 30 };
+      const _pp = outOfBuildings(pos.x, pos.z);
       // addNpcDog label so proximity chat works
       clearingNPCs.push({
-        wx: pos.x, wz: pos.z, s: 1.0, fur: npc.fur, yaw: pos.yaw ?? 0,
+        wx: _pp.x, wz: _pp.z, s: 1.0, fur: npc.fur, yaw: pos.yaw ?? 0,
         text: DOG_DISPLAY_NAMES[npc.id] || (npc.id.charAt(0).toUpperCase() + npc.id.slice(1)),
         type: 'adult', ears: npc.ears,
       });
-      drawPackMemberNpc(npcQuads, npc.id, pos.x, pos.z, pos.yaw ?? 0);
+      drawPackMemberNpc(npcQuads, npc.id, _pp.x, _pp.z, pos.yaw ?? 0);
     }
 
     // Generate (or restore) today's NPC quests
@@ -3960,13 +4071,13 @@
       dbox( 0.20, 1.03, 1.11, 0.02, 0.02, 0.02, eyeWhtW);
       dbox(-0.16, 1.03, 1.11, 0.02, 0.02, 0.02, eyeWhtW);
 
-      // ── Ears (tan outer, brown inner) ─────────────────────────────────
-      dbox( 0.28, 1.26, 0.70, 0.11, 0.24, 0.08, tanFur);
-      dbox(-0.28, 1.26, 0.70, 0.11, 0.24, 0.08, tanFur);
-      dbox( 0.28, 1.24, 0.73, 0.06, 0.16, 0.04, brownEar);
-      dbox(-0.28, 1.24, 0.73, 0.06, 0.16, 0.04, brownEar);
-      dbox( 0.27, 1.50, 0.68, 0.06, 0.08, 0.06, tanFur);
-      dbox(-0.27, 1.50, 0.68, 0.06, 0.08, 0.06, tanFur);
+      // ── Ears (erect, pointed — stick straight up) ────────────────────
+      dbox( 0.26, 1.30, 0.66, 0.09, 0.34, 0.06, tanFur);
+      dbox(-0.26, 1.30, 0.66, 0.09, 0.34, 0.06, tanFur);
+      dbox( 0.26, 1.28, 0.68, 0.05, 0.22, 0.04, brownEar);
+      dbox(-0.26, 1.28, 0.68, 0.05, 0.22, 0.04, brownEar);
+      dbox( 0.25, 1.58, 0.63, 0.05, 0.06, 0.05, tanFur);   // pointed tip
+      dbox(-0.25, 1.58, 0.63, 0.05, 0.06, 0.05, tanFur);
 
       // ── Amber tail (curled up) ────────────────────────────────────────
       const tailWagW = sin(wagT) * 0.55;
@@ -6157,10 +6268,16 @@
       }
 
       const fSize   = isAdult ? 13 : 12;
+      // Name header: show bold name above idle-chat text when npc.name is set
+      const showNameHeader = !quest && npc.name;
+      ctx.font = 'bold ' + fSize + 'px Arial';
+      const nameW = showNameHeader ? ctx.measureText(npc.name).width : 0;
       ctx.font = (isAdult ? 'italic ' : '') + fSize + 'px Arial';
       const tw  = ctx.measureText(displayText).width;
       const pad = 10, r = 8;
-      const bw  = tw + pad * 2, bh = fSize + pad * 2;
+      const lineSpacing = showNameHeader ? fSize + 4 : 0;
+      const bw  = Math.max(tw, nameW) + pad * 2;
+      const bh  = fSize + pad * 2 + lineSpacing;
       const bx  = Math.max(4, Math.min(W - bw - 4, sp.x - bw / 2));
       const by  = sp.y - bh - 14;
       if (by < -bh) return;
@@ -6196,10 +6313,19 @@
       const textColor = quest
         ? (quest.status === 'ready' ? '#a0f0b8' : '#f0d888')
         : isAdult ? '#ead9a5' : isKid ? '#f0c880' : '#adbde0';
-      ctx.fillStyle  = textColor;
       ctx.textAlign    = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(displayText, bx + bw / 2, by + bh / 2);
+      if (showNameHeader) {
+        ctx.font = 'bold ' + fSize + 'px Arial';
+        ctx.fillStyle = '#ffe090';
+        ctx.fillText(npc.name, bx + bw / 2, by + pad + fSize * 0.5);
+        ctx.font = (isAdult ? 'italic ' : '') + fSize + 'px Arial';
+        ctx.fillStyle = textColor;
+        ctx.fillText(displayText, bx + bw / 2, by + pad + lineSpacing + fSize * 0.5);
+      } else {
+        ctx.fillStyle = textColor;
+        ctx.fillText(displayText, bx + bw / 2, by + bh / 2);
+      }
       ctx.globalAlpha = 1;
     });
     ctx.textAlign    = savedTA;
@@ -15178,10 +15304,22 @@
     if (inventory.length === 0) window.closeSciDonateOverlay();
   };
 
+  let _lastSwitcherInBuilding = false;
   function frame() {
     try {
       // ── Advance village day cycle (15-minute real loop) ────────────────
       const _now = Date.now();
+      // ── Hide/show dog switcher when entering/leaving buildings ──────────
+      const _inBldg = gameState === 'cave' || gameState === 'factory' || gameState === 'sciCenter' ||
+                      gameState === 'academy' || gameState === 'foodcenter' || gameState === 'missionHQ';
+      if (_inBldg !== _lastSwitcherInBuilding) {
+        _lastSwitcherInBuilding = _inBldg;
+        const _sb = document.getElementById('dog-switcher');
+        if (_sb) {
+          if (_inBldg) { _sb.classList.remove('visible'); _sb.style.display = 'none'; }
+          else { updateSwitcherBar(); }
+        }
+      }
       if (_lastFrameMs > 0 && isInVillage()) {
         dayPhaseMs = (dayPhaseMs + Math.min(200, _now - _lastFrameMs)) % 900000;
       }
