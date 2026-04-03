@@ -1181,8 +1181,8 @@
   <!-- Missions unlocked card -->
   <div id="missions-card" class="hidden">
     <div id="missions-card-title">🎯 Missions Unlocked!</div>
-    <div id="missions-card-body">Go to the <strong>West Path</strong> to find the Mission HQ!</div>
-    <div id="missions-card-sub">Missions are tasks given by the seven professors — infiltrate wolf camps, steal DNA testers, and rescue hostages. Head west to get briefed.</div>
+    <div id="missions-card-body">In all games, the <strong>East Path</strong> leads to Mission Headquarters!</div>
+    <div id="missions-card-sub">If you join a pack, you can go on missions there.</div>
     <button id="missions-card-btn" onclick="closeMissionsCard()">Let's go! 🐾</button>
   </div>
 
@@ -5464,6 +5464,8 @@
       ds.z = Math.max(-50, Math.min(42, ds.z));
       // Only allow passing north boundary on the stone path
       if (ds.z < -43 && Math.abs(ds.x) > 3.5) ds.z = -43;
+      // East path locked until all dogs are in the village
+      if (!allDogsInVillage() && ds.x > 42 && Math.abs(ds.z) < 3.5) ds.x = 42;
       // Axis-aligned box push-out for each building
       const DOG_PAD = 0.55;
       for (const b of VBUILDINGS) {
@@ -5499,7 +5501,7 @@
         return;
       }
       // East path rock scrubland entrance — walk to x=44 along the east-west path
-      if (!(activeCharacter === 'ruff' && !ruffInVillage) && ds.x > 43 && Math.abs(ds.z) < 3.5 && gameState === 'playing') {
+      if (!(activeCharacter === 'ruff' && !ruffInVillage) && allDogsInVillage() && ds.x > 43 && Math.abs(ds.z) < 3.5 && gameState === 'playing') {
         enterRockScrub();
         return;
       }
@@ -5596,8 +5598,15 @@
         const scrubHintT = Math.max(0, Math.min(1, (ds.x - 30) / 6));
         ctx.globalAlpha = scrubHintT;
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.font = 'bold 14px Arial'; ctx.fillStyle = 'rgba(220,190,100,0.92)';
-        ctx.fillText('🪨 Walk east → Rock Scrubland', W/2, H - 120);
+        ctx.font = 'bold 14px Arial';
+        if (allDogsInVillage()) {
+          ctx.fillStyle = 'rgba(220,190,100,0.92)';
+          ctx.fillText('🪨 Walk east → Rock Scrubland', W/2, H - 120);
+        } else {
+          const missing = 7 - getVillageDogs().length;
+          ctx.fillStyle = 'rgba(200,120,80,0.95)';
+          ctx.fillText(`🔒 Bring all dogs to the village first  (${missing} still missing)`, W/2, H - 120);
+        }
         ctx.globalAlpha = 1;
       }
       // WOB coins display
@@ -6673,6 +6682,11 @@
   // True when at least 2 dogs have made it to the village.
   function canSwitchDogs() {
     return getVillageDogs().length >= 2;
+  }
+
+  // True when all 7 dogs have reached the village (unlocks the east path).
+  function allDogsInVillage() {
+    return getVillageDogs().length >= 7;
   }
 
   // Dynamic ordered list used by the keydown handler (1 = index 0, etc.).
