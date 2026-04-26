@@ -6875,12 +6875,21 @@
     sleepMenuOpen      = false;
     bedClaimPromptOpen = false;
     saveProgress();
-    const name = DOG_SWITCH_NAMES[who] || who;
+    const name = (who === 'scratch' && !scratchIsNamed()) ? 'Pup' : (DOG_SWITCH_NAMES[who] || who);
     pickCanine(who);
     // Toast fires after the enter-screen clears (pickCanine's onDone sets gameState)
     setTimeout(() => { toastMsg = '🐾 Now playing as ' + name; toastTimer = 220; }, 900);
   }
   window.switchToCharacter = switchToCharacter;
+
+  // Returns true if Obsidian has completed the naming scene for Scratch
+  function scratchIsNamed() {
+    if (activeCharacter === 'obsidian') return obsidianNamingDone;
+    try {
+      const s = localStorage.getItem(SAVE_KEY_OBS);
+      return s ? (JSON.parse(s).obsidianNamingDone ?? false) : false;
+    } catch(e) { return false; }
+  }
 
   // Rebuild and (re-)display the switcher bar.
   function updateSwitcherBar() {
@@ -6894,7 +6903,9 @@
     }
     bar.innerHTML = '';
     dogs.forEach((id, i) => {
-      const info   = DOG_SW_INFO[id] || { emoji: '🐾', label: id };
+      const base   = DOG_SW_INFO[id] || { emoji: '🐾', label: id };
+      const label  = (id === 'scratch' && !scratchIsNamed()) ? 'Pup' : base.label;
+      const info   = { emoji: base.emoji, label };
       const btn    = document.createElement('button');
       btn.className = 'dog-sw-btn' + (id === activeCharacter ? ' active' : '');
       btn.title    = `[${i + 1}] ${info.label}`;
@@ -14834,6 +14845,8 @@
     if (!activeMission) return;
     showEnterScreen('Deploying on mission…', () => {
       inMissionField = true;
+      _mfPatrolPausedIdx.clear();
+      _mfCheesePauseFlash = 0;
       buildMissionField();
       dogState.x = 0; dogState.z = 6; dogState.y = DOG_FLOOR;
       dogState.yaw = Math.PI; dogState.velY = 0; dogState.grounded = true;
@@ -15027,6 +15040,8 @@
   }
 
   let _mfSpottedFlashTimer = 0;
+  let _mfCheesePauseFlash = 0; // frames to show "passed by" feedback for Cheeseball
+  const _mfPatrolPausedIdx = new Map(); // patrol index → remaining pause frames (Cheeseball ability)
 
   function updateMissionField() {
     // Block input processing while riddle overlay is open
@@ -15071,7 +15086,14 @@
 
     // Update patrol positions + detection
     missionFieldDetected = false;
-    missionFieldPatrols.forEach(p => {
+    missionFieldPatrols.forEach((p, pi) => {
+      // Advance pause timer for Cheeseball's distraction ability
+      if (_mfPatrolPausedIdx.has(pi)) {
+        const t = _mfPatrolPausedIdx.get(pi) - 1;
+        if (t <= 0) _mfPatrolPausedIdx.delete(pi);
+        else        _mfPatrolPausedIdx.set(pi, t);
+        return; // patrol frozen — skip movement + detection this frame
+      }
       p.t += p.tSpeed || 0.013;
       p.x = p.startX + Math.sin(p.t) * p.range * p.dx;
       p.z = p.startZ + Math.sin(p.t) * p.range * p.dz;
@@ -15085,7 +15107,15 @@
       if (dist < vRange) {
         const angle = Math.atan2(tdx, tdz);
         const diff  = ((angle - pFacing) + Math.PI*3) % (Math.PI*2) - Math.PI;
-        if (Math.abs(diff) < vAngle) missionFieldDetected = true;
+        if (Math.abs(diff) < vAngle) {
+          // Cheeseball: 50% chance patrol pauses and passes by instead of spotting
+          if (activeCharacter === 'cheeseball' && Math.random() < 0.5) {
+            _mfPatrolPausedIdx.set(pi, 110 + Math.floor(Math.random() * 60)); // ~2–3 s pause
+            _mfCheesePauseFlash = 60; // show feedback flash
+          } else {
+            missionFieldDetected = true;
+          }
+        }
       }
     });
 
@@ -15276,6 +15306,16 @@
       ctx.textAlign='center'; ctx.textBaseline='middle';
       ctx.font='bold 28px Arial'; ctx.fillStyle='rgba(255,80,40,0.95)';
       ctx.fillText('🚨 SPOTTED — reset to entry!', W/2, H*0.3);
+    }
+
+    // Cheeseball: "passed by" ability feedback
+    if (_mfCheesePauseFlash > 0) {
+      _mfCheesePauseFlash--;
+      ctx.globalAlpha = Math.min(1, _mfCheesePauseFlash / 20);
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = 'bold 22px Arial'; ctx.fillStyle = 'rgba(255,220,80,0.95)';
+      ctx.fillText('🧀 They looked… then walked on!', W/2, H*0.25);
+      ctx.globalAlpha = 1;
     }
 
     // NPC labels
