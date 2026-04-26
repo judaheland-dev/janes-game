@@ -969,32 +969,32 @@
     <div id="pick-title">🐾 Pick Your Canine</div>
     <div id="pick-subtitle">Choose your companion to explore the forest</div>
     <div id="pick-grid">
-      <div class="canine-card" onclick="pickCanine('newmoon')">
+      <div class="canine-card" onclick="pickCanineWrap('newmoon')">
         <img id="preview-newmoon" src="newmoon.jpg" width="190" height="190" style="border-radius:14px;object-fit:cover;display:block;">
         <div class="canine-name">New Moon</div>
         <div class="canine-badge" id="badge-newmoon">✦ New Game</div>
       </div>
-      <div class="canine-card" onclick="pickCanine('wark')">
+      <div class="canine-card" onclick="pickCanineWrap('wark')">
         <img id="preview-wark" src="wark.jpg" width="190" height="190" style="border-radius:14px;object-fit:cover;display:block;">
         <div class="canine-name">Wark</div>
         <div class="canine-badge" id="badge-wark">✦ New Game</div>
       </div>
-      <div class="canine-card" onclick="pickCanine('cheeseball')">
+      <div class="canine-card" onclick="pickCanineWrap('cheeseball')">
         <img id="preview-cheeseball" src="cheeseball.jpg" width="190" height="190" style="border-radius:14px;object-fit:cover;display:block;">
         <div class="canine-name">Cheeseball</div>
         <div class="canine-badge" id="badge-cheeseball">✦ New Game</div>
       </div>
-      <div class="canine-card canine-card--obsidian" onclick="pickCanine('obsidian')">
+      <div class="canine-card canine-card--obsidian" onclick="pickCanineWrap('obsidian')">
         <img id="preview-obsidian" src="obsidian.jpg" width="190" height="190" style="border-radius:14px;object-fit:cover;display:block;">
         <div class="canine-name canine-name--obsidian">Obsidian</div>
         <div class="canine-badge" id="badge-obsidian">✦ New Game</div>
       </div>
-      <div class="canine-card canine-card--ruff" onclick="pickCanine('ruff')">
+      <div class="canine-card canine-card--ruff" onclick="pickCanineWrap('ruff')">
         <img id="preview-ruff" src="ruff.jpg" width="190" height="190" style="border-radius:14px;object-fit:cover;display:block;">
         <div class="canine-name canine-name--ruff">Ruff</div>
         <div class="canine-badge" id="badge-ruff">✦ New Game</div>
       </div>
-      <div class="canine-card canine-card--bark" onclick="pickCanine('bark')">
+      <div class="canine-card canine-card--bark" onclick="pickCanineWrap('bark')">
         <img id="preview-bark" src="bark.jpg" width="190" height="190" style="border-radius:14px;object-fit:cover;display:block;">
         <div class="canine-name canine-name--bark">Bark</div>
         <div class="canine-badge" id="badge-bark">✦ New Game</div>
@@ -4082,9 +4082,64 @@
       drawPackMemberNpc(npcQuads, npc.id, _pp.x, _pp.z, pos.yaw ?? 0);
     }
 
-    // Generate (or restore) today's NPC quests
+    // ── Generate (or restore) today's NPC quests
     initDailyQuests();
-  }
+
+    // ── Robot dog + retro satellite — only once all dogs are in the village ──
+    if (allDogsInVillage()) {
+      const RX = 8, RZ = 5;   // position: east of the central green
+      const RM = 0xb0bcc8;    // metal body colour
+      const RD = 0x8090a0;    // darker metal
+      const RC = 0x20e8f0;    // cyan eye/accent glow
+      const fl = 0.21;
+      // Body
+      pushBox(villageQuads, RX, fl+0.58, RZ,       0.44, 0.30, 0.68, RM);
+      // Chest panel
+      pushBox(villageQuads, RX, fl+0.58, RZ+0.35,  0.26, 0.18, 0.04, RD);
+      pushBox(villageQuads, RX, fl+0.58, RZ+0.35,  0.08, 0.08, 0.05, RC);   // chest light
+      // Head (more cubic than organic)
+      pushBox(villageQuads, RX, fl+1.02, RZ+0.38,  0.30, 0.28, 0.28, RM);
+      // Eyes
+      pushBox(villageQuads, RX+0.13, fl+1.06, RZ+0.64, 0.07, 0.07, 0.04, RC);
+      pushBox(villageQuads, RX-0.13, fl+1.06, RZ+0.64, 0.07, 0.07, 0.04, RC);
+      // Antenna ears (rigid rods)
+      pushBox(villageQuads, RX+0.22, fl+1.38, RZ+0.38, 0.05, 0.22, 0.05, RD);
+      pushBox(villageQuads, RX+0.22, fl+1.60, RZ+0.38, 0.09, 0.05, 0.09, RC);
+      pushBox(villageQuads, RX-0.22, fl+1.38, RZ+0.38, 0.05, 0.22, 0.05, RD);
+      pushBox(villageQuads, RX-0.22, fl+1.60, RZ+0.38, 0.09, 0.05, 0.09, RC);
+      // Snout
+      pushBox(villageQuads, RX, fl+0.90, RZ+0.64,  0.13, 0.08, 0.12, RD);
+      // Tail (rigid stub)
+      pushBox(villageQuads, RX, fl+0.82, RZ-0.68,  0.07, 0.07, 0.18, RD, 0.4);
+      // Legs
+      const _rl = (lx, lz) => {
+        pushBox(villageQuads, RX+lx, fl+0.22, RZ+lz, 0.10, 0.22, 0.10, RD);
+        pushBox(villageQuads, RX+lx, fl+0.04, RZ+lz, 0.13, 0.04, 0.16, RM);
+      };
+      _rl( 0.26,  0.38); _rl(-0.26,  0.38); _rl( 0.26, -0.38); _rl(-0.26, -0.38);
+
+      // ── Retro satellite dish (x=10.5, z=5) ─────────────────────────────
+      const SX = 10.5, SZ = 5;
+      // Base block
+      pushBox(villageQuads, SX,   fl+0.10, SZ,    0.28, 0.10, 0.28, 0x4a4a50);
+      // Pole
+      pushBox(villageQuads, SX,   fl+0.70, SZ,    0.07, 0.60, 0.07, 0x606870);
+      // Arm pointing forward-up
+      pushBox(villageQuads, SX+0.28, fl+1.10, SZ, 0.28, 0.05, 0.05, 0x606870);
+      // Dish face (tilted plate — slightly forward-facing)
+      pushBox(villageQuads, SX+0.55, fl+1.20, SZ, 0.32, 0.28, 0.04, 0x9ab0c0);
+      pushBox(villageQuads, SX+0.55, fl+1.20, SZ, 0.18, 0.16, 0.06, 0x5090b0);  // inner bowl
+      pushBox(villageQuads, SX+0.55, fl+1.20, SZ, 0.06, 0.06, 0.08, RC);        // feed horn glow
+
+      // Register in clearingNPCs so the speech bubble system sees him
+      clearingNPCs.push({
+        wx: RX, wz: RZ, s: 1.0, fur: RM, yaw: 0,
+        name: 'Unit-7',
+        text: 'Go to Online Village? 🌐',
+        type: 'adult', ears: 'triangle',
+      });
+    }
+  }  // end buildVillage()
 
   // ── Build dog geometry into dogQuads each frame ──────────────────────────
   // dogState holds position, angle, animation timers
@@ -5639,13 +5694,29 @@
           enterSciCenter();
         }
       }
-      if (sciDoorDist < 3.8 && !inSciCenter && gameState === 'playing') {
-        const W = canvas.width, H = canvas.height;
-        ctx.globalAlpha = Math.max(0, Math.min(1, (3.8 - sciDoorDist)));
-        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.font = 'bold 14px Arial'; ctx.fillStyle = 'rgba(80,200,216,0.92)';
-        ctx.fillText('🔬  E  ·  Enter Science Center', W/2, H - 120);
-        ctx.globalAlpha = 1;
+      // --- Generic door hint system ---
+      // List of all door locations and labels (add more as needed)
+      const doorHints = [
+        { x: 26, z: -11, r: 3.5, label: '🍖  E  ·  Enter Food Center', color: 'rgba(255,190,80,0.92)' },
+        { x: -12, z: -29.5, r: 4.0, label: '🛏️  E  ·  Enter Cave', color: 'rgba(200,180,255,0.92)' },
+        { x: -24, z: -15.5, r: 4.2, label: '🏛️  E  ·  Enter W.O.B. Academy', color: 'rgba(168,184,240,0.92)' },
+        { x: 26, z: 7, r: 3.8, label: '🔬  E  ·  Enter Science Center', color: 'rgba(80,200,216,0.92)' },
+        // Houses (neighborhood, right side):
+        { x: 25, z: 15, r: 3.2, label: '🏠  E  ·  Enter House', color: 'rgba(255,255,255,0.90)' },
+        { x: 38, z: 11, r: 3.2, label: '🏠  E  ·  Enter House', color: 'rgba(255,255,255,0.90)' },
+        { x: 28, z: 27, r: 3.2, label: '🏠  E  ·  Enter House', color: 'rgba(255,255,255,0.90)' },
+        { x: 44, z: 24, r: 3.2, label: '🏠  E  ·  Enter House', color: 'rgba(255,255,255,0.90)' },
+      ];
+      for (const door of doorHints) {
+        const dist = Math.hypot(ds.x - door.x, ds.z - door.z);
+        if (dist < door.r && gameState === 'playing') {
+          const W = canvas.width, H = canvas.height;
+          ctx.globalAlpha = Math.max(0, Math.min(1, (door.r - dist)));
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.font = 'bold 14px Arial'; ctx.fillStyle = door.color;
+          ctx.fillText(door.label, W/2, H - 90);
+          ctx.globalAlpha = 1;
+        }
       }
       // West path Mission HQ approach hint (sign at x≈-34.5)
       if (ds.x < -30 && Math.abs(ds.z) < 4 && !inMissionHQ && gameState === 'playing' && !(activeCharacter === 'ruff' && !ruffInVillage)) {
@@ -8834,6 +8905,12 @@
   }
 
   // ── Pick canine (called from HTML onclick) ────────────────────────────────
+  // Wrapper used by the pick-screen cards — hides any open riddle overlay first
+  window.pickCanineWrap = function(who) {
+    document.getElementById('mission-riddle-overlay').classList.add('hidden');
+    window.pickCanine(who);
+  };
+
   window.pickCanine = function(who) {
     activeCharacter = who || 'newmoon';
     const cfg       = CHAR_CONFIG[activeCharacter] || {};
@@ -12232,6 +12309,7 @@
   }
 
   function exitFoodCenter() {
+    gameState         = 'loading';
     inFoodCenter      = false;
     foodMenuOpen      = false;
     donateOverlayOpen = false;
@@ -12641,6 +12719,7 @@
   }
 
   function exitFactory() {
+    gameState = 'loading';
     hideFactoryMenu();
     shopOverlayOpen = false;
     document.getElementById('shop-overlay').classList.add('hidden');
@@ -13656,13 +13735,13 @@
     const WH = 3.5, WT = 0.5;
     // North wall
     pushBox(Q, 0, WH/2, -40, 36, WH, WT, 0x5a4e3a);
-    // South wall — gap in centre for entrance
-    pushBox(Q, -10, WH/2, 22, 16, WH, WT, 0x5a4e3a);
-    pushBox(Q,  10, WH/2, 22, 16, WH, WT, 0x5a4e3a);
-    // East wall
-    pushBox(Q, 18, WH/2, -9, WT, WH, 62, 0x4e4430);
+    // South wall — gap in centre for entrance (x=-3 to x=3 is open)
+    pushBox(Q, -10.5, WH/2, 22, 7.5, WH, WT, 0x5a4e3a);
+    pushBox(Q,  10.5, WH/2, 22, 7.5, WH, WT, 0x5a4e3a);
+    // East wall (half-depth = 31 matches room length z=-40 to z=22)
+    pushBox(Q, 18, WH/2, -9, WT, WH, 31, 0x4e4430);
     // West wall
-    pushBox(Q, -18, WH/2, -9, WT, WH, 62, 0x4e4430);
+    pushBox(Q, -18, WH/2, -9, WT, WH, 31, 0x4e4430);
 
     // ── Command table in the centre ──────────────────────────────────────
     pushBox(Q, 0, 0.9, -8, 7.0, 0.12, 3.5, 0x6a4218);  // tabletop
@@ -13674,8 +13753,9 @@
       pushBox(Q, -2 + mi, 1.06, -8, 0.15, 0.04, 0.15, mi % 2 === 0 ? 0x7a2010 : 0x204880);
     }
     // Chairs around table
-    const chairPositions = [[-4,-5.5,0],[-1.3,-5.5,0],[1.3,-5.5,0],[4,-5.5,0],
-                             [-4,-10.5,Math.PI],[0,-10.5,Math.PI],[4,-10.5,Math.PI]];
+    // South chairs at z=-2.5 (south of table edge at z=-4.5), north chairs at z=-13.5 (north of table edge at z=-11.5)
+    const chairPositions = [[-4,-2.5,0],[-1.3,-2.5,0],[1.3,-2.5,0],[4,-2.5,0],
+                             [-4,-13.5,Math.PI],[0,-13.5,Math.PI],[4,-13.5,Math.PI]];
     for (const [cx,cz,cy] of chairPositions) {
       pushBox(Q, cx, 0.42, cz, 0.7, 0.06, 0.68, 0x3a2808, cy); // seat
       pushBox(Q, cx, 0.78, cz + Math.cos(cy)*0.30, 0.62, 0.52, 0.07, 0x3a2808, cy); // back
@@ -13718,10 +13798,6 @@
     pushBox(Q, -3.5, 1.0, 22, 0.5, 2.0, 0.5, 0x5a4e3a);  // left pillar body
     pushBox(Q,  3.5, 1.0, 22, 0.5, 2.0, 0.5, 0x5a4e3a);  // right pillar body
 
-    // ── Trees beyond the walls (exterior atmosphere) ─────────────────────
-    addTree(-20, 24, 0.9, Q); addTree(20, 24, 0.9, Q);
-    addTree(-22, -8, 1.0, Q); addTree(22, -8, 1.0, Q);
-    addTree(-20,-42, 0.8, Q); addTree(20,-42, 0.8, Q);
 
     // ── Professor NPCs — 7 stations around the command table ─────────────
     // Positions around the walls / briefing stations
@@ -14041,6 +14117,8 @@
   let missionFieldWalls  = []; // axis-aligned wall segments [{x1,z1,x2,z2}]
   let missionFieldObjectiveReady = false;
   let missionFieldDetected = false;
+  let missionFieldStage = 0;
+  let missionFieldDoors = []; // [{x,z,unlocked,stageIdx,guardX,guardZ,guardFacing,guardFur,guardEars,guardName,riddle}]
 
   // Seeded LCG RNG tied to mission key so each mission always generates the same map
   function mfRng(seed) {
@@ -14731,6 +14809,25 @@
         }
       }
     }
+
+    // ── Multi-stage init ────────────────────────────────────────────────
+    missionFieldStage = 0;
+    missionFieldDoors.length = 0;
+    const stageKey = profIdx * 3 + mIdx;
+    if (MISSION_STAGES[stageKey]) {
+      missionFieldItems.length = 0;
+      setupMissionStage(0);
+      MISSION_STAGES[stageKey].forEach((s, i) => {
+        if (s.type === 'riddle_door') {
+          missionFieldDoors.push({
+            x: s.guardX, z: s.guardZ, unlocked: false, stageIdx: i,
+            guardX: s.guardX, guardZ: s.guardZ, guardFacing: s.guardFacing,
+            guardFur: s.guardFur, guardEars: s.guardEars,
+            guardName: s.guardName, riddle: s.riddle,
+          });
+        }
+      });
+    }
   }
 
   function enterMissionField() {
@@ -14746,49 +14843,111 @@
     });
   }
 
-  // ── Mission Riddles ────────────────────────────────────────────────────────
-  // One riddle per professor × mission index (7 professors × 3 = 21).
-  // answer is matched case-insensitively; hint gives a nudge without spoiling.
-  const MISSION_RIDDLES = [
-    // Prof. Maple 🍁  (profIdx 0)
-    { q:"I have no mouth, yet I shout; no legs, yet I run far and wide. Wolves built me to carry their voices. What am I?",  hint:"Think about something that carries signals or sound across distance.", a:"signal tower" },
-    { q:"I carry secrets in paper arms. Steal me and you'll know every move. What am I?",                                    hint:"Plans written down that guide an army's attack.", a:"battle plans" },
-    { q:"I am a crystal that hums until shattered. Break me and silence follows. What am I?",                               hint:"It's used as a relay for the wolf communication system.", a:"relay crystal" },
-    // Prof. Birch 🌿  (profIdx 1)
-    { q:"I wear a white coat and test your blood, yet I am kept under lock and key. What am I?",                            hint:"Something found in a medical or science lab — small and handheld.", a:"dna tester" },
-    { q:"I'm neither a door nor a window, yet I'm the only way out of a cage. Find me and freedom follows. What am I?",     hint:"Think of a rear exit or a secondary escape route.", a:"back gate" },
-    { q:"I look like water, smell like flowers, and make wolves drowsy. Pour me carefully. What am I?",                     hint:"A harmless-to-dogs compound you're adding to the stream.", a:"compound" },
-    // Prof. Cedar 🌲  (profIdx 2)
-    { q:"I hold food but am not a plate; I stack easily and travel with armies. What am I?",                                hint:"Goods are stored and transported in these wooden containers.", a:"crate" },
-    { q:"I move along a road but am not a single vehicle — I am many, together carrying hope. What am I?",                  hint:"A group of supply vehicles travelling as one unit.", a:"convoy" },
-    { q:"I sleep in darkness, wake in thunder, and leave nothing behind but smoke. Plant me and run. What am I?",           hint:"Something that explodes — used to demolish a target.", a:"spark charge" },
-    // Prof. Ash 🔥  (profIdx 3)
-    { q:"I am the place that shapes who comes and goes. Every army builds me first. What am I?",                             hint:"The main entrance fortified at the edge of a village.", a:"gate" },
-    { q:"I give orders but take none. Catch me and the army loses its voice. Who am I?",                                    hint:"A high-ranking enemy wolf who leads the patrol.", a:"lieutenant" },
-    { q:"I was ours, then theirs. Hoist me again and claim what was lost. What am I?",                                      hint:"A piece of cloth that represents ownership and victory.", a:"flag" },
-    // Prof. Flint ⚡  (profIdx 4)
-    { q:"I hold thousands of names but weigh nothing. Steal my contents and you know every dog. What am I?",                hint:"Information stored electronically about genetics.", a:"dna database" },
-    { q:"I hang around a neck, hold memories close, and may carry power. Find me. What am I?",                              hint:"An ornamental item lost in a wolf raid — personal and precious.", a:"necklace" },
-    { q:"I am invisible once released, yet I always know where my host wanders. Plant me quietly. What am I?",              hint:"Something biological that tracks movement from the inside.", a:"tracking spore" },
-    // Prof. Slate 🪨  (profIdx 5)
-    { q:"I have many rooms but no family lives here. Dogs are kept against their will inside me. What am I?",               hint:"A structure specifically made to house and confine dogs.", a:"dog house" },
-    { q:"I capture the truth in an instant without speaking. Held still, I never lie. What am I?",                          hint:"A device that records a still image.", a:"photograph" },
-    { q:"I am round, stamped in wax, and speak for the whole village without saying a word. What am I?",                    hint:"An official emblem used to authenticate orders.", a:"seal" },
-    // Prof. Ember 🌸  (profIdx 6)
-    { q:"I am small, alone, and locked away where hope shouldn't reach. Find me and carry me home. Who am I?",              hint:"A young dog taken captive and held in a cage.", a:"pup" },
-    { q:"I sent no final message. I left no trail. Yet something happened to me near the ridge. Who am I?",                 hint:"A scout who went dark — lost somewhere on patrol.", a:"bramblefur" },
-    { q:"I wear two faces and belong to two worlds. Pull me out before both worlds discover me. Who am I?",                 hint:"An agent working secretly inside the enemy's ranks.", a:"double agent" },
-  ];
+  // ── Multi-stage mission definitions ─────────────────────────────────────
+  // Missions listed here have multiple stages with riddle-door guards.
+  // All others are single-stage: walk to objective → press E to complete.
+  const MISSION_STAGES = {
+    // Maple-0 "Infiltrate Wolf Camp North" — wolf_camp
+    0: [
+      { type:'reach',       label:'Reach the patrol perimeter',              icon:'👣', x:0,    z:-22 },
+      { type:'riddle_door', label:'Answer the inner gate guard\'s riddle',   icon:'🚪',
+        guardX:0.5, guardZ:-53, guardFacing:0, guardFur:0x504848, guardEars:'triangle',
+        guardName:'Gate Guard 🐺',
+        riddle:{ q:'I stand between safety and danger — open to the worthy, shut to the rest. Every fort has one. What am I?', hint:'The fortified opening in a palisade or fence wall.', a:'gate|entrance|door|opening' } },
+      { type:'objective',   label:'Reach the northern overlook and return',  icon:'🔭', x:0,    z:-108 },
+    ],
+    // Birch-0 "Raid the Human Lab" — human_lab
+    3: [
+      { type:'reach',       label:'Infiltrate the lab entry corridor',        icon:'🏢', x:0,    z:-20 },
+      { type:'riddle_door', label:'Bypass the security checkpoint',           icon:'🚪',
+        guardX:0.5, guardZ:-53, guardFacing:0, guardFur:0x6080a0, guardEars:'floppy',
+        guardName:'Security Guard 👮',
+        riddle:{ q:'I am a string of secrets no one should share. Get me right and any lock obeys. What am I?', hint:'What lab guards use to control access to secure rooms.', a:'password|passcode|code|access code' } },
+      { type:'objective',   label:'Extract the DNA testers from the server room', icon:'💾', x:-22, z:-108 },
+    ],
+    // Cedar-2 "Destroy the Wolf Ammunition Dump" — cave
+    8: [
+      { type:'reach',       label:'Descend into the cave complex',            icon:'🕳️', x:0,    z:-25 },
+      { type:'riddle_door', label:'Pass the cave sentinel',                   icon:'🚪',
+        guardX:0.5, guardZ:-53, guardFacing:0, guardFur:0x1a1018, guardEars:'triangle',
+        guardName:'Cave Sentinel 🦇',
+        riddle:{ q:'I swallow everything that enters and give back only echoes. Walk through me only with permission. What am I?', hint:'The passage leading from the outer cave to the inner chamber.', a:'tunnel|passage|cave|entrance|doorway' } },
+      { type:'objective',   label:'Plant the spark charge in the ammo dump',  icon:'🔮', x:0,    z:-108 },
+    ],
+    // Ash-2 "Retake the Outpost" — nether_ruins
+    11: [
+      { type:'reach',       label:'Navigate through the outer ruins',         icon:'🏛️', x:0,    z:-22 },
+      { type:'riddle_door', label:'Pass the wraith guardian of the archway',  icon:'🚪',
+        guardX:0.5, guardZ:-53, guardFacing:0, guardFur:0x3010a0, guardEars:'triangle',
+        guardName:'Archway Wraith 👻',
+        riddle:{ q:'Warriors raise me after every victory. I fly on a pole and say who won. I was yours — now take me back. What am I?', hint:'Hoisted to show who controls a territory or outpost.', a:'flag|banner|standard' } },
+      { type:'objective',   label:'Clear the outpost and hoist the Warbark flag', icon:'📜', x:0,   z:-108 },
+    ],
+    // Flint-0 "Steal the Wolf DNA Database" — human_lab
+    12: [
+      { type:'reach',       label:'Enter the mobile lab compound',            icon:'🔬', x:0,    z:-20 },
+      { type:'riddle_door', label:'Crack the security door',                  icon:'🚪',
+        guardX:0.5, guardZ:-53, guardFacing:0, guardFur:0x6080a0, guardEars:'floppy',
+        guardName:'Lab Technician 👮',
+        riddle:{ q:'I hold everything, weigh nothing, and can vanish in a moment. Every wolf secret lives inside me. What am I?', hint:'The digital records this whole mission is about stealing.', a:'database|data|records|files|dna' } },
+      { type:'objective',   label:'Extract the wolf DNA database',            icon:'💾', x:-22, z:-108 },
+    ],
+    // Slate-0 "Infiltrate the Dog House" — human_house
+    15: [
+      { type:'reach',       label:'Sneak through the front rooms undetected', icon:'🏠', x:0,    z:-22 },
+      { type:'riddle_door', label:'Get past the hall guard',                  icon:'🚪',
+        guardX:0.5, guardZ:-53, guardFacing:0, guardFur:0xe07820, guardEars:'triangle',
+        guardName:'Hall Cat 🐱',
+        riddle:{ q:'I look like one of them, yet I serve a different master. I walk with two names in shadow. What am I?', hint:'Someone secretly working for the other side while blending in.', a:'spy|agent|double agent|undercover|mole' } },
+      { type:'objective',   label:'Open the rear gate and free the dogs',     icon:'🔑', x:-14, z:-109 },
+    ],
+    // Ember-0 "Rescue the Hostage Pup" — nether
+    18: [
+      { type:'reach',       label:'Cross the first lava bridge',              icon:'🌋', x:-16, z:-35 },
+      { type:'riddle_door', label:'Answer the nether spirit\'s challenge',    icon:'🚪',
+        guardX:-0.5, guardZ:-53, guardFacing:0, guardFur:0x2a1040, guardEars:'triangle',
+        guardName:'Nether Spirit 👻',
+        riddle:{ q:'I am the smallest and the most afraid, held in darkness, waiting for someone who may never come. Who am I?', hint:'The young dog taken captive — the whole reason for this mission.', a:'pup|puppy|hostage|cub|young dog' } },
+      { type:'objective',   label:'Find and rescue the hostage pup',          icon:'🔮', x:0,    z:-108 },
+    ],
+  };
 
-  let mroActive = false;
-  let mroPendingObj = null; // the objective item waiting to be collected
-
-  function mroOpen(obj) {
+  function setupMissionStage(idx) {
+    if (!activeMission) return;
     const { profIdx, mIdx } = activeMission;
-    const riddleIdx = profIdx * 3 + mIdx;
-    const riddle = MISSION_RIDDLES[riddleIdx];
-    if (!riddle) { obj.collected = true; exitMissionField(true); return; }
-    mroPendingObj = obj;
+    const stages = MISSION_STAGES[profIdx * 3 + mIdx];
+    if (!stages || idx >= stages.length) return;
+    missionFieldStage = idx;
+    missionFieldItems.length = 0;
+    const stage = stages[idx];
+    if (stage.type === 'reach') {
+      missionFieldItems.push({ id:0, x:stage.x, z:stage.z, type:'reach', label:stage.label, icon:stage.icon, collected:false });
+    } else if (stage.type === 'riddle_door') {
+      // Nav marker points to the guard
+      missionFieldItems.push({ id:0, x:stage.guardX, z:stage.guardZ, type:'door_nav', label:stage.label, icon:'🚪', collected:false });
+    } else if (stage.type === 'objective') {
+      missionFieldItems.push({ id:0, x:stage.x, z:stage.z, type:'objective', label:stage.label, icon:stage.icon, collected:false });
+    }
+  }
+
+  function advanceMissionStage() {
+    if (!activeMission) return;
+    const { profIdx, mIdx } = activeMission;
+    const stages = MISSION_STAGES[profIdx * 3 + mIdx];
+    if (!stages) { exitMissionField(true); return; }
+    const next = missionFieldStage + 1;
+    if (next >= stages.length) { exitMissionField(true); }
+    else                       { setupMissionStage(next); }
+  }
+
+  // ── Riddle overlay helpers ──────────────────────────────────────────────
+  let mroActive = false;
+  let _mroRiddle = null;
+  let _mroOnSuccess = null;
+
+  function mroOpen(riddle, onSuccess) {
+    _mroRiddle = riddle;
+    _mroOnSuccess = onSuccess;
     mroActive = true;
     document.getElementById('mro-question').textContent = riddle.q;
     document.getElementById('mro-hint-text').textContent = '';
@@ -14796,30 +14955,27 @@
     document.getElementById('mro-input').value = '';
     document.getElementById('mro-feedback').textContent = '';
     const hintBtn = document.getElementById('mro-hint-btn');
-    hintBtn.textContent = `💡 Hint  (30 🪙)`;
+    hintBtn.textContent = '💡 Hint  (30 🪙)';
     hintBtn.disabled = false;
     document.getElementById('mission-riddle-overlay').classList.remove('hidden');
     setTimeout(() => {
       const inp = document.getElementById('mro-input');
-      inp.focus();
-      inp.onkeydown = e => { if (e.key === 'Enter') mroSubmit(); };
+      if (inp) { inp.focus(); inp.onkeydown = e => { if (e.key === 'Enter') window.mroSubmit(); }; }
     }, 80);
   }
 
   window.mroSubmit = function() {
-    if (!mroPendingObj || !activeMission) return;
-    const { profIdx, mIdx } = activeMission;
-    const riddle = MISSION_RIDDLES[profIdx * 3 + mIdx];
+    if (!_mroRiddle) return;
     const ans = document.getElementById('mro-input').value.trim().toLowerCase();
-    const accepted = riddle.a.split('|').map(s=>s.trim());
-    if (accepted.some(a => ans.includes(a) || a.includes(ans) && ans.length >= 3)) {
+    const accepted = _mroRiddle.a.split('|').map(s => s.trim());
+    if (accepted.some(a => ans.includes(a) || (a.includes(ans) && ans.length >= 3))) {
       document.getElementById('mro-feedback').style.color = '#60ff80';
       document.getElementById('mro-feedback').textContent = '✓ Correct! Well done!';
       setTimeout(() => {
         document.getElementById('mission-riddle-overlay').classList.add('hidden');
         mroActive = false;
-        mroPendingObj.collected = true;
-        exitMissionField(true);
+        const cb = _mroOnSuccess; _mroRiddle = null; _mroOnSuccess = null;
+        if (cb) cb();
       }, 900);
     } else {
       document.getElementById('mro-feedback').style.color = '#ff7060';
@@ -14829,18 +14985,16 @@
   };
 
   window.mroBuyHint = function() {
-    if (!activeMission) return;
+    if (!_mroRiddle) return;
     if (wobCoins < 30) {
       document.getElementById('mro-feedback').style.color = '#ff9040';
-      document.getElementById('mro-feedback').textContent = "Not enough WOB coins! (Need 30 🪙)";
+      document.getElementById('mro-feedback').textContent = 'Not enough WOB coins! (Need 30 🪙)';
       return;
     }
-    const { profIdx, mIdx } = activeMission;
-    const riddle = MISSION_RIDDLES[profIdx * 3 + mIdx];
     wobCoins -= 30;
     const wc = document.getElementById('wob-count');
     if (wc) wc.textContent = wobCoins;
-    document.getElementById('mro-hint-text').textContent = '💡 ' + riddle.hint;
+    document.getElementById('mro-hint-text').textContent = '💡 ' + _mroRiddle.hint;
     document.getElementById('mro-hint-text').classList.remove('hidden');
     const hintBtn = document.getElementById('mro-hint-btn');
     hintBtn.textContent = '💡 Hint (used)';
@@ -14851,10 +15005,13 @@
   window.mroClose = function() {
     document.getElementById('mission-riddle-overlay').classList.add('hidden');
     mroActive = false;
-    mroPendingObj = null;
+    _mroRiddle = null;
+    _mroOnSuccess = null;
   };
 
   function exitMissionField(completed) {
+    document.getElementById('mission-riddle-overlay').classList.add('hidden');
+    mroActive = false; _mroRiddle = null; _mroOnSuccess = null;
     inMissionField = false;
     const mission = activeMission;
     if (completed && mission) {
@@ -14872,6 +15029,9 @@
   let _mfSpottedFlashTimer = 0;
 
   function updateMissionField() {
+    // Block input processing while riddle overlay is open
+    if (mroActive) { keysJustPressed.clear(); return; }
+
     const ds = dogState;
     if (keys['ArrowLeft']  || keys['KeyA']) ds.yaw += TURN_SPEED;
     if (keys['ArrowRight'] || keys['KeyD']) ds.yaw -= TURN_SPEED;
@@ -14894,6 +15054,13 @@
       const hw=(w.x2-w.x1)/2+PAD, hd=(w.z2-w.z1)/2+PAD;
       const ox=Math.abs(ds.x-cx)-hw, oz=Math.abs(ds.z-cz)-hd;
       if (ox<0&&oz<0) { if(ox>oz) ds.x+=Math.sign(ds.x-cx)*(-ox); else ds.z+=Math.sign(ds.z-cz)*(-oz); }
+    }
+
+    // Door collision — locked doors block passage (full-width barrier 4 units behind guard)
+    for (const d of missionFieldDoors) {
+      if (d.unlocked) continue;
+      const barZ = d.guardZ + 4;
+      if (ds.z < barZ && ds.z > barZ - 1.2) { ds.z = barZ; }
     }
 
     // South walk-back to abort
@@ -14928,19 +15095,40 @@
     }
     if (_mfSpottedFlashTimer > 0) _mfSpottedFlashTimer--;
 
-    // Objective interaction
-    const obj = missionFieldItems.find(it => !it.collected && it.type === 'objective');
-    if (obj) {
-      const dist = Math.hypot(ds.x-obj.x, ds.z-obj.z);
-      missionFieldObjectiveReady = dist < 3.2;
-      if (missionFieldObjectiveReady && keysJustPressed.has('KeyE') && !mroActive) {
-        keysJustPressed.delete('KeyE');
-        keysJustPressed.clear();
-        mroOpen(obj);
-        return;
+    // Stage item interaction
+    missionFieldObjectiveReady = false;
+    const activeItem = missionFieldItems.find(it => !it.collected);
+    if (activeItem) {
+      const dist = Math.hypot(ds.x - activeItem.x, ds.z - activeItem.z);
+      if (activeItem.type === 'reach') {
+        // Auto-advance when close enough
+        if (dist < 3.5) { activeItem.collected = true; advanceMissionStage(); return; }
+      } else if (activeItem.type === 'door_nav') {
+        // Find the corresponding door
+        const door = missionFieldDoors.find(d => !d.unlocked && d.stageIdx === missionFieldStage);
+        if (door) {
+          missionFieldObjectiveReady = dist < 3.8;
+          if (missionFieldObjectiveReady && keysJustPressed.has('KeyE')) {
+            keysJustPressed.delete('KeyE');
+            keysJustPressed.clear();
+            mroOpen(door.riddle, () => {
+              door.unlocked = true;
+              activeItem.collected = true;
+              advanceMissionStage();
+            });
+            return;
+          }
+        }
+      } else if (activeItem.type === 'objective') {
+        missionFieldObjectiveReady = dist < 3.2;
+        if (missionFieldObjectiveReady && keysJustPressed.has('KeyE')) {
+          keysJustPressed.delete('KeyE');
+          keysJustPressed.clear();
+          activeItem.collected = true;
+          advanceMissionStage();
+          return;
+        }
       }
-    } else {
-      missionFieldObjectiveReady = false;
     }
 
     keysJustPressed.clear();
@@ -15027,7 +15215,20 @@
       forest:0x060c08,     village:0x0c0a04,    cave:0x060406,
       nether_ruins:0x0e0404, human_house:0x100c06,
     }[mapType]||0x080804;
-    const allQ = [...missionFieldQuads, ...patrolQ, ...npcQ, ...dogQuads];
+
+    // Door guards (locked doors only)
+    const doorGuardQ = [];
+    missionFieldDoors.forEach(d => {
+      if (d.unlocked) return;
+      addNpcDog(doorGuardQ, d.guardX, d.guardZ, 1.0, d.guardFur, d.guardFacing, d.guardEars || 'triangle');
+      // Door bar visual — two vertical beams spanning the width
+      pushBox(doorGuardQ, d.guardX-14, 1.8, d.guardZ+4, 0.18, 1.8, 0.18, 0x804020);
+      pushBox(doorGuardQ, d.guardX+14, 1.8, d.guardZ+4, 0.18, 1.8, 0.18, 0x804020);
+      pushBox(doorGuardQ, d.guardX,    1.0, d.guardZ+4, 28,   0.14, 0.14, 0xa06030);
+      pushBox(doorGuardQ, d.guardX,    2.4, d.guardZ+4, 28,   0.14, 0.14, 0xa06030);
+    });
+
+    const allQ = [...missionFieldQuads, ...patrolQ, ...npcQ, ...doorGuardQ, ...dogQuads];
     const toRender = allQ.map(q => {
       const pts = projectClipped(q.verts, cam); if (!pts) return null;
       const cx=q.verts.reduce((s,v)=>s+v.x,0)/4, cy=q.verts.reduce((s,v)=>s+v.y,0)/4, cz=q.verts.reduce((s,v)=>s+v.z,0)/4;
@@ -15085,17 +15286,48 @@
       ctx.fillText(n.label, sp.x, sp.y-3); ctx.globalAlpha=1;
     });
 
-    // Objective marker
-    const obj=missionFieldItems.find(it=>!it.collected&&it.type==='objective');
-    if (obj) {
-      const sp=project(v3(obj.x,DOG_FLOOR+3.0,obj.z),cam);
+    // Item / objective marker
+    const activeItem2 = missionFieldItems.find(it => !it.collected);
+    if (activeItem2) {
+      const sp = project(v3(activeItem2.x, DOG_FLOOR+3.0, activeItem2.z), cam);
       if (sp) {
-        ctx.globalAlpha=0.92; ctx.textAlign='center'; ctx.textBaseline='bottom';
-        ctx.font='bold 13px Arial';
-        ctx.fillStyle=missionFieldObjectiveReady?'#60ff80':'#ffdd60';
-        ctx.fillText(`${obj.icon} ${missionFieldObjectiveReady?'E · Answer riddle 🔐':'Objective'}`, sp.x, sp.y-3);
-        ctx.globalAlpha=1;
+        ctx.globalAlpha = 0.92; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+        ctx.font = 'bold 13px Arial';
+        if (activeItem2.type === 'reach') {
+          ctx.fillStyle = '#80d0ff';
+          ctx.fillText(`${activeItem2.icon} Head here`, sp.x, sp.y-3);
+        } else if (activeItem2.type === 'door_nav') {
+          ctx.fillStyle = missionFieldObjectiveReady ? '#ffaa30' : '#ffdd60';
+          ctx.fillText(`🚪 ${missionFieldObjectiveReady ? 'E · Talk to guard' : 'Find the door guard'}`, sp.x, sp.y-3);
+        } else if (activeItem2.type === 'objective') {
+          ctx.fillStyle = missionFieldObjectiveReady ? '#60ff80' : '#ffdd60';
+          ctx.fillText(`${activeItem2.icon} ${missionFieldObjectiveReady ? 'E · Complete' : 'Objective'}`, sp.x, sp.y-3);
+        }
+        ctx.globalAlpha = 1;
       }
+    }
+
+    // Door guard labels
+    const ds2 = dogState;
+    missionFieldDoors.forEach(d => {
+      if (d.unlocked) return;
+      const sp = project(v3(d.guardX, DOG_FLOOR+2.4, d.guardZ), cam);
+      if (!sp) return;
+      const near = Math.hypot(ds2.x - d.guardX, ds2.z - d.guardZ) < 3.8;
+      ctx.globalAlpha = 0.9; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+      ctx.font = 'bold 11px Arial';
+      ctx.fillStyle = near ? '#ffaa30' : '#d0c090';
+      ctx.fillText(near ? `E · ${d.guardName} — answer riddle` : d.guardName, sp.x, sp.y-3);
+      ctx.globalAlpha = 1;
+    });
+
+    // Stage counter HUD
+    const stageKey2 = activeMission ? activeMission.profIdx * 3 + activeMission.mIdx : -1;
+    if (MISSION_STAGES[stageKey2]) {
+      const totalStages = MISSION_STAGES[stageKey2].length;
+      ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+      ctx.font = 'bold 12px Arial'; ctx.fillStyle = 'rgba(200,200,255,0.85)';
+      ctx.fillText(`Stage ${missionFieldStage+1} of ${totalStages}`, W - 14, 14);
     }
 
     // HUD banner
@@ -15620,6 +15852,7 @@
     jewelryBoxOpen = true;
     jewelryBoxTab  = 'necklace';
     document.getElementById('jewelry-overlay').classList.remove('hidden');
+    document.getElementById('dog-switcher').classList.remove('visible');
     document.querySelectorAll('.jw-tab-btn').forEach(b =>
       b.classList.toggle('active', b.getAttribute('onclick').includes("'necklace'")));
     renderJewelryGrid();
@@ -15627,6 +15860,7 @@
   function closeJewelryBox() {
     jewelryBoxOpen = false;
     document.getElementById('jewelry-overlay').classList.add('hidden');
+    updateSwitcherBar();
   }
   window.openJewelryBox  = openJewelryBox;
   window.closeJewelryBox = closeJewelryBox;
