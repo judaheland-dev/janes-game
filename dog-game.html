@@ -1,141 +1,91 @@
-// ── Puzzle Overlay ─────────────────────────────────────────────────────
-function showPuzzleOverlay() {
-  if (!missionFieldPuzzle) return '';
-  return `
-    <div id="puzzle-overlay" style="position:fixed;inset:0;z-index:9999;background:rgba(10,8,20,0.93);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;">
-      <div style="background:#222a38;padding:24px 32px;border-radius:16px;box-shadow:0 4px 32px #000a;max-width:420px;">
-        <div style="font:700 18px Georgia,serif;color:#ffe080;margin-bottom:10px;">Riddle</div>
-        <div style="font:15px/1.5 Arial;color:#ffeedd;margin-bottom:18px;">${missionFieldPuzzle.question}</div>
-        <input id="puzzle-answer" type="text" style="font-size:1.1em;padding:7px 12px;border-radius:7px;border:1.5px solid #ccb060;width:100%;max-width:260px;outline:none;" placeholder="Your answer..." autofocus onkeydown="if(event.key==='Enter'){window.submitPuzzleAnswer()}" />
-        <button onclick="window.submitPuzzleAnswer()" style="margin-top:14px;padding:7px 22px;font-size:1.1em;background:#ffe080;color:#222;border:none;border-radius:8px;cursor:pointer;">Submit</button>
-        <div id="puzzle-feedback" style="color:#ffb080;font-size:1em;margin-top:10px;min-height:1.2em;"></div>
-      </div>
-    </div>
-  `;
-}
-
-window.submitPuzzleAnswer = function() {
-  const input = document.getElementById('puzzle-answer');
-  if (!input || !missionFieldPuzzle) return;
-  const val = input.value.trim().toLowerCase();
-  const correct = missionFieldPuzzle.answer && val === missionFieldPuzzle.answer.toLowerCase();
-  const feedback = document.getElementById('puzzle-feedback');
-  if (correct) {
-    missionFieldPuzzle.solved = true;
-    // Advance to next stage
-    if (missionFieldStages && missionFieldStage < missionFieldStages.length-1) {
-      missionFieldStage++;
-      buildMissionField();
-      // Remove overlay
-      document.getElementById('puzzle-overlay').remove();
-    } else {
-      exitMissionField(true);
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🐕 Dog Game</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { overflow: hidden; background: #000; }
+    canvas { display: block; }
+    #hud {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.52);
+      color: #fff;
+      padding: 10px 26px;
+      border-radius: 20px;
+      font: 15px/1.6 Arial, sans-serif;
+      pointer-events: none;
+      white-space: nowrap;
+      letter-spacing: 0.4px;
     }
-  } else {
-    if (feedback) feedback.textContent = 'Incorrect. Try again!';
-    input.value = '';
-    input.focus();
-  }
-};
-function updateMissionField() {
-  const ds = dogState;
-  // Puzzle/riddle blocking
-  if (missionFieldPuzzle && !missionFieldPuzzle.solved) {
-    // Show puzzle overlay (to be implemented)
-    // If puzzle solved, set missionFieldPuzzle.solved = true
-    return;
-  }
-  if (keys['ArrowLeft']  || keys['KeyA']) ds.yaw += TURN_SPEED;
-  if (keys['ArrowRight'] || keys['KeyD']) ds.yaw -= TURN_SPEED;
-  let moved = false;
-  if (keys['ArrowUp']    || keys['KeyW']) { ds.x+=sin(ds.yaw)*MOVE_SPEED; ds.z+=cos(ds.yaw)*MOVE_SPEED; moved=true; }
-  if (keys['ArrowDown']  || keys['KeyS']) { ds.x-=sin(ds.yaw)*BACK_SPEED*0.6; ds.z-=cos(ds.yaw)*BACK_SPEED*0.6; }
-  if (moved) { ds.walkT+=0.14; const sw=Math.sin(ds.walkT)*0.55; ds.frontLegAngle=sw; ds.backLegAngle=-sw; }
-  ds.wagT += 0.05;
-  if (keysJustPressed.has('Space') && ds.grounded) { ds.velY=JUMP_VEL; ds.grounded=false; }
-  ds.velY+=GRAVITY; ds.y+=ds.velY;
-  if (ds.y<=DOG_FLOOR) { ds.y=DOG_FLOOR; ds.velY=0; ds.grounded=true; }
-
-  ds.x = Math.max(-44, Math.min(44, ds.x));
-  ds.z = Math.max(-118, Math.min(8,  ds.z));
-
-  // Improved wall collisions: iterative push-out with sliding
-  const PAD = 0.65;
-  for (let iter = 0; iter < 2; ++iter) {
-    for (const w of missionFieldWalls) {
-      const cx = (w.x1 + w.x2) / 2, cz = (w.z1 + w.z2) / 2;
-      const hw = (w.x2 - w.x1) / 2 + PAD, hd = (w.z2 - w.z1) / 2 + PAD;
-      const dx = ds.x - cx, dz = ds.z - cz;
-      if (Math.abs(dx) < hw && Math.abs(dz) < hd) {
-        // Push out along shallowest axis, but allow sliding
-        if (hw - Math.abs(dx) < hd - Math.abs(dz)) {
-          ds.x = cx + Math.sign(dx) * hw;
-        } else {
-          ds.z = cz + Math.sign(dz) * hd;
-        }
-      }
+    /* ── Pick Canine screen ───────────────────────────────────────── */
+    #pick-screen {
+      position: fixed; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      background: radial-gradient(ellipse at 50% 32%, #1a1f3a 0%, #07091a 100%);
+      z-index: 100; gap: 28px;
     }
-  }
-
-  // Update patrol positions + detection
-  missionFieldDetected = false;
-  missionFieldPatrols.forEach(p => {
-    p.t += p.tSpeed || 0.013;
-    p.x = p.startX + Math.sin(p.t) * p.range * p.dx;
-    p.z = p.startZ + Math.sin(p.t) * p.range * p.dz;
-    // Patrol facing direction
-    const pFacing = p.dx !== 0 ? (Math.sin(p.t) >= 0 ? Math.PI/2 : -Math.PI/2) : (Math.sin(p.t) >= 0 ? 0 : Math.PI);
-    const tdx = ds.x - p.x, tdz = ds.z - p.z;
-    const dist = Math.hypot(tdx, tdz);
-    const pt = p.patrolType || (p.isHuman ? 'human' : 'wolf');
-    const vRange = {cat:9, wraith:11, human:7, bat:5, wolf:7}[pt] || 7;
-    const vAngle = {cat:0.90, wraith:1.05, human:0.68, bat:0.45, wolf:0.65}[pt] || 0.65;
-    if (dist < vRange) {
-      const angle = Math.atan2(tdx, tdz);
-      const diff  = ((angle - pFacing) + Math.PI*3) % (Math.PI*2) - Math.PI;
-      if (Math.abs(diff) < vAngle) missionFieldDetected = true;
+    #pick-screen.hidden { display: none; }
+    #pick-title {
+      font: bold 38px/1.2 Arial, sans-serif;
+      color: #d0e8ff;
+      text-shadow: 0 0 36px #7ab4f5, 0 2px 10px #000;
+      letter-spacing: 4px; text-transform: uppercase;
     }
-  });
-
-  if (missionFieldDetected && _mfSpottedFlashTimer <= 0) {
-    _mfSpottedFlashTimer = 80;
-    dogState.x = 0; dogState.z = 6;
-  }
-  if (_mfSpottedFlashTimer > 0) _mfSpottedFlashTimer--;
-
-  // Objective interaction
-  const obj = missionFieldItems.find(it => !it.collected && it.type === 'objective');
-  if (obj) {
-    const dist = Math.hypot(ds.x-obj.x, ds.z-obj.z);
-    missionFieldObjectiveReady = dist < 3.2;
-    if (missionFieldObjectiveReady && keysJustPressed.has('KeyE')) {
-      keysJustPressed.delete('KeyE');
-      obj.collected = true;
-      keysJustPressed.clear();
-      // Advance to next stage if available
-      if (missionFieldStages && missionFieldStage < missionFieldStages.length-1) {
-        missionFieldStage++;
-        buildMissionField();
-        // Optionally show stage transition overlay
-      } else {
-        exitMissionField(true);
-      }
-      return;
+    #pick-subtitle {
+      font: 15px Arial, sans-serif; color: #5a7899;
+      margin-top: -18px; letter-spacing: 1px;
     }
-  } else {
-    missionFieldObjectiveReady = false;
-  }
-
-  keysJustPressed.clear();
-
-  // Camera
-  camYawTarget = ds.yaw;
-  cam.yaw  = lerp(cam.yaw, camYawTarget, 0.10);
-  cam.pos.x = lerp(cam.pos.x, ds.x - sin(cam.yaw)*6.5, 0.10);
-  cam.pos.y = lerp(cam.pos.y, ds.y + 3.5, 0.10);
-  cam.pos.z = lerp(cam.pos.z, ds.z - cos(cam.yaw)*6.5, 0.10);
-  cam.pitch = 0.28;
-}
+    #pick-grid { display: flex; gap: 32px; flex-wrap: wrap; justify-content: center; }
+    .canine-card {
+      background: rgba(255,255,255,0.04);
+      border: 2px solid rgba(180,210,255,0.18);
+      border-radius: 20px; padding: 22px 26px 18px;
+      display: flex; flex-direction: column; align-items: center; gap: 12px;
+      cursor: pointer;
+      transition: transform 0.18s, border-color 0.18s, box-shadow 0.18s;
+      box-shadow: 0 4px 36px rgba(0,0,0,0.7);
+    }
+    .canine-card:hover {
+      transform: translateY(-8px) scale(1.04);
+      border-color: rgba(120,180,255,0.65);
+      box-shadow: 0 12px 48px rgba(90,150,255,0.30);
+    }
+    .canine-card--obsidian {
+      background: rgba(20,10,4,0.90);
+      border-color: rgba(100,55,18,0.55);
+    }
+    .canine-card--obsidian:hover {
+      border-color: rgba(160,90,30,0.80);
+      box-shadow: 0 12px 52px rgba(120,60,15,0.50);
+    }
+    .canine-card--obsidian canvas { background: #140803; }
+    .canine-name--obsidian { color: #b8a0f0 !important; text-shadow: 0 0 18px rgba(140,80,255,0.5); }
+    .canine-card--ruff {
+      background: rgba(30,18,6,0.88);
+      border-color: rgba(160,110,40,0.50);
+    }
+    .canine-card--ruff:hover {
+      border-color: rgba(210,160,60,0.85);
+      box-shadow: 0 12px 52px rgba(180,120,30,0.45);
+    }
+    .canine-card--ruff canvas { background: #1a1406; }
+    .canine-name--ruff { color: #e8c870 !important; text-shadow: 0 0 14px rgba(220,160,40,0.5); }
+    .canine-card--bark {
+      background: rgba(18,8,2,0.92);
+      border-color: rgba(130,58,20,0.52);
+    }
+    .canine-card--bark:hover {
+      border-color: rgba(200,88,38,0.88);
+      box-shadow: 0 12px 52px rgba(160,65,20,0.50);
+    }
+    .canine-card--bark canvas { background: #b8a480; }
+    .canine-name--bark { color: #d4905a !important; text-shadow: 0 0 14px rgba(210,115,45,0.55); }
     .canine-card canvas {
       border-radius: 14px;
       background: #07091a;
@@ -686,6 +636,44 @@ function updateMissionField() {
       text-shadow: 0 0 10px rgba(220,180,40,0.45); display: none;
     }
     #mission-hud.visible { display: block; }
+    /* Mission riddle overlay */
+    #mission-riddle-overlay {
+      position: fixed; inset: 0; z-index: 280;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      background: rgba(2,4,12,0.96); gap: 14px; padding: 20px;
+    }
+    #mission-riddle-overlay.hidden { display: none; }
+    #mro-title { font: bold 26px Arial; color: #f0d060; letter-spacing: 3px; text-shadow: 0 0 22px rgba(240,200,60,0.5); }
+    #mro-question {
+      max-width: 540px; text-align: center; font: italic 16px/1.6 Georgia, serif;
+      color: #d8c890; border: 1.5px solid rgba(200,170,60,0.35); border-radius: 12px;
+      padding: 16px 22px; background: rgba(14,10,2,0.90);
+    }
+    #mro-hint-text {
+      max-width: 500px; text-align: center; font: 13px Arial; color: #80e880;
+      background: rgba(0,40,0,0.60); border: 1px solid rgba(80,180,80,0.35);
+      border-radius: 8px; padding: 10px 18px;
+    }
+    #mro-hint-text.hidden { display: none; }
+    #mro-input {
+      width: 320px; max-width: 90%; padding: 10px 16px; font: 15px Arial;
+      background: rgba(10,8,2,0.92); color: #f0e0a0; border: 1.5px solid rgba(200,160,50,0.55);
+      border-radius: 8px; outline: none; text-align: center;
+    }
+    #mro-input:focus { border-color: rgba(240,200,80,0.85); }
+    #mro-feedback { font: bold 14px Arial; min-height: 20px; color: #ff7060; text-align: center; }
+    #mro-btns { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+    #mro-submit-btn, #mro-hint-btn, #mro-close-btn {
+      padding: 9px 20px; border-radius: 9px; border: 1.5px solid rgba(200,160,50,0.50);
+      cursor: pointer; font: bold 13px Arial; transition: background 0.12s;
+    }
+    #mro-submit-btn { background: rgba(40,30,4,0.90); color: #f0d060; }
+    #mro-submit-btn:hover { background: rgba(80,60,8,0.95); }
+    #mro-hint-btn { background: rgba(4,30,8,0.90); color: #80e880; border-color: rgba(80,180,80,0.45); }
+    #mro-hint-btn:hover { background: rgba(8,60,12,0.95); }
+    #mro-close-btn { background: rgba(30,6,6,0.90); color: #e06060; border-color: rgba(180,60,60,0.40); }
+    #mro-close-btn:hover { background: rgba(60,10,10,0.95); }
+
     /* Obsidian game-over overlay */
     #obsidian-gameover {
       position: fixed; inset: 0; z-index: 400;
@@ -1249,6 +1237,20 @@ function updateMissionField() {
   </div>
   <!-- Active mission HUD -->
   <div id="mission-hud"></div>
+
+  <!-- Mission riddle overlay -->
+  <div id="mission-riddle-overlay" class="hidden">
+    <div id="mro-title">🔐 Riddle!</div>
+    <div id="mro-question"></div>
+    <div id="mro-hint-text" class="hidden"></div>
+    <input id="mro-input" type="text" placeholder="Type your answer…" autocomplete="off" spellcheck="false" />
+    <div id="mro-feedback"></div>
+    <div id="mro-btns">
+      <button id="mro-submit-btn" onclick="mroSubmit()">✓ Submit Answer</button>
+      <button id="mro-hint-btn" onclick="mroBuyHint()">💡 Hint  (30 🪙)</button>
+      <button id="mro-close-btn" onclick="mroClose()">✕ Never mind</button>
+    </div>
+  </div>
 
   <!-- Obsidian game-over overlay -->
   <div id="obsidian-gameover" class="hidden">
@@ -3921,8 +3923,7 @@ function updateMissionField() {
       const r = 42 + ((i * 7) % 9) * 1.3;
       const tx = Math.cos(a) * r, tz = Math.sin(a) * r;
       if (tz >  37 && Math.abs(tx) < 8) continue; // south entrance
-      if (tz < -38 && Math.abs(tx) < 9) continue; // widen north forest path
-      if (tx > 37 && Math.abs(tz) < 7) continue; // east path gap
+      if (tz < -38 && Math.abs(tx) < 5) continue; // north forest path
       addTree(tx, tz, 0.72 + ((i * 11) % 7) * 0.1, villageQuads);
     }
     // Ring 2 (r≈50) — background depth, no gap at south (gives solid wall feel)
@@ -3931,8 +3932,7 @@ function updateMissionField() {
       const r = 50 + ((i * 5) % 8) * 1.2;
       const tx = Math.cos(a) * r, tz = Math.sin(a) * r;
       if (tz > 44) continue;
-      if (tz < -44 && Math.abs(tx) < 10) continue; // widen north forest path
-      if (tx > 45 && Math.abs(tz) < 8) continue; // east path gap
+      if (tz < -44 && Math.abs(tx) < 6) continue;
       addTree(tx, tz, 0.78 + ((i * 9) % 8) * 0.1, villageQuads);
     }
 
@@ -5321,6 +5321,15 @@ function updateMissionField() {
            (activeCharacter === 'scratch');
   }
 
+  // Returns true only when every playable dog has reached the village at least once
+  function allDogsInVillage() {
+    const ALL_DOGS = ['wark', 'newmoon', 'cheeseball', 'obsidian', 'ruff', 'bark', 'scratch'];
+    const gvp = (getGlobalSave().charVillagePos) || {};
+    // Current active character may not have been saved yet — use live state too
+    if (isInVillage() && !gvp[activeCharacter]) gvp[activeCharacter] = true;
+    return ALL_DOGS.every(d => !!gvp[d]);
+  }
+
   let _moon = false;   // updated each frame by update(); read by renderScene()
 
   function update() {
@@ -5516,10 +5525,6 @@ function updateMissionField() {
       ds.z = Math.max(-50, Math.min(42, ds.z));
       // Only allow passing north boundary on the stone path
       if (ds.z < -43 && Math.abs(ds.x) > 3.5) ds.z = -43;
-      // East path locked until all dogs are in the village
-      if (!allDogsInVillage() && ds.x > 42 && Math.abs(ds.z) < 3.5) ds.x = 42;
-      // West path (Mission HQ) locked until all 7 pups have been led to the village
-      if (!packGatherDone && ds.x < -42 && Math.abs(ds.z) < 3.5) ds.x = -42;
       // Axis-aligned box push-out for each building
       const DOG_PAD = 0.55;
       for (const b of VBUILDINGS) {
@@ -5549,13 +5554,19 @@ function updateMissionField() {
         enterForest();
         return;
       }
-      // West path Mission HQ entrance — locked until all 7 pups are in the village
-      if (!(activeCharacter === 'ruff' && !ruffInVillage) && packGatherDone && ds.x < -43 && Math.abs(ds.z) < 3.5 && gameState === 'playing') {
-        enterMissionHQ();
-        return;
+      // West path Mission HQ entrance — walk to x=-44 along the east-west path
+      if (!(activeCharacter === 'ruff' && !ruffInVillage) && ds.x < -43 && Math.abs(ds.z) < 3.5 && gameState === 'playing') {
+        if (!allDogsInVillage()) {
+          // Nudge player back so they can't pass through
+          dogState.x = -43;
+          if (!toastTimer) { toastMsg = '🐾 Lead all dogs to the village first!'; toastTimer = 180; }
+        } else {
+          enterMissionHQ();
+          return;
+        }
       }
       // East path rock scrubland entrance — walk to x=44 along the east-west path
-      if (!(activeCharacter === 'ruff' && !ruffInVillage) && allDogsInVillage() && ds.x > 43 && Math.abs(ds.z) < 3.5 && gameState === 'playing') {
+      if (!(activeCharacter === 'ruff' && !ruffInVillage) && ds.x > 43 && Math.abs(ds.z) < 3.5 && gameState === 'playing') {
         enterRockScrub();
         return;
       }
@@ -5643,13 +5654,12 @@ function updateMissionField() {
         ctx.globalAlpha = mhqHintT;
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.font = 'bold 14px Arial';
-        if (packGatherDone) {
+        if (allDogsInVillage()) {
           ctx.fillStyle = 'rgba(240,200,80,0.92)';
           ctx.fillText('🎯 Walk west → Mission HQ', W/2, H - 120);
         } else {
-          const missing = 7 - getVillageDogs().length;
-          ctx.fillStyle = 'rgba(200,100,100,0.92)';
-          ctx.fillText('🔒 Mission HQ — lead all 7 pups to the village first (' + missing + ' remaining)', W/2, H - 120);
+          ctx.fillStyle = 'rgba(220,100,80,0.92)';
+          ctx.fillText('🔒 Lead all dogs to the village to unlock Mission HQ', W/2, H - 120);
         }
         ctx.globalAlpha = 1;
       }
@@ -5659,15 +5669,8 @@ function updateMissionField() {
         const scrubHintT = Math.max(0, Math.min(1, (ds.x - 30) / 6));
         ctx.globalAlpha = scrubHintT;
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.font = 'bold 14px Arial';
-        if (allDogsInVillage()) {
-          ctx.fillStyle = 'rgba(220,190,100,0.92)';
-          ctx.fillText('🪨 Walk east → Rock Scrubland', W/2, H - 120);
-        } else {
-          const missing = 7 - getVillageDogs().length;
-          ctx.fillStyle = 'rgba(200,120,80,0.95)';
-          ctx.fillText(`🔒 Bring all dogs to the village first  (${missing} still missing)`, W/2, H - 120);
-        }
+        ctx.font = 'bold 14px Arial'; ctx.fillStyle = 'rgba(220,190,100,0.92)';
+        ctx.fillText('🪨 Walk east → Rock Scrubland', W/2, H - 120);
         ctx.globalAlpha = 1;
       }
       // WOB coins display
@@ -6745,11 +6748,6 @@ function updateMissionField() {
     return getVillageDogs().length >= 2;
   }
 
-  // True when all 7 dogs have reached the village (unlocks the east path).
-  function allDogsInVillage() {
-    return getVillageDogs().length >= 7;
-  }
-
   // Dynamic ordered list used by the keydown handler (1 = index 0, etc.).
   function getSwitchOrder() {
     return getVillageDogs();
@@ -6952,22 +6950,6 @@ function updateMissionField() {
       save.barkInVillage  = barkInVillage;
       save.barkInForest   = barkInForest;
       save.barkDeepForest = barkDeepForest;
-      save.wobCoins         = wobCoins;
-      save.warkPouch        = warkPouch;
-      save.inventory        = inventory.map(it => ({ type: it.type, defIdx: it.defIdx, count: it.count || 1 }));
-      save.collectionLog    = { mushroom:[...collectionLog.mushroom], animal:[...collectionLog.animal], rock:[...collectionLog.rock], metal:[...collectionLog.metal] };
-      save.donateCount      = { mushroom:{...donateCount.mushroom}, animal:{...donateCount.animal}, rock:{...donateCount.rock}, metal:{...donateCount.metal} };
-      save.freeDonateDay    = freeDonateDay;
-      save.freeDonateMushr  = freeDonateMushr;
-      save.freeDonateAnimal = freeDonateAnimal;
-      save.jewelryBox        = JSON.stringify(jewelryBox);
-      save.equippedNecklace  = equippedNecklace;
-      save.lifetimeCollected = { rock:{...lifetimeCollected.rock}, metal:{...lifetimeCollected.metal} };
-      save.dayPhaseMs        = dayPhaseMs;
-      if (barkInVillage) {
-        save.dailyQuestSeed    = dailyQuestSeed;
-        save.villageQuestsFull = JSON.stringify(villageQuests);
-      }
     }
     if (activeCharacter === 'scratch') {
       save.wobCoins         = wobCoins;
@@ -7240,38 +7222,6 @@ function updateMissionField() {
         barkInVillage  = s.barkInVillage ?? false;
         barkInForest   = barkInVillage ? false : (s.barkInForest ?? false);
         barkDeepForest = (!barkInVillage && !barkInForest) ? (s.barkDeepForest ?? false) : false;
-        wobCoins  = s.wobCoins  ?? 0;
-        warkPouch = s.warkPouch ?? null;
-        inventory.length = 0;
-        if (s.inventory) s.inventory.forEach(it => inventory.push({ type: it.type, defIdx: it.defIdx, count: it.count || 1 }));
-        if (s.collectionLog) {
-          collectionLog.mushroom = new Set(s.collectionLog.mushroom || []);
-          collectionLog.animal   = new Set(s.collectionLog.animal   || []);
-          collectionLog.rock     = new Set(s.collectionLog.rock     || []);
-          collectionLog.metal    = new Set(s.collectionLog.metal    || []);
-        }
-        if (s.donateCount) {
-          donateCount.mushroom = s.donateCount.mushroom || {};
-          donateCount.animal   = s.donateCount.animal   || {};
-          donateCount.rock     = s.donateCount.rock     || {};
-          donateCount.metal    = s.donateCount.metal    || {};
-        }
-        if (s.freeDonateDay === new Date().toDateString()) {
-          freeDonateDay    = s.freeDonateDay;
-          freeDonateMushr  = s.freeDonateMushr  || 0;
-          freeDonateAnimal = s.freeDonateAnimal || 0;
-        }
-        jewelryBox       = s.jewelryBox ? JSON.parse(s.jewelryBox) : [];
-        equippedNecklace = s.equippedNecklace ?? -1;
-        if (s.lifetimeCollected) {
-          lifetimeCollected.rock  = s.lifetimeCollected.rock  || {};
-          lifetimeCollected.metal = s.lifetimeCollected.metal || {};
-        }
-        if (s.dayPhaseMs != null) dayPhaseMs = s.dayPhaseMs;
-        if (barkInVillage && s.dailyQuestSeed && s.villageQuestsFull && s.dailyQuestSeed === new Date().toDateString()) {
-          dailyQuestSeed = s.dailyQuestSeed;
-          try { _restoredQuestsFull = JSON.parse(s.villageQuestsFull); } catch(e) {}
-        }
         if (barkInVillage) buildVillage();
         else if (barkInForest) buildBarkForest();
         else if (barkDeepForest) buildBarkDeepForest();
@@ -14091,9 +14041,6 @@ function updateMissionField() {
   let missionFieldWalls  = []; // axis-aligned wall segments [{x1,z1,x2,z2}]
   let missionFieldObjectiveReady = false;
   let missionFieldDetected = false;
-  let missionFieldStage = 0; // Current stage index in multi-stage missions
-  let missionFieldStages = null; // Array of stages for the current mission
-  let missionFieldPuzzle = null; // Current puzzle/riddle state if any
 
   // Seeded LCG RNG tied to mission key so each mission always generates the same map
   function mfRng(seed) {
@@ -14118,10 +14065,6 @@ function updateMissionField() {
     return MISSION_MAP_TYPES[activeMission.profIdx * 3 + activeMission.mIdx] || 'forest';
   }
 
-
-  // Hiding spots: bushes/ditches
-  let missionFieldHides = [];
-
   function buildMissionField() {
     missionFieldQuads.length  = 0;
     missionFieldPatrols.length = 0;
@@ -14130,35 +14073,13 @@ function updateMissionField() {
     missionFieldWalls.length  = 0;
     missionFieldObjectiveReady = false;
     missionFieldDetected = false;
-    missionFieldHides.length = 0;
-    if (!activeMission || !missionFieldStages) return;
+    if (!activeMission) return;
 
-    // Use current stage
-    const stage = missionFieldStages[missionFieldStage];
-    const { mapType, objective, puzzle, geometry } = stage;
-    // Use seeded RNG per stage
-    const mKey = (activeMission.profIdx * 3 + activeMission.mIdx) * 10 + missionFieldStage;
-    const rng = mfRng(mKey * 9973 + 7);
-    // Optionally allow geometry override per stage
-    if (geometry) geometry({missionFieldQuads, missionFieldWalls, missionFieldItems, missionFieldPatrols, rng});
-    else {
-      // Fallback to old logic using mapType
-      // ...existing code for mapType geometry...
-      // (This is a placeholder; actual geometry code remains below)
-    }
-    // If this stage has a puzzle, set up puzzle state
-    missionFieldPuzzle = puzzle ? {...puzzle, solved: false} : null;
-  }
-// Build multi-stage mission structure for a mission
-function buildMissionStages(mission) {
-  // Example: 3 stages, last is a puzzle
-  // This should be expanded per mission for richer detail
-  return [
-    { mapType: getMissionMapType(), objective: mission.objective },
-    { mapType: getMissionMapType(), objective: 'Reach the inner sanctum', puzzle: { type: 'riddle', question: 'What walks on four legs in the morning, two at noon, and three in the evening?', answer: 'man' } },
-    { mapType: getMissionMapType(), objective: 'Collect the final artifact' }
-  ];
-}
+    const { profIdx, mIdx } = activeMission;
+    const mKey  = profIdx * 3 + mIdx;
+    const rng   = mfRng(mKey * 9973 + 7);
+    const m     = PROFESSORS[profIdx].missions[mIdx];
+    const mapType = getMissionMapType();
 
     // Field is wide and deep — player enters at z=6, objective is near z=-110
     const FIELD_W = 45, FIELD_D = 120;
@@ -14183,16 +14104,9 @@ function buildMissionStages(mission) {
       missionFieldQuads.push({ verts:[v3(-3.5,0.01,gz),v3(3.5,0.01,gz),v3(3.5,0.01,gz+2),v3(-3.5,0.01,gz+2)], color:0x6a5a38, normal:v3(0,1,0), isGround:true });
     }
 
-
     // ── Map-specific geometry ─────────────────────────────────────────────
 
     if (mapType === 'wolf_camp') {
-      // Add hiding bushes
-      for (let i = 0; i < 7; i++) {
-        const bx = (rng()-0.5)*(FIELD_W*2-12), bz = -18 - rng()*FIELD_D*0.7;
-        missionFieldQuads.push({ verts:[v3(bx-1.6,0.18,bz-1.6),v3(bx+1.6,0.18,bz-1.6),v3(bx+1.6,0.18,bz+1.6),v3(bx-1.6,0.18,bz+1.6)], color:0x2e5c18, normal:v3(0,1,0), isGround:true });
-        missionFieldHides.push({ x:bx, z:bz, r:2.1 });
-      }
       // Dense forest perimeter — tall trees ringing the map edge
       for (let i = 0; i < 120; i++) {
         const side = i < 60 ? -1 : 1;
@@ -14283,12 +14197,6 @@ function buildMissionStages(mission) {
       }
 
     } else if (mapType === 'human_lab') {
-      // Add hiding ditches
-      for (let i = 0; i < 5; i++) {
-        const bx = (rng()-0.5)*(FIELD_W*2-18), bz = -22 - rng()*FIELD_D*0.7;
-        missionFieldQuads.push({ verts:[v3(bx-2.2,0.01,bz-1.1),v3(bx+2.2,0.01,bz-1.1),v3(bx+2.2,0.01,bz+1.1),v3(bx-2.2,0.01,bz+1.1)], color:0x7a6c48, normal:v3(0,1,0), isGround:true });
-        missionFieldHides.push({ x:bx, z:bz, r:2.5 });
-      }
       // Mostly indoors — a large facility with corridors, labs, security guards
 
       // Main building outer shell
@@ -14359,12 +14267,6 @@ function buildMissionStages(mission) {
       });
 
     } else if (mapType === 'nether') {
-      // Add hiding bone piles
-      for (let i = 0; i < 6; i++) {
-        const bx = (rng()-0.5)*(FIELD_W*2-18), bz = -18 - rng()*FIELD_D*0.7;
-        missionFieldQuads.push({ verts:[v3(bx-1.3,0.09,bz-1.3),v3(bx+1.3,0.09,bz-1.3),v3(bx+1.3,0.09,bz+1.3),v3(bx-1.3,0.09,bz+1.3)], color:0xc8c0a8, normal:v3(0,1,0), isGround:true });
-        missionFieldHides.push({ x:bx, z:bz, r:1.7 });
-      }
       // Dark volcanic underworld — glowing lava rivers, obsidian pillars, bone arches
 
       // Lava river (runs east-west around z=-40 and z=-80)
@@ -14430,12 +14332,6 @@ function buildMissionStages(mission) {
       });
 
     } else if (mapType === 'forest') {
-      // Add hiding bushes
-      for (let i = 0; i < 9; i++) {
-        const bx = (rng()-0.5)*(FIELD_W*2-14), bz = -18 - rng()*FIELD_D*0.7;
-        missionFieldQuads.push({ verts:[v3(bx-1.7,0.16,bz-1.7),v3(bx+1.7,0.16,bz-1.7),v3(bx+1.7,0.16,bz+1.7),v3(bx-1.7,0.16,bz+1.7)], color:0x2e5c18, normal:v3(0,1,0), isGround:true });
-        missionFieldHides.push({ x:bx, z:bz, r:2.2 });
-      }
       // Deep old-growth forest — winding paths, dense undergrowth, fallen logs
 
       // Thick forest perimeter
@@ -14509,12 +14405,6 @@ function buildMissionStages(mission) {
       });
 
     } else if (mapType === 'village') {
-      // Add hiding crates
-      for (let i = 0; i < 7; i++) {
-        const bx = (rng()-0.5)*(FIELD_W*2-18), bz = -18 - rng()*FIELD_D*0.7;
-        missionFieldQuads.push({ verts:[v3(bx-1.2,0.18,bz-1.2),v3(bx+1.2,0.18,bz-1.2),v3(bx+1.2,0.18,bz+1.2),v3(bx-1.2,0.18,bz+1.2)], color:0x8a6c38, normal:v3(0,1,0), isGround:true });
-        missionFieldHides.push({ x:bx, z:bz, r:1.6 });
-      }
       // Occupied enemy village — streets, houses, market stalls, suspicious guard dogs
 
       // Village ground — stone street tiles
@@ -14843,11 +14733,8 @@ function buildMissionStages(mission) {
     }
   }
 
-  function enterMissionField(stageIdx = 0) {
+  function enterMissionField() {
     if (!activeMission) return;
-    missionFieldStage = stageIdx;
-    // Build mission stages if not already present
-    if (!missionFieldStages) missionFieldStages = buildMissionStages(activeMission);
     showEnterScreen('Deploying on mission…', () => {
       inMissionField = true;
       buildMissionField();
@@ -14858,6 +14745,114 @@ function buildMissionStages(mission) {
       gameState = 'missionField';
     });
   }
+
+  // ── Mission Riddles ────────────────────────────────────────────────────────
+  // One riddle per professor × mission index (7 professors × 3 = 21).
+  // answer is matched case-insensitively; hint gives a nudge without spoiling.
+  const MISSION_RIDDLES = [
+    // Prof. Maple 🍁  (profIdx 0)
+    { q:"I have no mouth, yet I shout; no legs, yet I run far and wide. Wolves built me to carry their voices. What am I?",  hint:"Think about something that carries signals or sound across distance.", a:"signal tower" },
+    { q:"I carry secrets in paper arms. Steal me and you'll know every move. What am I?",                                    hint:"Plans written down that guide an army's attack.", a:"battle plans" },
+    { q:"I am a crystal that hums until shattered. Break me and silence follows. What am I?",                               hint:"It's used as a relay for the wolf communication system.", a:"relay crystal" },
+    // Prof. Birch 🌿  (profIdx 1)
+    { q:"I wear a white coat and test your blood, yet I am kept under lock and key. What am I?",                            hint:"Something found in a medical or science lab — small and handheld.", a:"dna tester" },
+    { q:"I'm neither a door nor a window, yet I'm the only way out of a cage. Find me and freedom follows. What am I?",     hint:"Think of a rear exit or a secondary escape route.", a:"back gate" },
+    { q:"I look like water, smell like flowers, and make wolves drowsy. Pour me carefully. What am I?",                     hint:"A harmless-to-dogs compound you're adding to the stream.", a:"compound" },
+    // Prof. Cedar 🌲  (profIdx 2)
+    { q:"I hold food but am not a plate; I stack easily and travel with armies. What am I?",                                hint:"Goods are stored and transported in these wooden containers.", a:"crate" },
+    { q:"I move along a road but am not a single vehicle — I am many, together carrying hope. What am I?",                  hint:"A group of supply vehicles travelling as one unit.", a:"convoy" },
+    { q:"I sleep in darkness, wake in thunder, and leave nothing behind but smoke. Plant me and run. What am I?",           hint:"Something that explodes — used to demolish a target.", a:"spark charge" },
+    // Prof. Ash 🔥  (profIdx 3)
+    { q:"I am the place that shapes who comes and goes. Every army builds me first. What am I?",                             hint:"The main entrance fortified at the edge of a village.", a:"gate" },
+    { q:"I give orders but take none. Catch me and the army loses its voice. Who am I?",                                    hint:"A high-ranking enemy wolf who leads the patrol.", a:"lieutenant" },
+    { q:"I was ours, then theirs. Hoist me again and claim what was lost. What am I?",                                      hint:"A piece of cloth that represents ownership and victory.", a:"flag" },
+    // Prof. Flint ⚡  (profIdx 4)
+    { q:"I hold thousands of names but weigh nothing. Steal my contents and you know every dog. What am I?",                hint:"Information stored electronically about genetics.", a:"dna database" },
+    { q:"I hang around a neck, hold memories close, and may carry power. Find me. What am I?",                              hint:"An ornamental item lost in a wolf raid — personal and precious.", a:"necklace" },
+    { q:"I am invisible once released, yet I always know where my host wanders. Plant me quietly. What am I?",              hint:"Something biological that tracks movement from the inside.", a:"tracking spore" },
+    // Prof. Slate 🪨  (profIdx 5)
+    { q:"I have many rooms but no family lives here. Dogs are kept against their will inside me. What am I?",               hint:"A structure specifically made to house and confine dogs.", a:"dog house" },
+    { q:"I capture the truth in an instant without speaking. Held still, I never lie. What am I?",                          hint:"A device that records a still image.", a:"photograph" },
+    { q:"I am round, stamped in wax, and speak for the whole village without saying a word. What am I?",                    hint:"An official emblem used to authenticate orders.", a:"seal" },
+    // Prof. Ember 🌸  (profIdx 6)
+    { q:"I am small, alone, and locked away where hope shouldn't reach. Find me and carry me home. Who am I?",              hint:"A young dog taken captive and held in a cage.", a:"pup" },
+    { q:"I sent no final message. I left no trail. Yet something happened to me near the ridge. Who am I?",                 hint:"A scout who went dark — lost somewhere on patrol.", a:"bramblefur" },
+    { q:"I wear two faces and belong to two worlds. Pull me out before both worlds discover me. Who am I?",                 hint:"An agent working secretly inside the enemy's ranks.", a:"double agent" },
+  ];
+
+  let mroActive = false;
+  let mroPendingObj = null; // the objective item waiting to be collected
+
+  function mroOpen(obj) {
+    const { profIdx, mIdx } = activeMission;
+    const riddleIdx = profIdx * 3 + mIdx;
+    const riddle = MISSION_RIDDLES[riddleIdx];
+    if (!riddle) { obj.collected = true; exitMissionField(true); return; }
+    mroPendingObj = obj;
+    mroActive = true;
+    document.getElementById('mro-question').textContent = riddle.q;
+    document.getElementById('mro-hint-text').textContent = '';
+    document.getElementById('mro-hint-text').classList.add('hidden');
+    document.getElementById('mro-input').value = '';
+    document.getElementById('mro-feedback').textContent = '';
+    const hintBtn = document.getElementById('mro-hint-btn');
+    hintBtn.textContent = `💡 Hint  (30 🪙)`;
+    hintBtn.disabled = false;
+    document.getElementById('mission-riddle-overlay').classList.remove('hidden');
+    setTimeout(() => {
+      const inp = document.getElementById('mro-input');
+      inp.focus();
+      inp.onkeydown = e => { if (e.key === 'Enter') mroSubmit(); };
+    }, 80);
+  }
+
+  window.mroSubmit = function() {
+    if (!mroPendingObj || !activeMission) return;
+    const { profIdx, mIdx } = activeMission;
+    const riddle = MISSION_RIDDLES[profIdx * 3 + mIdx];
+    const ans = document.getElementById('mro-input').value.trim().toLowerCase();
+    const accepted = riddle.a.split('|').map(s=>s.trim());
+    if (accepted.some(a => ans.includes(a) || a.includes(ans) && ans.length >= 3)) {
+      document.getElementById('mro-feedback').style.color = '#60ff80';
+      document.getElementById('mro-feedback').textContent = '✓ Correct! Well done!';
+      setTimeout(() => {
+        document.getElementById('mission-riddle-overlay').classList.add('hidden');
+        mroActive = false;
+        mroPendingObj.collected = true;
+        exitMissionField(true);
+      }, 900);
+    } else {
+      document.getElementById('mro-feedback').style.color = '#ff7060';
+      document.getElementById('mro-feedback').textContent = '✗ Not quite — try again!';
+      document.getElementById('mro-input').select();
+    }
+  };
+
+  window.mroBuyHint = function() {
+    if (!activeMission) return;
+    if (wobCoins < 30) {
+      document.getElementById('mro-feedback').style.color = '#ff9040';
+      document.getElementById('mro-feedback').textContent = "Not enough WOB coins! (Need 30 🪙)";
+      return;
+    }
+    const { profIdx, mIdx } = activeMission;
+    const riddle = MISSION_RIDDLES[profIdx * 3 + mIdx];
+    wobCoins -= 30;
+    const wc = document.getElementById('wob-count');
+    if (wc) wc.textContent = wobCoins;
+    document.getElementById('mro-hint-text').textContent = '💡 ' + riddle.hint;
+    document.getElementById('mro-hint-text').classList.remove('hidden');
+    const hintBtn = document.getElementById('mro-hint-btn');
+    hintBtn.textContent = '💡 Hint (used)';
+    hintBtn.disabled = true;
+    document.getElementById('mro-feedback').textContent = '';
+  };
+
+  window.mroClose = function() {
+    document.getElementById('mission-riddle-overlay').classList.add('hidden');
+    mroActive = false;
+    mroPendingObj = null;
+  };
 
   function exitMissionField(completed) {
     inMissionField = false;
@@ -14907,36 +14902,25 @@ function buildMissionStages(mission) {
     // Escape to abort
     if (keysJustPressed.has('Escape')) { keysJustPressed.clear(); exitMissionField(false); return; }
 
-
-    // Check if player is hiding
-    let inHide = false;
-    if (typeof missionFieldHides !== 'undefined') {
-      for (const h of missionFieldHides) {
-        if (Math.hypot(ds.x - h.x, ds.z - h.z) < h.r) { inHide = true; break; }
-      }
-    }
-
     // Update patrol positions + detection
     missionFieldDetected = false;
-    if (!inHide) {
-      missionFieldPatrols.forEach(p => {
-        p.t += p.tSpeed || 0.013;
-        p.x = p.startX + Math.sin(p.t) * p.range * p.dx;
-        p.z = p.startZ + Math.sin(p.t) * p.range * p.dz;
-        // Patrol facing direction
-        const pFacing = p.dx !== 0 ? (Math.sin(p.t) >= 0 ? Math.PI/2 : -Math.PI/2) : (Math.sin(p.t) >= 0 ? 0 : Math.PI);
-        const tdx = ds.x - p.x, tdz = ds.z - p.z;
-        const dist = Math.hypot(tdx, tdz);
-        const pt = p.patrolType || (p.isHuman ? 'human' : 'wolf');
-        const vRange = {cat:9, wraith:11, human:7, bat:5, wolf:7}[pt] || 7;
-        const vAngle = {cat:0.90, wraith:1.05, human:0.68, bat:0.45, wolf:0.65}[pt] || 0.65;
-        if (dist < vRange) {
-          const angle = Math.atan2(tdx, tdz);
-          const diff  = ((angle - pFacing) + Math.PI*3) % (Math.PI*2) - Math.PI;
-          if (Math.abs(diff) < vAngle) missionFieldDetected = true;
-        }
-      });
-    }
+    missionFieldPatrols.forEach(p => {
+      p.t += p.tSpeed || 0.013;
+      p.x = p.startX + Math.sin(p.t) * p.range * p.dx;
+      p.z = p.startZ + Math.sin(p.t) * p.range * p.dz;
+      // Patrol facing direction
+      const pFacing = p.dx !== 0 ? (Math.sin(p.t) >= 0 ? Math.PI/2 : -Math.PI/2) : (Math.sin(p.t) >= 0 ? 0 : Math.PI);
+      const tdx = ds.x - p.x, tdz = ds.z - p.z;
+      const dist = Math.hypot(tdx, tdz);
+      const pt = p.patrolType || (p.isHuman ? 'human' : 'wolf');
+      const vRange = {cat:9, wraith:11, human:7, bat:5, wolf:7}[pt] || 7;
+      const vAngle = {cat:0.90, wraith:1.05, human:0.68, bat:0.45, wolf:0.65}[pt] || 0.65;
+      if (dist < vRange) {
+        const angle = Math.atan2(tdx, tdz);
+        const diff  = ((angle - pFacing) + Math.PI*3) % (Math.PI*2) - Math.PI;
+        if (Math.abs(diff) < vAngle) missionFieldDetected = true;
+      }
+    });
 
     if (missionFieldDetected && _mfSpottedFlashTimer <= 0) {
       _mfSpottedFlashTimer = 80;
@@ -14949,11 +14933,10 @@ function buildMissionStages(mission) {
     if (obj) {
       const dist = Math.hypot(ds.x-obj.x, ds.z-obj.z);
       missionFieldObjectiveReady = dist < 3.2;
-      if (missionFieldObjectiveReady && keysJustPressed.has('KeyE')) {
+      if (missionFieldObjectiveReady && keysJustPressed.has('KeyE') && !mroActive) {
         keysJustPressed.delete('KeyE');
-        obj.collected = true;
         keysJustPressed.clear();
-        exitMissionField(true);
+        mroOpen(obj);
         return;
       }
     } else {
@@ -14972,14 +14955,7 @@ function buildMissionStages(mission) {
   }
 
   function renderMissionField() {
-      if (!activeMission) return;
-      // Puzzle overlay
-      if (missionFieldPuzzle && !missionFieldPuzzle.solved) {
-        const overlay = showPuzzleOverlay();
-        const container = document.getElementById('game-container') || document.body;
-        container.insertAdjacentHTML('beforeend', overlay);
-        return;
-      }
+    if (!activeMission) return;
     const W = canvas.width, H = canvas.height;
     const mapType = getMissionMapType();
     const { profIdx, mIdx } = activeMission;
@@ -15117,7 +15093,7 @@ function buildMissionStages(mission) {
         ctx.globalAlpha=0.92; ctx.textAlign='center'; ctx.textBaseline='bottom';
         ctx.font='bold 13px Arial';
         ctx.fillStyle=missionFieldObjectiveReady?'#60ff80':'#ffdd60';
-        ctx.fillText(`${obj.icon} ${missionFieldObjectiveReady?'E · Complete objective':'Objective'}`, sp.x, sp.y-3);
+        ctx.fillText(`${obj.icon} ${missionFieldObjectiveReady?'E · Answer riddle 🔐':'Objective'}`, sp.x, sp.y-3);
         ctx.globalAlpha=1;
       }
     }
