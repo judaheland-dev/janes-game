@@ -6213,7 +6213,7 @@
       ...(activeCharacter === 'ruff' && !ruffInVillage ? (ruffScene === 'battle' ? ruffBattleQuads : ruffScene === 'river' ? ruffRiverQuads : ruffQuads) : []),
       ...(activeCharacter === 'bark' && !barkInVillage ? (barkInUpstairs ? barkUpstairsQuads : barkDeepForest ? barkDeepForestQuads : barkInForest ? barkForestQuads : barkQuads) : []),
       ...(isInVillage() ? villageQuads : []),
-      ...(isInVillage() && !arrivalNpcsActive ? npcQuads : []),
+      ...((isInVillage() || (activeCharacter === 'wark' && warkPhase < 2)) && !arrivalNpcsActive ? npcQuads : []),
       ...arrivalNpcQuads,
       ...(isInVillage() ? villageScratchQuads : []),
       ...(isInVillage() ? squirrelQuads : []),
