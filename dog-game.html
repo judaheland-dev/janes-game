@@ -673,6 +673,9 @@
     #mro-hint-btn:hover { background: rgba(8,60,12,0.95); }
     #mro-close-btn { background: rgba(30,6,6,0.90); color: #e06060; border-color: rgba(180,60,60,0.40); }
     #mro-close-btn:hover { background: rgba(60,10,10,0.95); }
+    #mro-intimidate-btn { background: rgba(20,0,30,0.92); color: #c060ff; border-color: rgba(160,60,240,0.55); }
+    #mro-intimidate-btn:hover:not(:disabled) { background: rgba(40,0,60,0.95); }
+    #mro-intimidate-btn:disabled { opacity: 0.38; cursor: default; }
 
     /* Obsidian game-over overlay */
     #obsidian-gameover {
@@ -1248,6 +1251,7 @@
     <div id="mro-btns">
       <button id="mro-submit-btn" onclick="mroSubmit()">✓ Submit Answer</button>
       <button id="mro-hint-btn" onclick="mroBuyHint()">💡 Hint  (30 🪙)</button>
+      <button id="mro-intimidate-btn" onclick="mroIntimidate()" style="display:none">😤 Intimidate (×1)</button>
       <button id="mro-close-btn" onclick="mroClose()">✕ Never mind</button>
     </div>
   </div>
@@ -10666,6 +10670,28 @@
       dogState.yaw = Math.PI; dogState.velY = 0; dogState.grounded = true;
       cam.yaw = Math.PI;
       cam.pos.x = 0; cam.pos.y = DOG_FLOOR + 3.5; cam.pos.z = 34 + 6.5;
+      // --- Auto-give and equip iron+obsidian necklace if not present ---
+      // Find iron and obsidian indices
+      const ironIdx = METALS.findIndex(m => m.name === 'Iron Ore');
+      const obsidianIdx = ROCKS.findIndex(r => r.name === 'Obsidian');
+      // Check if necklace already exists in jewelryBox
+      let necklaceIdx = jewelryBox.findIndex(j => j.type === 'necklace' && j.metalIdx === ironIdx && j.rockIdx === obsidianIdx);
+      if (necklaceIdx === -1) {
+        // Add the necklace
+        jewelryBox.push({
+          type: 'necklace',
+          metalIdx: ironIdx,
+          rockIdx: obsidianIdx,
+          effect: 'obsidian_necklace',
+          name: 'Iron & Obsidian Necklace',
+          icon: '⛓️🖤',
+        });
+        necklaceIdx = jewelryBox.length - 1;
+      }
+      // Equip it if not already equipped
+      if (equippedNecklace !== necklaceIdx) {
+        equippedNecklace = necklaceIdx;
+      }
       buildVillage();
       villageScratchPos.x = dogState.x + 2; villageScratchPos.z = dogState.z; villageScratchPos.yaw = dogState.yaw;
       const _gs = getGlobalSave();
@@ -14130,6 +14156,10 @@
   let missionFieldDetected = false;
   let missionFieldStage = 0;
   let missionFieldDoors = []; // [{x,z,unlocked,stageIdx,guardX,guardZ,guardFacing,guardFur,guardEars,guardName,riddle}]
+  let missionFieldTraps = []; // [{x,z,triggered,hidden}] — pressure plates in maze missions
+  let missionFieldCrossroads = []; // [{x,z,hint}] — New Moon ability trigger points
+  let _nmCrossroadHint = null; // {text, timer} — active hint popup
+  let _mfTrapFlashTimer = 0; // frames for trap-triggered red flash
 
   // Seeded LCG RNG tied to mission key so each mission always generates the same map
   function mfRng(seed) {
@@ -14142,10 +14172,10 @@
   const MISSION_MAP_TYPES = [
     'wolf_camp','wolf_camp','wolf_camp',    // 0 Maple  — scout perimeter, steal plans, sabotage tower
     'human_lab','cave','nether',            // 1 Birch  — lab raid, cave prison, nether stream
-    'wolf_camp','nether','cave',            // 2 Cedar  — border cache, nether escort, cave ammo dump
+    'wolf_camp','maze','cave',              // 2 Cedar  — border cache, maze escort, cave ammo dump
     'village','nether','nether_ruins',      // 3 Ash    — defend gate, capture lieutenant, retake outpost
     'human_lab','wolf_camp','wolf_camp',    // 4 Flint  — lab data, raider camp, alpha territory
-    'human_house','nether_ruins','cave',    // 5 Slate  — house infiltration, ruins recon, seal vault
+    'human_house','nether_ruins','maze',    // 5 Slate  — house infiltration, ruins recon, maze vault
     'nether','forest','wolf_camp',          // 6 Ember  — nether rescue, forest search, wolf extract
   ];
 
@@ -14160,6 +14190,9 @@
     missionFieldItems.length  = 0;
     missionFieldNpcs.length   = 0;
     missionFieldWalls.length  = 0;
+    missionFieldTraps.length  = 0;
+    missionFieldCrossroads.length = 0;
+    _nmCrossroadHint = null;
     missionFieldObjectiveReady = false;
     missionFieldDetected = false;
     if (!activeMission) return;
@@ -14801,10 +14834,231 @@
       missionFieldPatrols.push({ x:6, z:-44, startX:6, startZ:-44, dx:1, dz:0, t:rng()*Math.PI*2, range:12, tSpeed:0.020, fur:0xe07820, ears:'triangle', patrolType:'cat', isHuman:false, spotted:false });
       // Extra cat in bedroom for higher professor levels
       if (profIdx >= 3) missionFieldPatrols.push({ x:-2, z:-88, startX:-2, startZ:-88, dx:0, dz:1, t:rng()*Math.PI*2, range:10, tSpeed:0.022, fur:0xa05810, ears:'triangle', patrolType:'cat', isHuman:false, spotted:false });
-    }
 
-    // ── Seeded random scatter walls (bonus cover — skip for structured indoor maps) ──
-    if (mapType !== 'human_house') {
+    } else if (mapType === 'maze') {
+
+      // ── Dungeon Maze ───────────────────────────────────────────────────
+      // Recursive-backtracker maze on a 5×12 grid.
+      // Each cell is 8×8 units; corridor width is ~6 units; walls are thick stone.
+      // Player enters at top of south cell (col 2, row 0) and must reach the exit cell (col 2, row 11).
+
+      missionFieldTraps.length = 0;
+      missionFieldCrossroads.length = 0;
+
+      const COLS = 5, ROWS = 12;
+      const CELL = 8; // units per cell
+      const MAZE_X0 = -(COLS * CELL) / 2;   // leftmost cell edge = -20
+      const MAZE_Z0 = -8;                     // southernmost cell starts here (z=-8)
+      const WALL_H  = 4.2;
+      const WALL_T  = 0.9; // wall thickness
+
+      // Wall color depends on which maze mission (Cedar=stone, Slate=brick vault)
+      const isVault = (mKey === 17); // Slate-2
+      const wCol = isVault ? 0x504438 : 0x2c2830;
+      const fCol = isVault ? 0x403830 : 0x1c1a22;
+      const fCol2 = isVault ? 0x382e28 : 0x141220;
+      const torchCol = isVault ? 0xd06010 : 0x8000ff;
+
+      // ── Recursive backtracker ──────────────────────────────────────────
+      // Each cell stores which walls are OPEN (passage exists): N, S, E, W
+      const cells = Array.from({length:ROWS*COLS}, () => ({ open:{N:false,S:false,E:false,W:false}, visited:false }));
+      const ci = (r,c) => r * COLS + c;
+      const stack = [{r:0, c:2}];
+      cells[ci(0,2)].visited = true;
+      while (stack.length > 0) {
+        const {r,c} = stack[stack.length-1];
+        const dirs = [{dr:-1,dc:0,d:'N',od:'S'},{dr:1,dc:0,d:'S',od:'N'},{dr:0,dc:1,d:'E',od:'W'},{dr:0,dc:-1,d:'W',od:'E'}]
+          .filter(({dr,dc}) => { const nr=r+dr,nc=c+dc; return nr>=0&&nr<ROWS&&nc>=0&&nc<COLS&&!cells[ci(nr,nc)].visited; });
+        if (dirs.length === 0) { stack.pop(); continue; }
+        const pick = dirs[Math.floor(rng() * dirs.length)];
+        cells[ci(r,c)].open[pick.d] = true;
+        cells[ci(r+pick.dr,c+pick.dc)].open[pick.od] = true;
+        cells[ci(r+pick.dr,c+pick.dc)].visited = true;
+        stack.push({r:r+pick.dr, c:c+pick.dc});
+      }
+      // Force entry (S of row 0 col 2) and exit (N of row 11 col 2)
+      cells[ci(0,2)].open.S = true;
+      cells[ci(ROWS-1,2)].open.N = true;
+
+      // Add 4 extra "hidden passage" openings (walls that look intact but are passable)
+      const hiddenWalls = [];
+      const hiddenCandidates = [];
+      for (let r=0;r<ROWS;r++) for (let c=0;c<COLS;c++) {
+        ['N','E'].forEach(dir => {
+          const nr=r+(dir==='N'?-1:0), nc=c+(dir==='E'?1:0);
+          if (nr<0||nr>=ROWS||nc<0||nc>=COLS) return;
+          if (!cells[ci(r,c)].open[dir]) hiddenCandidates.push({r,c,dir,nr,nc,od:dir==='N'?'S':'W'});
+        });
+      }
+      // pick 4 random from candidates
+      for (let hi=0;hi<4&&hiddenCandidates.length;hi++) {
+        const idx = Math.floor(rng()*hiddenCandidates.length);
+        const hw = hiddenCandidates.splice(idx,1)[0];
+        hiddenWalls.push(hw);
+        cells[ci(hw.r,hw.c)].open[hw.dir] = true;
+        cells[ci(hw.nr,hw.nc)].open[hw.od] = true;
+      }
+
+      // ── Floor tiles ────────────────────────────────────────────────────
+      for (let r=0;r<ROWS;r++) {
+        for (let c=0;c<COLS;c++) {
+          const x0=MAZE_X0+c*CELL, z0=MAZE_Z0-r*CELL;
+          missionFieldQuads.push({ verts:[v3(x0,0.01,z0),v3(x0+CELL,0.01,z0),v3(x0+CELL,0.01,z0-CELL),v3(x0,0.01,z0-CELL)], color:((r+c)&1)?fCol:fCol2, normal:v3(0,1,0), isGround:true });
+        }
+      }
+
+      // ── Ceiling (sells the dungeon feel) ───────────────────────────────
+      const mx0=MAZE_X0, mx1=MAZE_X0+COLS*CELL;
+      const mz0=MAZE_Z0, mz1=MAZE_Z0-ROWS*CELL;
+      missionFieldQuads.push({ verts:[v3(mx0,WALL_H,mz0),v3(mx1,WALL_H,mz0),v3(mx1,WALL_H,mz1),v3(mx0,WALL_H,mz1)], color:0x0c0c10, normal:v3(0,-1,0), isGround:false });
+
+      // ── Helper: render + collide a wall segment ─────────────────────────
+      function mazeWall(wx,wz,ww,wd,col,hidden=false) {
+        if (!hidden) {
+          pushBox(missionFieldQuads, wx, WALL_H/2, wz, ww, WALL_H/2, wd, col);
+          addWall(wx, wz, ww, wd);
+        } else {
+          // Hidden passage: render a faint cracked texture — slightly different color, still blocks
+          // (passable — we DON'T call addWall)
+          pushBox(missionFieldQuads, wx, WALL_H/2, wz, ww, WALL_H/2, wd, col - 0x101010);
+        }
+      }
+
+      // ── Outer boundary walls ────────────────────────────────────────────
+      // South boundary (z = MAZE_Z0) — with gap at entry column
+      mazeWall(MAZE_X0 + 2*CELL + CELL/2, MAZE_Z0, CELL/2 - 0.5, WALL_T, wCol); // right of gap
+      mazeWall(MAZE_X0 + CELL,             MAZE_Z0, CELL,          WALL_T, wCol); // cols 0-1
+      mazeWall(MAZE_X0 + 4*CELL,           MAZE_Z0, CELL/2,        WALL_T, wCol); // col 4 east
+      // North boundary (z = MAZE_Z0-ROWS*CELL) — with gap at exit column
+      const nz = MAZE_Z0 - ROWS*CELL;
+      mazeWall(MAZE_X0 + 2*CELL + CELL/2, nz, CELL/2 - 0.5, WALL_T, wCol);
+      mazeWall(MAZE_X0 + CELL,             nz, CELL,          WALL_T, wCol);
+      mazeWall(MAZE_X0 + 4*CELL,           nz, CELL/2,        WALL_T, wCol);
+      // West boundary
+      mazeWall(MAZE_X0, MAZE_Z0-ROWS*CELL/2, WALL_T, ROWS*CELL/2, wCol);
+      // East boundary
+      mazeWall(MAZE_X0+COLS*CELL, MAZE_Z0-ROWS*CELL/2, WALL_T, ROWS*CELL/2, wCol);
+
+      // ── Interior walls from maze data ───────────────────────────────────
+      const hidSet = new Set(hiddenWalls.map(h=>`${h.r},${h.c},${h.dir}`));
+      for (let r=0;r<ROWS;r++) {
+        for (let c=0;c<COLS;c++) {
+          const cx=MAZE_X0+c*CELL+CELL/2, cz=MAZE_Z0-r*CELL-CELL/2;
+          // South wall of cell (between row r and row r+1)
+          if (r < ROWS-1 && !cells[ci(r,c)].open.S) {
+            const isHidden = hidSet.has(`${r},${c},S`)||hidSet.has(`${r+1},${c},N`);
+            mazeWall(cx, cz-CELL/2, CELL-WALL_T, WALL_T, wCol, isHidden);
+          }
+          // East wall of cell (between col c and col c+1)
+          if (c < COLS-1 && !cells[ci(r,c)].open.E) {
+            const isHidden = hidSet.has(`${r},${c},E`)||hidSet.has(`${r},${c+1},W`);
+            mazeWall(cx+CELL/2, cz, WALL_T, CELL-WALL_T, wCol, isHidden);
+          }
+        }
+      }
+
+      // ── Torches on walls ────────────────────────────────────────────────
+      for (let r=0;r<ROWS;r+=2) {
+        for (let c=0;c<COLS;c+=2) {
+          const tx=MAZE_X0+c*CELL+WALL_T+0.3, tz=MAZE_Z0-r*CELL-CELL/2;
+          pushBox(missionFieldQuads, tx, WALL_H*0.65, tz, 0.15, 0.15, 0.15, torchCol); // bracket
+          pushBox(missionFieldQuads, tx, WALL_H*0.65+0.35, tz, 0.08, 0.4, 0.08, 0xd08000); // flame
+        }
+      }
+
+      // ── Traps (pressure plates) ─────────────────────────────────────────
+      // Place ~8 traps in dead-end cells and mid-corridor spots
+      const deadEnds = [];
+      for (let r=1;r<ROWS-1;r++) {
+        for (let c=0;c<COLS;c++) {
+          const cell = cells[ci(r,c)];
+          const openCount = ['N','S','E','W'].filter(d=>cell.open[d]).length;
+          if (openCount === 1 && !(r===0&&c===2) && !(r===ROWS-1&&c===2)) deadEnds.push({r,c});
+        }
+      }
+      // Shuffle dead ends and pick up to 6
+      deadEnds.sort(()=>rng()-0.5);
+      deadEnds.slice(0, Math.min(6, deadEnds.length)).forEach(({r,c}) => {
+        const tx = MAZE_X0+c*CELL+CELL/2, tz = MAZE_Z0-r*CELL-CELL/2;
+        pushBox(missionFieldQuads, tx, 0.03, tz, 1.2, 0.03, 1.2, 0x603010); // plate
+        missionFieldTraps.push({ x:tx, z:tz, triggered:false, isDeadEnd:true });
+      });
+      // Extra traps in random mid-corridor cells
+      const midCells = [];
+      for (let r=2;r<ROWS-2;r++) for (let c=0;c<COLS;c++) {
+        if (!deadEnds.some(d=>d.r===r&&d.c===c)) midCells.push({r,c});
+      }
+      midCells.sort(()=>rng()-0.5);
+      midCells.slice(0,4).forEach(({r,c}) => {
+        const tx = MAZE_X0+c*CELL+CELL/2 + (rng()-0.5)*2;
+        const tz = MAZE_Z0-r*CELL-CELL/2 + (rng()-0.5)*2;
+        pushBox(missionFieldQuads, tx, 0.03, tz, 1.0, 0.03, 1.0, 0x501010);
+        missionFieldTraps.push({ x:tx, z:tz, triggered:false, isDeadEnd:false });
+      });
+
+      // ── Crossroads (3- or 4-way intersections) for New Moon ability ─────
+      for (let r=1;r<ROWS-1;r++) {
+        for (let c=0;c<COLS;c++) {
+          const cell = cells[ci(r,c)];
+          const openCount = ['N','S','E','W'].filter(d=>cell.open[d]).length;
+          if (openCount >= 3) {
+            const cx2 = MAZE_X0+c*CELL+CELL/2, cz2 = MAZE_Z0-r*CELL-CELL/2;
+            // Determine what lies ahead (N = deeper into maze)
+            const aheadR = r - 1;
+            let hint = 'Dead end ahead';
+            if (aheadR >= 0) {
+              const aheadCell = cells[ci(aheadR,c)];
+              const aheadOpen = ['N','S','E','W'].filter(d=>aheadCell.open[d]).length;
+              const hasTrap = missionFieldTraps.some(t => {
+                const tr = Math.round((MAZE_Z0 - t.z) / CELL);
+                const tc = Math.round((t.x - MAZE_X0) / CELL);
+                return tr === aheadR && tc === c;
+              });
+              if (hasTrap)     hint = '⚠️ Trap ahead!';
+              else if (aheadR === ROWS-1 && c === 2) hint = '✨ Exit this way!';
+              else if (aheadOpen <= 1) hint = '🚫 Dead end ahead';
+              else hint = '✅ Passage continues';
+            }
+            missionFieldCrossroads.push({ x:cx2, z:cz2, hint, revealed:false });
+          }
+        }
+      }
+
+      // ── Patrol wolves / wraiths that pop out of dead ends ──────────────
+      const patrolCells = deadEnds.slice(0,3).concat(midCells.slice(0,3));
+      patrolCells.forEach(({r,c}, pi) => {
+        if (pi >= 2 + profIdx) return; // scale with professor level
+        const px = MAZE_X0+c*CELL+CELL/2, pz = MAZE_Z0-r*CELL-CELL/2;
+        const horiz = cells[ci(r,c)].open.E || cells[ci(r,c)].open.W;
+        const isVaultMission = (mKey === 17);
+        missionFieldPatrols.push({
+          x:px, z:pz, startX:px, startZ:pz,
+          dx:horiz?1:0, dz:horiz?0:1,
+          t:rng()*Math.PI*2, range:CELL*0.45, tSpeed:0.015,
+          fur: isVaultMission ? 0x2a1808 : 0x1a0c3a,
+          ears:'triangle',
+          patrolType: isVaultMission ? 'wolf' : 'wraith',
+          isHuman:false, spotted:false,
+        });
+      });
+
+      // ── Objective at far end of maze ────────────────────────────────────
+      const exitX = MAZE_X0 + 2*CELL + CELL/2;
+      const exitZ = MAZE_Z0 - ROWS*CELL + CELL/2;
+      const objIcon = isVault ? '🔐' : '🗝️';
+      // Pedestal
+      pushBox(missionFieldQuads, exitX, 1.2, exitZ, 1.4, 1.2, 1.4, wCol);
+      pushBox(missionFieldQuads, exitX, 2.55, exitZ, 1.0, 0.15, 1.0, wCol - 0x080808);
+      pushBox(missionFieldQuads, exitX, 3.0, exitZ, 0.5, 0.7, 0.5, isVault ? 0xd0a020 : 0x4080ff);
+      addWall(exitX, exitZ, 1.6, 1.6);
+      missionFieldItems.push({ id:0, x:exitX, z:exitZ, type:'objective', label:m.objective, icon:objIcon, collected:false });
+
+      // Entry path tile from field south to maze entry
+      for (let gz=-1; gz<3; gz+=1) {
+        missionFieldQuads.push({ verts:[v3(exitX-2,0.01,MAZE_Z0+gz),v3(exitX+2,0.01,MAZE_Z0+gz),v3(exitX+2,0.01,MAZE_Z0+gz+1),v3(exitX-2,0.01,MAZE_Z0+gz+1)], color:0x4a3820, normal:v3(0,1,0), isGround:true });
+      }
+    }
+    if (mapType !== 'human_house' && mapType !== 'maze') {
       const mazeCount = 4 + Math.floor(rng()*4);
       const wallCol = { wolf_camp:0x3a2810, human_lab:0x606868, nether:0x1a0c1c, forest:0x3a2808, village:0x907868, cave:0x2a2018, nether_ruins:0x3a2028 }[mapType]||0x383028;
       for (let mi2=0; mi2<mazeCount; mi2++) {
@@ -14847,6 +15101,7 @@
       inMissionField = true;
       _mfPatrolPausedIdx.clear();
       _mfCheesePauseFlash = 0;
+      _obsIntimidateUsed = false;
       buildMissionField();
       dogState.x = 0; dogState.z = 6; dogState.y = DOG_FLOOR;
       dogState.yaw = Math.PI; dogState.velY = 0; dogState.grounded = true;
@@ -14970,6 +15225,14 @@
     const hintBtn = document.getElementById('mro-hint-btn');
     hintBtn.textContent = '💡 Hint  (30 🪙)';
     hintBtn.disabled = false;
+    const intBtn = document.getElementById('mro-intimidate-btn');
+    if (activeCharacter === 'obsidian') {
+      intBtn.style.display = '';
+      intBtn.disabled = _obsIntimidateUsed;
+      intBtn.textContent = _obsIntimidateUsed ? '😤 Intimidate (used)' : '😤 Intimidate (×1)';
+    } else {
+      intBtn.style.display = 'none';
+    }
     document.getElementById('mission-riddle-overlay').classList.remove('hidden');
     setTimeout(() => {
       const inp = document.getElementById('mro-input');
@@ -15015,6 +15278,31 @@
     document.getElementById('mro-feedback').textContent = '';
   };
 
+  window.mroIntimidate = function() {
+    if (activeCharacter !== 'obsidian' || _obsIntimidateUsed || !_mroRiddle) return;
+    _obsIntimidateUsed = true;
+    const btn = document.getElementById('mro-intimidate-btn');
+    btn.disabled = true;
+    btn.textContent = '😤 Intimidate (used)';
+    if (Math.random() < 0.10) {
+      // Success — creature is scared
+      document.getElementById('mro-feedback').style.color = '#c060ff';
+      document.getElementById('mro-feedback').textContent = '😤 They flinch… and step aside!';
+      _obsIntimidateFlash = 90;
+      setTimeout(() => {
+        document.getElementById('mission-riddle-overlay').classList.add('hidden');
+        mroActive = false;
+        const cb = _mroOnSuccess; _mroRiddle = null; _mroOnSuccess = null;
+        if (cb) cb();
+      }, 1000);
+    } else {
+      // Failure — still need to answer
+      document.getElementById('mro-feedback').style.color = '#c060ff';
+      document.getElementById('mro-feedback').textContent = '😤 They hold their ground… answer the riddle!';
+      _obsIntimidateFlash = 90;
+    }
+  };
+
   window.mroClose = function() {
     document.getElementById('mission-riddle-overlay').classList.add('hidden');
     mroActive = false;
@@ -15042,6 +15330,8 @@
   let _mfSpottedFlashTimer = 0;
   let _mfCheesePauseFlash = 0; // frames to show "passed by" feedback for Cheeseball
   const _mfPatrolPausedIdx = new Map(); // patrol index → remaining pause frames (Cheeseball ability)
+  let _obsIntimidateUsed = false;        // Obsidian: one-time intimidate per mission
+  let _obsIntimidateFlash = 0;           // frames to show intimidate feedback
 
   function updateMissionField() {
     // Block input processing while riddle overlay is open
@@ -15125,6 +15415,41 @@
     }
     if (_mfSpottedFlashTimer > 0) _mfSpottedFlashTimer--;
 
+    // ── Trap detection (maze missions) ─────────────────────────────────────
+    if (_mfTrapFlashTimer <= 0) {
+      for (const trap of missionFieldTraps) {
+        if (trap.triggered) continue;
+        if (Math.hypot(ds.x - trap.x, ds.z - trap.z) < 1.1) {
+          trap.triggered = true;
+          _mfTrapFlashTimer = 90;
+          dogState.x = 0; dogState.z = 6; // reset to entry
+          break;
+        }
+      }
+    }
+    if (_mfTrapFlashTimer > 0) _mfTrapFlashTimer--;
+
+    // ── New Moon crossroad ability (maze missions) ──────────────────────────
+    if (activeCharacter === 'newmoon' && missionFieldCrossroads.length > 0) {
+      for (const cr of missionFieldCrossroads) {
+        if (cr.revealed) continue;
+        if (Math.hypot(ds.x - cr.x, ds.z - cr.z) < 2.8) {
+          cr.revealed = true;
+          if (Math.random() < 0.5) {
+            // Ability triggers — show the hint
+            _nmCrossroadHint = { text: `🌙 ${cr.hint}`, timer: 180 };
+          } else {
+            _nmCrossroadHint = { text: '🌙 Senses tingling… but nothing clear.', timer: 120 };
+          }
+          break;
+        }
+      }
+    }
+    if (_nmCrossroadHint) {
+      _nmCrossroadHint.timer--;
+      if (_nmCrossroadHint.timer <= 0) _nmCrossroadHint = null;
+    }
+
     // Stage item interaction
     missionFieldObjectiveReady = false;
     const activeItem = missionFieldItems.find(it => !it.collected);
@@ -15182,12 +15507,12 @@
     const skyTop = {
       wolf_camp:'#090e08',  human_lab:'#080c12',  nether:'#0a0002',
       forest:'#04090a',     village:'#0e0c06',    cave:'#040404',
-      nether_ruins:'#0a0204', human_house:'#1a1208',
+      nether_ruins:'#0a0204', human_house:'#1a1208', maze:'#060408',
     }[mapType]||'#080808';
     const skyBot = {
       wolf_camp:'#162018',  human_lab:'#101820',  nether:'#220608',
       forest:'#0c1a10',     village:'#1e1608',    cave:'#060606',
-      nether_ruins:'#1a0608', human_house:'#281c10',
+      nether_ruins:'#1a0608', human_house:'#281c10', maze:'#0c0810',
     }[mapType]||'#101010';
     const g = ctx.createLinearGradient(0,0,0,H*0.55);
     g.addColorStop(0,skyTop); g.addColorStop(1,skyBot);
@@ -15211,6 +15536,11 @@
       const bg=ctx.createLinearGradient(0,H*0.42,0,H*0.55);
       bg.addColorStop(0,'rgba(20,30,80,0)'); bg.addColorStop(1,'rgba(20,30,80,0.20)');
       ctx.fillStyle=bg; ctx.fillRect(0,H*0.42,W,H*0.13);
+    } else if (mapType === 'maze') {
+      // Dungeon ceiling glow — torchlight warmth bleeding upward
+      const mg=ctx.createLinearGradient(0,H*0.40,0,H*0.55);
+      mg.addColorStop(0,'rgba(60,20,10,0)'); mg.addColorStop(1,'rgba(60,20,10,0.22)');
+      ctx.fillStyle=mg; ctx.fillRect(0,H*0.40,W,H*0.15);
     }
 
     // Patrols as quads
@@ -15243,7 +15573,7 @@
     const fogHex = {
       wolf_camp:0x080e06,  human_lab:0x080c12,  nether:0x0e0204,
       forest:0x060c08,     village:0x0c0a04,    cave:0x060406,
-      nether_ruins:0x0e0404, human_house:0x100c06,
+      nether_ruins:0x0e0404, human_house:0x100c06, maze:0x0a0608,
     }[mapType]||0x080804;
 
     // Door guards (locked doors only)
@@ -15308,6 +15638,16 @@
       ctx.fillText('🚨 SPOTTED — reset to entry!', W/2, H*0.3);
     }
 
+    // Obsidian: intimidate ability feedback
+    if (_obsIntimidateFlash > 0) {
+      _obsIntimidateFlash--;
+      ctx.globalAlpha = Math.min(1, _obsIntimidateFlash / 20);
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = 'bold 22px Arial'; ctx.fillStyle = 'rgba(180,80,255,0.95)';
+      ctx.fillText('😤 Obsidian glares with cold fury!', W/2, H*0.22);
+      ctx.globalAlpha = 1;
+    }
+
     // Cheeseball: "passed by" ability feedback
     if (_mfCheesePauseFlash > 0) {
       _mfCheesePauseFlash--;
@@ -15315,6 +15655,42 @@
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.font = 'bold 22px Arial'; ctx.fillStyle = 'rgba(255,220,80,0.95)';
       ctx.fillText('🧀 They looked… then walked on!', W/2, H*0.25);
+      ctx.globalAlpha = 1;
+    }
+
+    // Maze: trap flash
+    if (_mfTrapFlashTimer > 0) {
+      ctx.globalAlpha = Math.min(1, _mfTrapFlashTimer / 30);
+      ctx.fillStyle = 'rgba(200,60,20,0.35)'; ctx.fillRect(0,0,W,H);
+      ctx.globalAlpha = 1;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = 'bold 26px Arial'; ctx.fillStyle = 'rgba(255,100,40,0.95)';
+      ctx.fillText('⚠️ TRAPPED — reset to entry!', W/2, H*0.3);
+    }
+
+    // Maze: trap plate labels (glow when nearby)
+    if (mapType === 'maze') {
+      const ds3 = dogState;
+      missionFieldTraps.forEach(trap => {
+        if (trap.triggered) return;
+        const sp = project(v3(trap.x, DOG_FLOOR + 0.3, trap.z), cam);
+        if (!sp) return;
+        const near = Math.hypot(ds3.x - trap.x, ds3.z - trap.z) < 3.5;
+        if (!near) return;
+        ctx.globalAlpha = 0.85; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+        ctx.font = 'bold 12px Arial'; ctx.fillStyle = '#ff6030';
+        ctx.fillText('⚠️ Trap!', sp.x, sp.y - 2);
+        ctx.globalAlpha = 1;
+      });
+    }
+
+    // New Moon crossroad hint
+    if (_nmCrossroadHint) {
+      const alpha = Math.min(1, _nmCrossroadHint.timer / 30);
+      ctx.globalAlpha = alpha;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = 'bold 20px Arial'; ctx.fillStyle = 'rgba(160,220,255,0.95)';
+      ctx.fillText(_nmCrossroadHint.text, W/2, H*0.22);
       ctx.globalAlpha = 1;
     }
 
