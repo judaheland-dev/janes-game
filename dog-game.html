@@ -3871,7 +3871,8 @@
       const r = 42 + ((i * 7) % 9) * 1.3;
       const tx = Math.cos(a) * r, tz = Math.sin(a) * r;
       if (tz >  37 && Math.abs(tx) < 8) continue; // south entrance
-      if (tz < -38 && Math.abs(tx) < 5) continue; // north forest path
+      if (tz < -38 && Math.abs(tx) < 9) continue; // widen north forest path
+      if (tx > 37 && Math.abs(tz) < 7) continue; // east path gap
       addTree(tx, tz, 0.72 + ((i * 11) % 7) * 0.1, villageQuads);
     }
     // Ring 2 (r≈50) — background depth, no gap at south (gives solid wall feel)
@@ -3880,7 +3881,8 @@
       const r = 50 + ((i * 5) % 8) * 1.2;
       const tx = Math.cos(a) * r, tz = Math.sin(a) * r;
       if (tz > 44) continue;
-      if (tz < -44 && Math.abs(tx) < 6) continue;
+      if (tz < -44 && Math.abs(tx) < 10) continue; // widen north forest path
+      if (tx > 45 && Math.abs(tz) < 8) continue; // east path gap
       addTree(tx, tz, 0.78 + ((i * 9) % 8) * 0.1, villageQuads);
     }
 
@@ -14039,6 +14041,9 @@
   let missionFieldWalls  = []; // axis-aligned wall segments [{x1,z1,x2,z2}]
   let missionFieldObjectiveReady = false;
   let missionFieldDetected = false;
+  let missionFieldStage = 0; // Current stage index in multi-stage missions
+  let missionFieldStages = null; // Array of stages for the current mission
+  let missionFieldPuzzle = null; // Current puzzle/riddle state if any
 
   // Seeded LCG RNG tied to mission key so each mission always generates the same map
   function mfRng(seed) {
@@ -14071,13 +14076,34 @@
     missionFieldWalls.length  = 0;
     missionFieldObjectiveReady = false;
     missionFieldDetected = false;
-    if (!activeMission) return;
+    if (!activeMission || !missionFieldStages) return;
 
-    const { profIdx, mIdx } = activeMission;
-    const mKey  = profIdx * 3 + mIdx;
-    const rng   = mfRng(mKey * 9973 + 7);
-    const m     = PROFESSORS[profIdx].missions[mIdx];
-    const mapType = getMissionMapType();
+    // Use current stage
+    const stage = missionFieldStages[missionFieldStage];
+    const { mapType, objective, puzzle, geometry } = stage;
+    // Use seeded RNG per stage
+    const mKey = (activeMission.profIdx * 3 + activeMission.mIdx) * 10 + missionFieldStage;
+    const rng = mfRng(mKey * 9973 + 7);
+    // Optionally allow geometry override per stage
+    if (geometry) geometry({missionFieldQuads, missionFieldWalls, missionFieldItems, missionFieldPatrols, rng});
+    else {
+      // Fallback to old logic using mapType
+      // ...existing code for mapType geometry...
+      // (This is a placeholder; actual geometry code remains below)
+    }
+    // If this stage has a puzzle, set up puzzle state
+    missionFieldPuzzle = puzzle ? {...puzzle, solved: false} : null;
+  }
+// Build multi-stage mission structure for a mission
+function buildMissionStages(mission) {
+  // Example: 3 stages, last is a puzzle
+  // This should be expanded per mission for richer detail
+  return [
+    { mapType: getMissionMapType(), objective: mission.objective },
+    { mapType: getMissionMapType(), objective: 'Reach the inner sanctum', puzzle: { type: 'riddle', question: 'What walks on four legs in the morning, two at noon, and three in the evening?', answer: 'man' } },
+    { mapType: getMissionMapType(), objective: 'Collect the final artifact' }
+  ];
+}
 
     // Field is wide and deep — player enters at z=6, objective is near z=-110
     const FIELD_W = 45, FIELD_D = 120;
@@ -14731,8 +14757,11 @@
     }
   }
 
-  function enterMissionField() {
+  function enterMissionField(stageIdx = 0) {
     if (!activeMission) return;
+    missionFieldStage = stageIdx;
+    // Build mission stages if not already present
+    if (!missionFieldStages) missionFieldStages = buildMissionStages(activeMission);
     showEnterScreen('Deploying on mission…', () => {
       inMissionField = true;
       buildMissionField();
