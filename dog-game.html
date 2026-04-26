@@ -1,91 +1,141 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🐕 Dog Game</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { overflow: hidden; background: #000; }
-    canvas { display: block; }
-    #hud {
-      position: fixed;
-      bottom: 24px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(0, 0, 0, 0.52);
-      color: #fff;
-      padding: 10px 26px;
-      border-radius: 20px;
-      font: 15px/1.6 Arial, sans-serif;
-      pointer-events: none;
-      white-space: nowrap;
-      letter-spacing: 0.4px;
+// ── Puzzle Overlay ─────────────────────────────────────────────────────
+function showPuzzleOverlay() {
+  if (!missionFieldPuzzle) return '';
+  return `
+    <div id="puzzle-overlay" style="position:fixed;inset:0;z-index:9999;background:rgba(10,8,20,0.93);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;">
+      <div style="background:#222a38;padding:24px 32px;border-radius:16px;box-shadow:0 4px 32px #000a;max-width:420px;">
+        <div style="font:700 18px Georgia,serif;color:#ffe080;margin-bottom:10px;">Riddle</div>
+        <div style="font:15px/1.5 Arial;color:#ffeedd;margin-bottom:18px;">${missionFieldPuzzle.question}</div>
+        <input id="puzzle-answer" type="text" style="font-size:1.1em;padding:7px 12px;border-radius:7px;border:1.5px solid #ccb060;width:100%;max-width:260px;outline:none;" placeholder="Your answer..." autofocus onkeydown="if(event.key==='Enter'){window.submitPuzzleAnswer()}" />
+        <button onclick="window.submitPuzzleAnswer()" style="margin-top:14px;padding:7px 22px;font-size:1.1em;background:#ffe080;color:#222;border:none;border-radius:8px;cursor:pointer;">Submit</button>
+        <div id="puzzle-feedback" style="color:#ffb080;font-size:1em;margin-top:10px;min-height:1.2em;"></div>
+      </div>
+    </div>
+  `;
+}
+
+window.submitPuzzleAnswer = function() {
+  const input = document.getElementById('puzzle-answer');
+  if (!input || !missionFieldPuzzle) return;
+  const val = input.value.trim().toLowerCase();
+  const correct = missionFieldPuzzle.answer && val === missionFieldPuzzle.answer.toLowerCase();
+  const feedback = document.getElementById('puzzle-feedback');
+  if (correct) {
+    missionFieldPuzzle.solved = true;
+    // Advance to next stage
+    if (missionFieldStages && missionFieldStage < missionFieldStages.length-1) {
+      missionFieldStage++;
+      buildMissionField();
+      // Remove overlay
+      document.getElementById('puzzle-overlay').remove();
+    } else {
+      exitMissionField(true);
     }
-    /* ── Pick Canine screen ───────────────────────────────────────── */
-    #pick-screen {
-      position: fixed; inset: 0;
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      background: radial-gradient(ellipse at 50% 32%, #1a1f3a 0%, #07091a 100%);
-      z-index: 100; gap: 28px;
+  } else {
+    if (feedback) feedback.textContent = 'Incorrect. Try again!';
+    input.value = '';
+    input.focus();
+  }
+};
+function updateMissionField() {
+  const ds = dogState;
+  // Puzzle/riddle blocking
+  if (missionFieldPuzzle && !missionFieldPuzzle.solved) {
+    // Show puzzle overlay (to be implemented)
+    // If puzzle solved, set missionFieldPuzzle.solved = true
+    return;
+  }
+  if (keys['ArrowLeft']  || keys['KeyA']) ds.yaw += TURN_SPEED;
+  if (keys['ArrowRight'] || keys['KeyD']) ds.yaw -= TURN_SPEED;
+  let moved = false;
+  if (keys['ArrowUp']    || keys['KeyW']) { ds.x+=sin(ds.yaw)*MOVE_SPEED; ds.z+=cos(ds.yaw)*MOVE_SPEED; moved=true; }
+  if (keys['ArrowDown']  || keys['KeyS']) { ds.x-=sin(ds.yaw)*BACK_SPEED*0.6; ds.z-=cos(ds.yaw)*BACK_SPEED*0.6; }
+  if (moved) { ds.walkT+=0.14; const sw=Math.sin(ds.walkT)*0.55; ds.frontLegAngle=sw; ds.backLegAngle=-sw; }
+  ds.wagT += 0.05;
+  if (keysJustPressed.has('Space') && ds.grounded) { ds.velY=JUMP_VEL; ds.grounded=false; }
+  ds.velY+=GRAVITY; ds.y+=ds.velY;
+  if (ds.y<=DOG_FLOOR) { ds.y=DOG_FLOOR; ds.velY=0; ds.grounded=true; }
+
+  ds.x = Math.max(-44, Math.min(44, ds.x));
+  ds.z = Math.max(-118, Math.min(8,  ds.z));
+
+  // Improved wall collisions: iterative push-out with sliding
+  const PAD = 0.65;
+  for (let iter = 0; iter < 2; ++iter) {
+    for (const w of missionFieldWalls) {
+      const cx = (w.x1 + w.x2) / 2, cz = (w.z1 + w.z2) / 2;
+      const hw = (w.x2 - w.x1) / 2 + PAD, hd = (w.z2 - w.z1) / 2 + PAD;
+      const dx = ds.x - cx, dz = ds.z - cz;
+      if (Math.abs(dx) < hw && Math.abs(dz) < hd) {
+        // Push out along shallowest axis, but allow sliding
+        if (hw - Math.abs(dx) < hd - Math.abs(dz)) {
+          ds.x = cx + Math.sign(dx) * hw;
+        } else {
+          ds.z = cz + Math.sign(dz) * hd;
+        }
+      }
     }
-    #pick-screen.hidden { display: none; }
-    #pick-title {
-      font: bold 38px/1.2 Arial, sans-serif;
-      color: #d0e8ff;
-      text-shadow: 0 0 36px #7ab4f5, 0 2px 10px #000;
-      letter-spacing: 4px; text-transform: uppercase;
+  }
+
+  // Update patrol positions + detection
+  missionFieldDetected = false;
+  missionFieldPatrols.forEach(p => {
+    p.t += p.tSpeed || 0.013;
+    p.x = p.startX + Math.sin(p.t) * p.range * p.dx;
+    p.z = p.startZ + Math.sin(p.t) * p.range * p.dz;
+    // Patrol facing direction
+    const pFacing = p.dx !== 0 ? (Math.sin(p.t) >= 0 ? Math.PI/2 : -Math.PI/2) : (Math.sin(p.t) >= 0 ? 0 : Math.PI);
+    const tdx = ds.x - p.x, tdz = ds.z - p.z;
+    const dist = Math.hypot(tdx, tdz);
+    const pt = p.patrolType || (p.isHuman ? 'human' : 'wolf');
+    const vRange = {cat:9, wraith:11, human:7, bat:5, wolf:7}[pt] || 7;
+    const vAngle = {cat:0.90, wraith:1.05, human:0.68, bat:0.45, wolf:0.65}[pt] || 0.65;
+    if (dist < vRange) {
+      const angle = Math.atan2(tdx, tdz);
+      const diff  = ((angle - pFacing) + Math.PI*3) % (Math.PI*2) - Math.PI;
+      if (Math.abs(diff) < vAngle) missionFieldDetected = true;
     }
-    #pick-subtitle {
-      font: 15px Arial, sans-serif; color: #5a7899;
-      margin-top: -18px; letter-spacing: 1px;
+  });
+
+  if (missionFieldDetected && _mfSpottedFlashTimer <= 0) {
+    _mfSpottedFlashTimer = 80;
+    dogState.x = 0; dogState.z = 6;
+  }
+  if (_mfSpottedFlashTimer > 0) _mfSpottedFlashTimer--;
+
+  // Objective interaction
+  const obj = missionFieldItems.find(it => !it.collected && it.type === 'objective');
+  if (obj) {
+    const dist = Math.hypot(ds.x-obj.x, ds.z-obj.z);
+    missionFieldObjectiveReady = dist < 3.2;
+    if (missionFieldObjectiveReady && keysJustPressed.has('KeyE')) {
+      keysJustPressed.delete('KeyE');
+      obj.collected = true;
+      keysJustPressed.clear();
+      // Advance to next stage if available
+      if (missionFieldStages && missionFieldStage < missionFieldStages.length-1) {
+        missionFieldStage++;
+        buildMissionField();
+        // Optionally show stage transition overlay
+      } else {
+        exitMissionField(true);
+      }
+      return;
     }
-    #pick-grid { display: flex; gap: 32px; flex-wrap: wrap; justify-content: center; }
-    .canine-card {
-      background: rgba(255,255,255,0.04);
-      border: 2px solid rgba(180,210,255,0.18);
-      border-radius: 20px; padding: 22px 26px 18px;
-      display: flex; flex-direction: column; align-items: center; gap: 12px;
-      cursor: pointer;
-      transition: transform 0.18s, border-color 0.18s, box-shadow 0.18s;
-      box-shadow: 0 4px 36px rgba(0,0,0,0.7);
-    }
-    .canine-card:hover {
-      transform: translateY(-8px) scale(1.04);
-      border-color: rgba(120,180,255,0.65);
-      box-shadow: 0 12px 48px rgba(90,150,255,0.30);
-    }
-    .canine-card--obsidian {
-      background: rgba(20,10,4,0.90);
-      border-color: rgba(100,55,18,0.55);
-    }
-    .canine-card--obsidian:hover {
-      border-color: rgba(160,90,30,0.80);
-      box-shadow: 0 12px 52px rgba(120,60,15,0.50);
-    }
-    .canine-card--obsidian canvas { background: #140803; }
-    .canine-name--obsidian { color: #b8a0f0 !important; text-shadow: 0 0 18px rgba(140,80,255,0.5); }
-    .canine-card--ruff {
-      background: rgba(30,18,6,0.88);
-      border-color: rgba(160,110,40,0.50);
-    }
-    .canine-card--ruff:hover {
-      border-color: rgba(210,160,60,0.85);
-      box-shadow: 0 12px 52px rgba(180,120,30,0.45);
-    }
-    .canine-card--ruff canvas { background: #1a1406; }
-    .canine-name--ruff { color: #e8c870 !important; text-shadow: 0 0 14px rgba(220,160,40,0.5); }
-    .canine-card--bark {
-      background: rgba(18,8,2,0.92);
-      border-color: rgba(130,58,20,0.52);
-    }
-    .canine-card--bark:hover {
-      border-color: rgba(200,88,38,0.88);
-      box-shadow: 0 12px 52px rgba(160,65,20,0.50);
-    }
-    .canine-card--bark canvas { background: #b8a480; }
-    .canine-name--bark { color: #d4905a !important; text-shadow: 0 0 14px rgba(210,115,45,0.55); }
+  } else {
+    missionFieldObjectiveReady = false;
+  }
+
+  keysJustPressed.clear();
+
+  // Camera
+  camYawTarget = ds.yaw;
+  cam.yaw  = lerp(cam.yaw, camYawTarget, 0.10);
+  cam.pos.x = lerp(cam.pos.x, ds.x - sin(cam.yaw)*6.5, 0.10);
+  cam.pos.y = lerp(cam.pos.y, ds.y + 3.5, 0.10);
+  cam.pos.z = lerp(cam.pos.z, ds.z - cos(cam.yaw)*6.5, 0.10);
+  cam.pitch = 0.28;
+}
     .canine-card canvas {
       border-radius: 14px;
       background: #07091a;
@@ -14068,6 +14118,10 @@
     return MISSION_MAP_TYPES[activeMission.profIdx * 3 + activeMission.mIdx] || 'forest';
   }
 
+
+  // Hiding spots: bushes/ditches
+  let missionFieldHides = [];
+
   function buildMissionField() {
     missionFieldQuads.length  = 0;
     missionFieldPatrols.length = 0;
@@ -14076,6 +14130,7 @@
     missionFieldWalls.length  = 0;
     missionFieldObjectiveReady = false;
     missionFieldDetected = false;
+    missionFieldHides.length = 0;
     if (!activeMission || !missionFieldStages) return;
 
     // Use current stage
@@ -14128,9 +14183,16 @@ function buildMissionStages(mission) {
       missionFieldQuads.push({ verts:[v3(-3.5,0.01,gz),v3(3.5,0.01,gz),v3(3.5,0.01,gz+2),v3(-3.5,0.01,gz+2)], color:0x6a5a38, normal:v3(0,1,0), isGround:true });
     }
 
+
     // ── Map-specific geometry ─────────────────────────────────────────────
 
     if (mapType === 'wolf_camp') {
+      // Add hiding bushes
+      for (let i = 0; i < 7; i++) {
+        const bx = (rng()-0.5)*(FIELD_W*2-12), bz = -18 - rng()*FIELD_D*0.7;
+        missionFieldQuads.push({ verts:[v3(bx-1.6,0.18,bz-1.6),v3(bx+1.6,0.18,bz-1.6),v3(bx+1.6,0.18,bz+1.6),v3(bx-1.6,0.18,bz+1.6)], color:0x2e5c18, normal:v3(0,1,0), isGround:true });
+        missionFieldHides.push({ x:bx, z:bz, r:2.1 });
+      }
       // Dense forest perimeter — tall trees ringing the map edge
       for (let i = 0; i < 120; i++) {
         const side = i < 60 ? -1 : 1;
@@ -14221,6 +14283,12 @@ function buildMissionStages(mission) {
       }
 
     } else if (mapType === 'human_lab') {
+      // Add hiding ditches
+      for (let i = 0; i < 5; i++) {
+        const bx = (rng()-0.5)*(FIELD_W*2-18), bz = -22 - rng()*FIELD_D*0.7;
+        missionFieldQuads.push({ verts:[v3(bx-2.2,0.01,bz-1.1),v3(bx+2.2,0.01,bz-1.1),v3(bx+2.2,0.01,bz+1.1),v3(bx-2.2,0.01,bz+1.1)], color:0x7a6c48, normal:v3(0,1,0), isGround:true });
+        missionFieldHides.push({ x:bx, z:bz, r:2.5 });
+      }
       // Mostly indoors — a large facility with corridors, labs, security guards
 
       // Main building outer shell
@@ -14291,6 +14359,12 @@ function buildMissionStages(mission) {
       });
 
     } else if (mapType === 'nether') {
+      // Add hiding bone piles
+      for (let i = 0; i < 6; i++) {
+        const bx = (rng()-0.5)*(FIELD_W*2-18), bz = -18 - rng()*FIELD_D*0.7;
+        missionFieldQuads.push({ verts:[v3(bx-1.3,0.09,bz-1.3),v3(bx+1.3,0.09,bz-1.3),v3(bx+1.3,0.09,bz+1.3),v3(bx-1.3,0.09,bz+1.3)], color:0xc8c0a8, normal:v3(0,1,0), isGround:true });
+        missionFieldHides.push({ x:bx, z:bz, r:1.7 });
+      }
       // Dark volcanic underworld — glowing lava rivers, obsidian pillars, bone arches
 
       // Lava river (runs east-west around z=-40 and z=-80)
@@ -14356,6 +14430,12 @@ function buildMissionStages(mission) {
       });
 
     } else if (mapType === 'forest') {
+      // Add hiding bushes
+      for (let i = 0; i < 9; i++) {
+        const bx = (rng()-0.5)*(FIELD_W*2-14), bz = -18 - rng()*FIELD_D*0.7;
+        missionFieldQuads.push({ verts:[v3(bx-1.7,0.16,bz-1.7),v3(bx+1.7,0.16,bz-1.7),v3(bx+1.7,0.16,bz+1.7),v3(bx-1.7,0.16,bz+1.7)], color:0x2e5c18, normal:v3(0,1,0), isGround:true });
+        missionFieldHides.push({ x:bx, z:bz, r:2.2 });
+      }
       // Deep old-growth forest — winding paths, dense undergrowth, fallen logs
 
       // Thick forest perimeter
@@ -14429,6 +14509,12 @@ function buildMissionStages(mission) {
       });
 
     } else if (mapType === 'village') {
+      // Add hiding crates
+      for (let i = 0; i < 7; i++) {
+        const bx = (rng()-0.5)*(FIELD_W*2-18), bz = -18 - rng()*FIELD_D*0.7;
+        missionFieldQuads.push({ verts:[v3(bx-1.2,0.18,bz-1.2),v3(bx+1.2,0.18,bz-1.2),v3(bx+1.2,0.18,bz+1.2),v3(bx-1.2,0.18,bz+1.2)], color:0x8a6c38, normal:v3(0,1,0), isGround:true });
+        missionFieldHides.push({ x:bx, z:bz, r:1.6 });
+      }
       // Occupied enemy village — streets, houses, market stalls, suspicious guard dogs
 
       // Village ground — stone street tiles
@@ -14821,25 +14907,36 @@ function buildMissionStages(mission) {
     // Escape to abort
     if (keysJustPressed.has('Escape')) { keysJustPressed.clear(); exitMissionField(false); return; }
 
+
+    // Check if player is hiding
+    let inHide = false;
+    if (typeof missionFieldHides !== 'undefined') {
+      for (const h of missionFieldHides) {
+        if (Math.hypot(ds.x - h.x, ds.z - h.z) < h.r) { inHide = true; break; }
+      }
+    }
+
     // Update patrol positions + detection
     missionFieldDetected = false;
-    missionFieldPatrols.forEach(p => {
-      p.t += p.tSpeed || 0.013;
-      p.x = p.startX + Math.sin(p.t) * p.range * p.dx;
-      p.z = p.startZ + Math.sin(p.t) * p.range * p.dz;
-      // Patrol facing direction
-      const pFacing = p.dx !== 0 ? (Math.sin(p.t) >= 0 ? Math.PI/2 : -Math.PI/2) : (Math.sin(p.t) >= 0 ? 0 : Math.PI);
-      const tdx = ds.x - p.x, tdz = ds.z - p.z;
-      const dist = Math.hypot(tdx, tdz);
-      const pt = p.patrolType || (p.isHuman ? 'human' : 'wolf');
-      const vRange = {cat:9, wraith:11, human:7, bat:5, wolf:7}[pt] || 7;
-      const vAngle = {cat:0.90, wraith:1.05, human:0.68, bat:0.45, wolf:0.65}[pt] || 0.65;
-      if (dist < vRange) {
-        const angle = Math.atan2(tdx, tdz);
-        const diff  = ((angle - pFacing) + Math.PI*3) % (Math.PI*2) - Math.PI;
-        if (Math.abs(diff) < vAngle) missionFieldDetected = true;
-      }
-    });
+    if (!inHide) {
+      missionFieldPatrols.forEach(p => {
+        p.t += p.tSpeed || 0.013;
+        p.x = p.startX + Math.sin(p.t) * p.range * p.dx;
+        p.z = p.startZ + Math.sin(p.t) * p.range * p.dz;
+        // Patrol facing direction
+        const pFacing = p.dx !== 0 ? (Math.sin(p.t) >= 0 ? Math.PI/2 : -Math.PI/2) : (Math.sin(p.t) >= 0 ? 0 : Math.PI);
+        const tdx = ds.x - p.x, tdz = ds.z - p.z;
+        const dist = Math.hypot(tdx, tdz);
+        const pt = p.patrolType || (p.isHuman ? 'human' : 'wolf');
+        const vRange = {cat:9, wraith:11, human:7, bat:5, wolf:7}[pt] || 7;
+        const vAngle = {cat:0.90, wraith:1.05, human:0.68, bat:0.45, wolf:0.65}[pt] || 0.65;
+        if (dist < vRange) {
+          const angle = Math.atan2(tdx, tdz);
+          const diff  = ((angle - pFacing) + Math.PI*3) % (Math.PI*2) - Math.PI;
+          if (Math.abs(diff) < vAngle) missionFieldDetected = true;
+        }
+      });
+    }
 
     if (missionFieldDetected && _mfSpottedFlashTimer <= 0) {
       _mfSpottedFlashTimer = 80;
@@ -14875,7 +14972,14 @@ function buildMissionStages(mission) {
   }
 
   function renderMissionField() {
-    if (!activeMission) return;
+      if (!activeMission) return;
+      // Puzzle overlay
+      if (missionFieldPuzzle && !missionFieldPuzzle.solved) {
+        const overlay = showPuzzleOverlay();
+        const container = document.getElementById('game-container') || document.body;
+        container.insertAdjacentHTML('beforeend', overlay);
+        return;
+      }
     const W = canvas.width, H = canvas.height;
     const mapType = getMissionMapType();
     const { profIdx, mIdx } = activeMission;
