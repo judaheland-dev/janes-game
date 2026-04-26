@@ -5466,6 +5466,8 @@
       if (ds.z < -43 && Math.abs(ds.x) > 3.5) ds.z = -43;
       // East path locked until all dogs are in the village
       if (!allDogsInVillage() && ds.x > 42 && Math.abs(ds.z) < 3.5) ds.x = 42;
+      // West path (Mission HQ) locked until all 7 pups have been led to the village
+      if (!packGatherDone && ds.x < -42 && Math.abs(ds.z) < 3.5) ds.x = -42;
       // Axis-aligned box push-out for each building
       const DOG_PAD = 0.55;
       for (const b of VBUILDINGS) {
@@ -5495,8 +5497,8 @@
         enterForest();
         return;
       }
-      // West path Mission HQ entrance — walk to x=-44 along the east-west path
-      if (!(activeCharacter === 'ruff' && !ruffInVillage) && ds.x < -43 && Math.abs(ds.z) < 3.5 && gameState === 'playing') {
+      // West path Mission HQ entrance — locked until all 7 pups are in the village
+      if (!(activeCharacter === 'ruff' && !ruffInVillage) && packGatherDone && ds.x < -43 && Math.abs(ds.z) < 3.5 && gameState === 'playing') {
         enterMissionHQ();
         return;
       }
@@ -5588,8 +5590,15 @@
         const mhqHintT = Math.max(0, Math.min(1, (-30 - ds.x) / 6));
         ctx.globalAlpha = mhqHintT;
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.font = 'bold 14px Arial'; ctx.fillStyle = 'rgba(240,200,80,0.92)';
-        ctx.fillText('🎯 Walk west → Mission HQ', W/2, H - 120);
+        ctx.font = 'bold 14px Arial';
+        if (packGatherDone) {
+          ctx.fillStyle = 'rgba(240,200,80,0.92)';
+          ctx.fillText('🎯 Walk west → Mission HQ', W/2, H - 120);
+        } else {
+          const missing = 7 - getVillageDogs().length;
+          ctx.fillStyle = 'rgba(200,100,100,0.92)';
+          ctx.fillText('🔒 Mission HQ — lead all 7 pups to the village first (' + missing + ' remaining)', W/2, H - 120);
+        }
         ctx.globalAlpha = 1;
       }
       // East path rock scrubland approach hint (sign at x≈34.5)
