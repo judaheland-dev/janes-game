@@ -631,11 +631,20 @@
     #mission-hud {
       position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%);
       background: rgba(8,4,0,0.88); border: 1.5px solid rgba(180,140,40,0.55);
-      border-radius: 10px; padding: 7px 20px; z-index: 90; pointer-events: none;
+      border-radius: 10px; padding: 7px 16px 7px 20px; z-index: 90; pointer-events: auto;
       color: #e0c060; font: bold 13px Arial; letter-spacing: 0.5px;
       text-shadow: 0 0 10px rgba(220,180,40,0.45); display: none;
+      align-items: center; gap: 12px; white-space: nowrap;
     }
-    #mission-hud.visible { display: block; }
+    #mission-hud.visible { display: flex; }
+    #mission-hud-cancel {
+      background: rgba(60,10,10,0.80); border: 1.5px solid rgba(180,60,60,0.55);
+      border-radius: 7px; color: #e06060; font: bold 12px Arial;
+      padding: 3px 10px; cursor: pointer; pointer-events: auto;
+      transition: background 0.12s, color 0.12s; flex-shrink: 0;
+      letter-spacing: 0; text-shadow: none;
+    }
+    #mission-hud-cancel:hover { background: rgba(100,20,20,0.92); color: #ff8080; }
     /* Mission riddle overlay */
     #mission-riddle-overlay {
       position: fixed; inset: 0; z-index: 280;
@@ -9009,6 +9018,13 @@
         obsidianBullyTriggered = false; obsidianBullyDone = false; obsidianPupFollowing = false;
         obsidianNamingDone = false; obsidianSciNecklaceVisit = false;
         cityBullyNpcs.length = 0; cityPupNpc = null;
+        // Obsidian starts with her Iron & Obsidian necklace already equipped
+        jewelryBox = [];
+        const _ironIdx = METALS.findIndex(m => m.name === 'Iron Ore');
+        const _obsIdx  = ROCKS.findIndex(r => r.name === 'Obsidian');
+        jewelryBox.push({ type:'necklace', metalIdx:_ironIdx, rockIdx:_obsIdx,
+          effect:'obsidian_necklace', name:'Iron & Obsidian Necklace', icon:'⛓️🖤' });
+        equippedNecklace = 0;
         buildCity();  // fresh start only — sets up geometry + food
       }
       // Village path — 3D world, playing state
@@ -13933,6 +13949,72 @@
 
   // ── Mission HQ (west village path) ──────────────────────────────────────
 
+  // ── Procedural mission name / brief generation ─────────────────────────
+  // Title and brief are generated from map-type pools seeded by profIdx*3+mIdx.
+  // Objectives, roles, and rewards remain hardcoded (gameplay-critical).
+  const MISSION_TEXT_POOLS = {
+    wolf_camp: {
+      titles:["Infiltrate Wolf Camp","Sabotage the Howl Tower","Steal the War Plans","Hit the Raider Camp","Storm the Forward Base","Breach the Wolf Perimeter","Take Down the Command Post"],
+      briefs:["Wolf scouts have fortified a forward position north of the border. Move fast, cause disruption, and return before the watch changes.","The alpha's relay tower coordinates every wolf raid in the region. Disable it before dawn or the next assault finds us unprepared.","Battle plans for the next offensive are stored in a tent near the eastern gate. Get in, take the documents, and leave no trace.","A raider party is camped on our border. Scatter them before they can relay their position to the main body.","The forward base is their staging point for the next push. One operative disrupting their command post is worth a dozen soldiers in the field.","Intel shows wolves massing at a forward camp. A precision strike now prevents a full assault later."],
+    },
+    human_lab: {
+      titles:["Raid the Research Station","Extract the Lab Data","Steal the Bio Files","Infiltrate the Test Facility","Breach the Science Wing","The Lab Heist"],
+      briefs:["A human research station on the outskirts stores critical biological data. Reach the server room and take it all.","Lab security is tight but shift changes create windows. Enter during the gap, find the files, and leave before anyone notices.","Human scientists have been quietly working for wolf interests. The files implicate key figures — we need them now.","The facility runs around the clock. Your best window is between the day and night shifts. Don't waste it.","Wolves have funnelled resources into this research station. The data inside could change the war — if we can get it out."],
+    },
+    cave: {
+      titles:["Descend into the Dark","Cave Extraction Op","Clear the Wolf Cavern","Reach the Inner Chamber","Deep Cave Raid"],
+      briefs:["The cave system north of the ridge hides a wolf weapons cache. Plant the charge at the deepest point and get clear before it blows.","Our agent went dark somewhere in this cave network. Find what happened and bring back any evidence you can carry.","Wolf sentinels have sealed the tunnels. Push through and shut the inner chamber down for good.","This cave complex is being used as a wolf relay point. One operative moving fast can disrupt their entire underground network."],
+    },
+    nether: {
+      titles:["Cross the Lava Fields","Nether Extraction","The Burning Crossing","Rescue Op: Nether Zone","Into the Nether"],
+      briefs:["The nether zone is hostile to everything alive — including us. Cross the bridges, avoid the patrols, and reach the objective before the heat takes you.","Someone is being held in a wolf encampment deep in nether territory. The terrain is as lethal as the guards. Move carefully.","Our contact sent a distress signal from the nether interior. Reach the coordinates before their position is compromised.","Wolves exploit the nether's natural dangers as cover. Tonight we use those same dangers against them."],
+    },
+    forest: {
+      titles:["Forest Recon","Search the Canopy","Track Through the Trees","Night Forest Op"],
+      briefs:["The deep forest hides wolf movement routes. Find them, map them, and return with the intelligence before dawn.","Something is moving through the old forest. Find out what — and whether it's a threat to the village.","Cover under the canopy cuts both ways. Make sure it works in our favour tonight."],
+    },
+    village: {
+      titles:["Hold the Gate","Defend the Village","Repel the Scouts","Guard the Southern Wall"],
+      briefs:["Wolf scouts probe our southern gate every night looking for weaknesses. Tonight we spring the trap. Hold the line until backup arrives.","The outer gate has a flaw the wolves have already found. Be there before they come back with more.","Three waves of scouts are inbound. The villagers can't fight. That's what you're here for.","They've been testing the gate for three nights running. Tonight they'll find something different waiting."],
+    },
+    maze: {
+      titles:["Navigate the Vault","The Labyrinth Run","Escape the Complex","Maze Extraction","Through the Dungeon"],
+      briefs:["The vault below the estate is a maze of corridors and mechanical guardians. Navigate it, find the objective, and get out before lockdown.","This labyrinth was built to trap intruders permanently. You have one shot to prove the designers wrong.","Every wrong turn costs time. Every right one brings you closer. Move fast, trust the pattern, reach the exit.","The dungeon layout is complex but not random. Find the logic in the walls and it will lead you through."],
+    },
+    nether_ruins: {
+      titles:["Retake the Outpost","Clear the Ruins","Reclaim Outpost Dusk","Nether Ruins Op"],
+      briefs:["Our forward listening post was overrun two days ago. Clear it, hoist our flag, and hold it until reinforcement arrives.","The ancient nether ruins shelter a wolf operation of unknown size. Go in, assess the threat, and deal with it.","Outpost Dusk has changed hands twice this month. Make sure it doesn't change again.","The wolves are using the ruins as a forward base. A single operative moving fast can still flip this."],
+    },
+    human_house: {
+      titles:["The House Job","Domestic Infiltration","Slip into the Suburbs","Interior Op"],
+      briefs:["Captive dogs are being held in a converted human house. Pose as a stray, slip inside, and open the rear gate without raising an alarm.","The house looks unremarkable from outside. Inside is another matter. Get in, get the objective, get out.","Every floorboard is a risk and every window a potential spotter. Move like a ghost and don't stop.","The family cat is the real threat. It doesn't miss anything and it doesn't forget a face. Avoid it."],
+    },
+    human_mansion: {
+      titles:["The Mansion Heist","Grand Estate Infiltration","The Ballroom Op","Private Wing Break-In","High-Society Intrusion"],
+      briefs:["A sprawling estate guards documents we need. Three guards, a butler cat, and a locked private wing stand in your way.","Stolen W.O.B. files are deep in the private wing. The ballroom is a maze of chandeliers and watchful eyes.","The mansion's social calendar means more cover — and more eyes. Use the advantage before it uses you.","Old-money security is complacent by habit. Exploit that before their rounds synchronise."],
+    },
+    dog_neighborhood: {
+      titles:["Suburban Recon","Neighbourhood Watch Op","Blend In and Gather","The Street-Level Run","Community Infiltration"],
+      briefs:["Wolf sympathisers are recruiting in the suburbs. Blend into the neighbourhood, talk to locals, and reach the community hall for the dossier.","The neighbourhood watch suspects nothing — keep it that way while you collect what we need.","Every curtain hides a potential spotter. Move naturally. Act like you belong. Get to the community hall.","The dogs here just want peace and quiet. Respect that — but make sure you get the dossier before you leave."],
+    },
+    dog_pound: {
+      titles:["Pound Break-Out","Rescue the Captives","Open the Back Gate","The Facility Liberation"],
+      briefs:["W.O.B. agents are locked in a city pound facility. Trick the keeper, reach the control room, and open the back kennels.","Concrete walls and chain-link cages are designed to hold. Find the gap and prove them wrong.","Three keeper shifts, twelve kennel units, one locked gate. Somewhere in between is your window.","The captives need the rear gate opened from the control room. Get there. Do it. Get out."],
+    },
+    city: {
+      titles:["Urban Strike Op","City Extraction","Downtown Infiltration","Metropolitan Recon","The Street Run","City Grid Op","Urban Pursuit","High-Rise Infiltration"],
+      briefs:["A city never sleeps and neither do the wolves embedded inside it. Move through the streets, use the crowds as cover, and reach the objective.","Urban operations are loud by design. The trick is making your noise sound like everyone else's.","CCTV blind spots have been mapped. The route is clear. Move before the patrol sweeps back around.","City wolves blend in better than forest ones. Learn to tell the difference before one of them spots you first.","Back alleys, parked cars, dumpsters — the city is full of places to hide. You'll need every one of them.","The urban grid gives you options. Every street is an escape route if you're fast enough."],
+    },
+  };
+  function genMissionTitle(mapType, seed) {
+    const pool = (MISSION_TEXT_POOLS[mapType] || MISSION_TEXT_POOLS.wolf_camp).titles;
+    return pool[Math.floor(mfRng((seed * 997 + 31) >>> 0)() * pool.length)];
+  }
+  function genMissionBrief(mapType, seed) {
+    const pool = (MISSION_TEXT_POOLS[mapType] || MISSION_TEXT_POOLS.wolf_camp).briefs;
+    return pool[Math.floor(mfRng((seed * 1031 + 17) >>> 0)() * pool.length)];
+  }
+
   // Seven professors and their three missions each.
   // Each mission has: id, title, brief, objective, role (which pup), reward desc.
   const PROFESSORS = [
@@ -14311,12 +14393,27 @@
     if (activeMission) {
       const p = PROFESSORS[activeMission.profIdx];
       const m = p.missions[activeMission.mIdx];
-      hud.textContent = `🎯 ACTIVE: ${m.title} — ${m.objective}`;
+      const _amMapType = getMissionMapType();
+      const _amSeed = activeMission.profIdx*3+activeMission.mIdx;
+      const _amTitle = genMissionTitle(_amMapType, _amSeed);
+      hud.innerHTML = '<span>\uD83C\uDFAF ACTIVE: ' + _amTitle + ' \u2014 ' + m.objective + '</span><button id="mission-hud-cancel" onclick="cancelActiveMission()">\u2715 Cancel</button>';
       hud.classList.add('visible');
     } else {
       hud.classList.remove('visible');
     }
   }
+
+  window.cancelActiveMission = function() {
+    if (!activeMission) return;
+    const m = PROFESSORS[activeMission.profIdx].missions[activeMission.mIdx];
+    activeMission = null;
+    renderMissionHUD();
+    saveProgress();
+    const ov = document.getElementById('mhq-overlay');
+    if (ov && !ov.classList.contains('hidden')) openMHQ();
+    toastMsg = '\u274C Mission cancelled: ' + m.title + '.';
+    toastTimer = 220;
+  };
 
   window.openMHQ = function() {
     const overlay = document.getElementById('mhq-overlay');
@@ -14352,14 +14449,17 @@
       const key = `${pi}-${mi}`;
       const done = missionCompleted.includes(key);
       const isActive = activeMission && activeMission.profIdx === pi && activeMission.mIdx === mi;
+      const _mSeed = pi*3+mi;
+      const _mMapType = MISSION_MAP_TYPES[_mSeed] || 'wolf_camp';
+      const _mTitle = genMissionTitle(_mMapType, _mSeed);
+      const _mBrief = genMissionBrief(_mMapType, _mSeed);
       const btn = document.createElement('button');
       btn.className = 'mhq-mission-btn' + (done ? ' completed' : '') + (isActive ? ' active-mission' : '');
-      btn.innerHTML = `<strong>${m.roleEmoji} ${m.title}</strong><br><span style="font:11px Arial;color:${done?'#60a860':isActive?'#60a8d0':'#a89060'}">${done ? '✅ Mission complete – '+m.reward : isActive ? '⚡ In progress — '+m.objective : m.brief}</span>`;
+      btn.innerHTML = `<strong>${m.roleEmoji} ${_mTitle}</strong><br><span style="font:11px Arial;color:${done?'#60a860':isActive?'#60a8d0':'#a89060'}">${done ? '✅ Mission complete – '+m.reward : isActive ? '⚡ In progress — '+m.objective : _mBrief}</span>`;
       if (!done) {
         btn.onclick = () => {
           if (isActive) {
-            // Abandon
-            completeMission(pi, mi, false);
+            cancelActiveMission();
           } else {
             acceptMission(pi, mi);
           }
@@ -14371,8 +14471,8 @@
 
   function acceptMission(profIdx, mIdx) {
     if (activeMission) {
-      toastMsg   = '⚠️ Abandon your current mission first!';
-      toastTimer = 260;
+      toastMsg   = '\u26A0\uFE0F You have an active mission! Use the \u2715 Cancel button on the HUD to drop it first.';
+      toastTimer = 300;
       return;
     }
     activeMission = { profIdx, mIdx };
@@ -14381,7 +14481,7 @@
     renderMissionHUD();
     saveProgress();
     showProfMissions(profIdx);
-    toastMsg = `🎯 Mission accepted: ${m.title}! Head to the south village exit to deploy.`;
+    toastMsg = `🎯 Mission accepted: ${genMissionTitle(MISSION_MAP_TYPES[profIdx*3+mIdx]||'wolf_camp', profIdx*3+mIdx)}! Head to the south village exit to deploy.`;
     toastTimer = 380;
   }
 
@@ -14590,7 +14690,7 @@
     'human_lab','cave','nether',            // 1 Birch  — lab raid, cave prison, nether stream
     'wolf_camp','maze','cave',              // 2 Cedar  — border cache, maze escort, cave ammo dump
     'village','nether','nether_ruins',      // 3 Ash    — defend gate, capture lieutenant, retake outpost
-    'human_lab','dog_neighborhood','wolf_camp',  // 4 Flint  — lab data, neighborhood recon, alpha camp
+    'human_lab','dog_neighborhood','city',        // 4 Flint  — lab data, neighborhood recon, city strike
     'human_house','human_mansion','maze',        // 5 Slate  — house infiltration, mansion heist, vault maze
     'nether','dog_pound','wolf_camp',            // 6 Ember  — nether rescue, pound break-out, wolf extract
   ];
@@ -14628,8 +14728,8 @@
     }
 
     // ── Floor tiles ──────────────────────────────────────────────────────
-    const fc = { wolf_camp:0x2a3018, human_lab:0x3c3c3c, nether:0x180606, forest:0x182810, village:0x6a5848, human_mansion:0x3a3428, dog_neighborhood:0x263814, dog_pound:0x343c3c }[mapType]||0x282820;
-    const fa = { wolf_camp:0x201e10, human_lab:0x303030, nether:0x100404, forest:0x142010, village:0x5a4838, human_mansion:0x2e2820, dog_neighborhood:0x1e2e0e, dog_pound:0x2a3030 }[mapType]||0x1e1e18;
+    const fc = { wolf_camp:0x2a3018, human_lab:0x3c3c3c, nether:0x180606, forest:0x182810, village:0x6a5848, human_mansion:0x3a3428, dog_neighborhood:0x263814, dog_pound:0x343c3c, city:0x484850 }[mapType]||0x282820;
+    const fa = { wolf_camp:0x201e10, human_lab:0x303030, nether:0x100404, forest:0x142010, village:0x5a4838, human_mansion:0x2e2820, dog_neighborhood:0x1e2e0e, dog_pound:0x2a3030, city:0x3c3c44 }[mapType]||0x1e1e18;
     // Ground in 4-unit tiles for performance
     for (let fx = -FIELD_W; fx < FIELD_W; fx += 4) {
       for (let fz = -FIELD_D; fz < 10; fz += 4) {
@@ -14640,7 +14740,7 @@
     // Ground detail overlay — scattered variation patches
     {
       const pr = mfRng(mKey * 1337 + 11);
-      const patchCol = { wolf_camp:0x1e2410, human_lab:0x282828, nether:0x140202, forest:0x102008, village:0x504030, cave:0x161010, nether_ruins:0x180a0a, human_house:0x5a4030, maze:0x141018, human_mansion:0x302820, dog_neighborhood:0x182a0c, dog_pound:0x283030 }[mapType]||0x181810;
+      const patchCol = { wolf_camp:0x1e2410, human_lab:0x282828, nether:0x140202, forest:0x102008, village:0x504030, cave:0x161010, nether_ruins:0x180a0a, human_house:0x5a4030, maze:0x141018, human_mansion:0x302820, dog_neighborhood:0x182a0c, dog_pound:0x283030, city:0x404048 }[mapType]||0x181810;
       for (let pi=0;pi<80;pi++) {
         const px=(pr()-0.5)*(FIELD_W*2-8), pz=-8-pr()*FIELD_D*0.95;
         const pw=1.5+pr()*3.5, pd=1.0+pr()*2.5;
@@ -15579,6 +15679,124 @@
         missionFieldPatrols.push({x:px,z:pz,startX:px,startZ:pz,dx:rng()<0.5?1:0,dz:rng()<0.5?0:1,t:rng()*Math.PI*2,range:8+rng()*6,tSpeed:0.015,fur:0x4a3020,ears:'triangle',isHuman:false,spotted:false});
       }
 
+    } else if (mapType === 'city') {
+      // ── Big City: skyscraper blocks, grid streets, alleys, covers ─────
+      // Main street x=-5..5, west district x=-22..-6, east district x=6..22
+      // Cross-streets at z=-30, -62, -92. Three tower zones + objective at z=-108.
+
+      // Outer collision boundary
+      addWall(0,-120,22,0.5); addWall(-22,-57,0.5,63); addWall(22,-57,0.5,63);
+
+      const bwall=(cx,cz,hw,hh,hd,col)=>{pushBox(missionFieldQuads,cx,hh,cz,hw,hh,hd,col);addWall(cx,cz,hw+0.2,hd+0.2);};
+
+      // Main street overlay (slightly lighter than floor tiles already placed)
+      for (let sz=-120;sz<8;sz+=2)
+        missionFieldQuads.push({verts:[v3(-5,0.02,sz),v3(5,0.02,sz),v3(5,0.02,sz+2),v3(-5,0.02,sz+2)],color:0x545460,normal:v3(0,1,0),isGround:true});
+      // Centre dashes
+      for (let dz=-120;dz<8;dz+=4)
+        missionFieldQuads.push({verts:[v3(-0.18,0.03,dz),v3(0.18,0.03,dz),v3(0.18,0.03,dz+2),v3(-0.18,0.03,dz+2)],color:0xd0c840,normal:v3(0,1,0),isGround:true});
+      // Cross streets + zebra crossings
+      [-30,-62,-92].forEach(sz=>{
+        for (let cx2=-22;cx2<22;cx2+=2)
+          missionFieldQuads.push({verts:[v3(cx2,0.025,sz-3),v3(cx2+2,0.025,sz-3),v3(cx2+2,0.025,sz+3),v3(cx2,0.025,sz+3)],color:0x4e4e58,normal:v3(0,1,0),isGround:true});
+        for (let s=0;s<4;s++)
+          missionFieldQuads.push({verts:[v3(-5+s*2.5,0.03,sz-3),v3(-5+s*2.5+1.5,0.03,sz-3),v3(-5+s*2.5+1.5,0.03,sz+3),v3(-5+s*2.5,0.03,sz+3)],color:0xc8c8c0,normal:v3(0,1,0),isGround:true});
+      });
+
+      // Zone 1: Commercial towers (z=4 to -28)
+      bwall(-14,-11,6,5,16,0x606878); bwall(14,-11,6,5,16,0x5c7080);
+      // Windows on east/west tower faces
+      for (let wy=1;wy<9;wy+=2) for (let wz=-4;wz>=-22;wz-=3) {
+        pushBox(missionFieldQuads,-7.9,wy,wz,0.05,0.5,0.9,0x80c0e0);
+        pushBox(missionFieldQuads, 7.9,wy,wz,0.05,0.5,0.9,0x80c0e0);
+      }
+      // Storefronts (cover behind shop awnings)
+      [[-9.5,-8,-1.5],[-9.5,-20,-1.5],[9.5,-8,1.5],[9.5,-20,1.5]].forEach(([sx,sz2,sw])=>{
+        pushBox(missionFieldQuads,sx,1.0,sz2,0.15,1.0,1.5,0x808888); addWall(sx,sz2,0.35,1.7);
+        pushBox(missionFieldQuads,sx,2.25,sz2+sw*0.4,1.0,0.08,1.2,0xc08040);
+      });
+      // Street lights
+      [0,-14].forEach(lz2=>{
+        [-6.5,6.5].forEach(lx2=>{pushBox(missionFieldQuads,lx2,5.5,lz2,0.12,5.5,0.12,0x484840);pushBox(missionFieldQuads,lx2,11.1,lz2,0.4,0.15,0.4,0xfff8e0);});
+      });
+      // Parked cars at cross-street 1
+      [[-16,-31],[14,-31],[-17,-29],[15,-29]].forEach(([cx3,cz3])=>{
+        pushBox(missionFieldQuads,cx3,0.85,cz3,3,0.85,5.5,0x304870+Math.floor(rng()*6)*0x100008); addWall(cx3,cz3,3.2,5.7);
+        pushBox(missionFieldQuads,cx3,1.8,cz3-0.5,2.4,0.95,3,0x283848);
+      });
+      // Traffic light
+      pushBox(missionFieldQuads,5.8,5.5,-30,0.12,5.5,0.12,0x404040);
+      pushBox(missionFieldQuads,5.8,11.1,-30,0.45,0.45,0.45,0x282828);
+      pushBox(missionFieldQuads,5.8,11.5,-30,0.28,0.18,0.28,0xe04020);
+
+      // Zone 2: Business towers (z=-34 to -60)
+      bwall(-14,-47,6,6.5,20,0x585870); bwall(14,-47,6,6.5,20,0x506878);
+      for (let wy=1;wy<12;wy+=2) for (let wz=-36;wz>=-56;wz-=3) {
+        pushBox(missionFieldQuads,-7.9,wy,wz,0.05,0.55,0.9,0x70b8d8);
+        pushBox(missionFieldQuads, 7.9,wy,wz,0.05,0.55,0.9,0x70b8d8);
+      }
+      // Alley dumpsters (cover)
+      [[-7.5,-40],[-7.5,-52],[7.5,-40],[7.5,-52]].forEach(([dx,dz4])=>{
+        pushBox(missionFieldQuads,dx,0.9,dz4,1.2,0.9,2.2,0x303840); addWall(dx,dz4,1.4,2.4);
+      });
+      // Fire escape railings (decorative cover on building face)
+      for (let fes=0;fes<4;fes++) pushBox(missionFieldQuads,-7.9,fes*2.5+1.2,-56+fes*2.5,0.18,0.08,1.8,0x505058);
+      // Plaza at cross-street 2 — benches + fountain
+      [[-2.5,-62],[2.5,-62],[-2.5,-60],[2.5,-60]].forEach(([bx2,bz2])=>{pushBox(missionFieldQuads,bx2,0.5,bz2,1.6,0.12,0.5,0x907860);});
+      pushBox(missionFieldQuads,0,0.9,-61,1.4,0.9,1.4,0x708090); pushBox(missionFieldQuads,0,2.0,-61,0.7,0.4,0.7,0x8098b0);
+      // Parked cars at cross-street 2
+      [[-16,-63],[15,-63],[-17,-61],[15,-61]].forEach(([cx4,cz4])=>{
+        pushBox(missionFieldQuads,cx4,0.85,cz4,3,0.85,5,0x484060+Math.floor(rng()*4)*0x100010); addWall(cx4,cz4,3.2,5.2);
+        pushBox(missionFieldQuads,cx4,1.75,cz4-0.4,2.4,0.9,2.8,0x383050);
+      });
+      [-6.5,6.5].forEach(lx5=>{pushBox(missionFieldQuads,lx5,5.5,-47,0.12,5.5,0.12,0x484840);pushBox(missionFieldQuads,lx5,11.1,-47,0.4,0.15,0.4,0xfff8e0);});
+
+      // Zone 3: Institutional towers (z=-66 to -92)
+      bwall(-14,-79,7,7.5,22,0x505068); bwall(14,-79,7,7.5,22,0x4c6070);
+      for (let wy=1;wy<13;wy+=2) for (let wz=-68;wz>=-88;wz-=3) {
+        pushBox(missionFieldQuads,-6.9,wy,wz,0.05,0.6,0.9,0x68b0d0);
+        pushBox(missionFieldQuads, 6.9,wy,wz,0.05,0.6,0.9,0x68b0d0);
+      }
+      // Market stalls at cross-street 3
+      [[-16,-92],[-8,-92],[0,-92],[8,-92],[16,-92]].forEach(([mx,mzz])=>{
+        pushBox(missionFieldQuads,mx,1.2,mzz,2.4,1.2,1.4,0x907050); addWall(mx,mzz,2.6,1.6);
+        pushBox(missionFieldQuads,mx,2.55,mzz,3.0,0.1,2.0,0xd09060);
+      });
+      // Street lights zone 3
+      [-6.5,6.5].forEach(lx6=>{pushBox(missionFieldQuads,lx6,5.5,-79,0.12,5.5,0.12,0x484840);pushBox(missionFieldQuads,lx6,11.1,-79,0.4,0.15,0.4,0xfff8e0);});
+      // Parked cars at cross-street 3
+      [[-15,-91],[14,-91]].forEach(([cx5,cz5])=>{pushBox(missionFieldQuads,cx5,0.85,cz5,3,0.85,5,0x304858+Math.floor(rng()*5)*0x100008);addWall(cx5,cz5,3.2,5.2);});
+
+      // Zone 4: Objective building — government/target structure (z=-94 to -120)
+      bwall(0,-108,11,5.5,12,0x686070);   // main target building
+      bwall(-16,-106,4.5,4.0,8,0x585068); // west annex
+      bwall(16,-106,4.5,4.0,8,0x505870);  // east annex
+      // Skylights on objective building roof
+      [-4,0,4].forEach(sx5=>pushBox(missionFieldQuads,sx5,11.2,-108,2.2,0.1,2.8,0x4080a0));
+      // Loading dock crates (cover near objective)
+      [[-6,-100],[6,-100],[-6,-116],[6,-116]].forEach(([cx6,cz6])=>{
+        pushBox(missionFieldQuads,cx6,0.9,cz6,1.4,0.9,1.4,0x5a4820); addWall(cx6,cz6,1.6,1.6);
+      });
+      // Objective beacon
+      pushBox(missionFieldQuads,0,2.1,-108,0.5,0.3,0.4,0xffe060);
+      missionFieldItems.push({id:0,x:0,z:-108,type:'objective',label:m.objective,icon:'🏙️',collected:false});
+
+      // City informant NPC
+      missionFieldNpcs.push({x:-8,z:-15,label:'Informant 🐕',color:'#d0c8a0',fur:0xa09080,ears:'floppy',hint:"The target is the big building at the north end. The guard at the central crossing is the one you need to slip past."});
+
+      // Patrols — city operatives
+      missionFieldPatrols.push({x:0,z:-13,startX:0,startZ:-13,dx:1,dz:0,t:rng()*Math.PI*2,range:11,tSpeed:0.013,fur:0x6080a0,ears:'floppy',patrolType:'human',isHuman:true,spotted:false});
+      missionFieldPatrols.push({x:0,z:-47,startX:0,startZ:-47,dx:1,dz:0,t:rng()*Math.PI*2,range:15,tSpeed:0.012,fur:0x6080a0,ears:'floppy',patrolType:'human',isHuman:true,spotted:false});
+      missionFieldPatrols.push({x:0,z:-79,startX:0,startZ:-79,dx:1,dz:0,t:rng()*Math.PI*2,range:17,tSpeed:0.012,fur:0x6080a0,ears:'floppy',patrolType:'human',isHuman:true,spotted:false});
+      missionFieldPatrols.push({x:-16,z:-50,startX:-16,startZ:-50,dx:0,dz:1,t:rng()*Math.PI*2,range:14,tSpeed:0.016,fur:0x302020,ears:'triangle',isHuman:false,spotted:false});
+      if (profIdx>=1) missionFieldPatrols.push({x:16,z:-50,startX:16,startZ:-50,dx:0,dz:1,t:rng()*Math.PI*2,range:14,tSpeed:0.016,fur:0x281818,ears:'triangle',isHuman:false,spotted:false});
+      if (profIdx>=2) missionFieldPatrols.push({x:0,z:-102,startX:0,startZ:-102,dx:1,dz:0,t:rng()*Math.PI*2,range:10,tSpeed:0.017,fur:0x281818,ears:'triangle',isHuman:false,spotted:false});
+      if (profIdx>=3) missionFieldPatrols.push({x:-15,z:-79,startX:-15,startZ:-79,dx:0,dz:1,t:rng()*Math.PI*2,range:14,tSpeed:0.013,fur:0x6080a0,ears:'floppy',patrolType:'human',isHuman:true,spotted:false});
+      for (let pi3=0;pi3<profIdx-1;pi3++) {
+        const px3=(rng()-0.5)*36,pz3=-20-rng()*80;
+        missionFieldPatrols.push({x:px3,z:pz3,startX:px3,startZ:pz3,dx:rng()<0.5?1:0,dz:rng()<0.5?0:1,t:rng()*Math.PI*2,range:8+rng()*8,tSpeed:0.014,fur:0x302020,ears:'triangle',isHuman:false,spotted:false});
+      }
+
     } else if (mapType === 'maze') {
 
       // ── Dungeon Maze ───────────────────────────────────────────────────
@@ -16010,6 +16228,87 @@
         riddle:{ q:'She goes by two names, serves two masters, and trusts no one completely. What do we call someone like her?', hint:'A spy working both sides of a conflict simultaneously.', a:'double agent|mole|spy|undercover|infiltrator' } },
       { type:'objective',   label:'Escort the double agent to the extraction point', icon:'🐾', x:0, z:-108 },
     ],
+    // Maple-1 "Steal the Battle Plans" — wolf_camp
+    1: [
+      { type:'reach',       label:'Get close enough to observe the camp',           icon:'👣', x:0, z:-22 },
+      { type:'riddle_door', label:'Pass the document storage guard',                icon:'🚪',
+        guardX:0.5, guardZ:-53, guardFacing:0, guardFur:0x504848, guardEars:'triangle',
+        guardName:'Plan Keeper 🐺',
+        riddle:{ q:'Every general fears me more than an enemy charge. I reveal positions, strategies, and weakness — yet I fold neatly in one paw. What am I?', hint:'The documents every wolf commander guards most carefully.', a:'plans|battle plans|map|blueprint|orders|documents' } },
+      { type:'objective',   label:'Retrieve the battle plans from the camp tent',   icon:'📋', x:0, z:-108 },
+    ],
+    // Maple-2 "Sabotage the Signal Tower" — wolf_camp
+    2: [
+      { type:'reach',       label:'Approach the signal tower perimeter',            icon:'📡', x:0, z:-22 },
+      { type:'riddle_door', label:'Get past the tower operator',                    icon:'🚪',
+        guardX:0.5, guardZ:-53, guardFacing:0, guardFur:0x403838, guardEars:'triangle',
+        guardName:'Tower Operator 🐺',
+        riddle:{ q:'I stand tall so I can speak to those too far away to hear. I carry no voice of my own — I carry everyone else\'s. What am I?', hint:'The structure the wolves use to relay their attack signals across the region.', a:'tower|signal tower|relay|transmitter|antenna|mast' } },
+      { type:'objective',   label:'Destroy the relay crystal at the tower top',     icon:'💥', x:0, z:-108 },
+    ],
+    // Birch-1 "Rescue the Captured Medic" — cave
+    4: [
+      { type:'reach',       label:'Descend into the cave complex',                  icon:'🕳️', x:0, z:-25 },
+      { type:'riddle_door', label:'Bypass the cave sentinel',                       icon:'🚪',
+        guardX:0.5, guardZ:-53, guardFacing:0, guardFur:0x1a1018, guardEars:'triangle',
+        guardName:'Cave Sentinel 🦇',
+        riddle:{ q:'I am the boundary between the world above and its hidden depths. Enter without permission and you may never find your way back. What am I?', hint:'The passage connecting the cave entrance to the inner chamber where the medic is held.', a:'tunnel|passage|cave|entrance|doorway|shaft' } },
+      { type:'objective',   label:'Reach Dr. Fernwhistle\'s holding cell',          icon:'🏥', x:0, z:-108 },
+    ],
+    // Birch-2 "Poison the Wolf Water Supply" — nether
+    5: [
+      { type:'reach',       label:'Cross the first lava bridge safely',             icon:'🌋', x:-16, z:-35 },
+      { type:'riddle_door', label:'Slip past the nether patrol',                    icon:'🚪',
+        guardX:-0.5, guardZ:-53, guardFacing:0, guardFur:0x2a1040, guardEars:'triangle',
+        guardName:'Nether Patrol 👁️',
+        riddle:{ q:'I flow endlessly, nourish all life, and yet can be turned against those who drink me. The wolves think theirs is pure. Prove them wrong. What am I?', hint:'The substance the wolves draw from the underground springs — their most critical resource.', a:'water|stream|river|supply|liquid' } },
+      { type:'objective',   label:'Reach the nether stream and add the compound',   icon:'⚗️', x:0, z:-108 },
+    ],
+    // Cedar-0 "Secure the Food Cache" — wolf_camp
+    6: [
+      { type:'reach',       label:'Locate the wolf supply depot',                   icon:'📦', x:0, z:-22 },
+      { type:'riddle_door', label:'Bluff past the supply keeper',                   icon:'🚪',
+        guardX:0.5, guardZ:-53, guardFacing:0, guardFur:0x504030, guardEars:'floppy',
+        guardName:'Supply Keeper 🐺',
+        riddle:{ q:'Without me no army moves, no campaign succeeds, and no soldier stands for long. I am the foundation of every war. What am I?', hint:'What every raiding party steals first and hoards most jealously.', a:'food|supplies|rations|provisions|sustenance' } },
+      { type:'objective',   label:'Recover the three stolen food crates',           icon:'🍖', x:0, z:-108 },
+    ],
+    // Cedar-1 "Escort the Supply Convoy" — maze
+    7: [
+      { type:'reach',       label:'Find the first junction checkpoint',             icon:'🧱', x:0, z:-22 },
+      { type:'riddle_door', label:'Bypass the maze guardian',                       icon:'🚪',
+        guardX:0.5, guardZ:-53, guardFacing:0, guardFur:0x484030, guardEars:'triangle',
+        guardName:'Maze Guardian 🏛️',
+        riddle:{ q:'Take the right wall and hold it. Every dead end teaches you. Every junction is a choice. What is the one thing you need most to navigate a labyrinth?', hint:'What navigators rely on — and what you must keep when every corridor looks the same.', a:'direction|sense of direction|bearing|orientation|path|way' } },
+      { type:'objective',   label:'Lead the convoy through to the exit point',      icon:'🚛', x:0, z:-108 },
+    ],
+    // Ash-0 "Defend the Village Gate" — village
+    9: [
+      { type:'reach',       label:'Take up position at the southern gate',          icon:'🏘️', x:0, z:-22 },
+      { type:'riddle_door', label:'Intercept the wolf scout commander',             icon:'🚪',
+        guardX:0.5, guardZ:-53, guardFacing:0, guardFur:0x504848, guardEars:'triangle',
+        guardName:'Scout Commander 🐺',
+        riddle:{ q:'I am sent ahead of every assault to find the weak points before the army arrives. Catch me and you catch the whole strategy. What am I?', hint:'The role of the wolf unit probing the southern gate each night.', a:'scout|spy|vanguard|advance scout|reconnaissance|forward unit' } },
+      { type:'objective',   label:'Repel all wolf scout waves from the gate',       icon:'🛡️', x:0, z:-108 },
+    ],
+    // Ash-1 "Capture the Lieutenant" — nether
+    10: [
+      { type:'reach',       label:'Cross into nether territory',                    icon:'🌋', x:-16, z:-35 },
+      { type:'riddle_door', label:'Get past the lieutenant\'s bodyguard',           icon:'🚪',
+        guardX:-0.5, guardZ:-53, guardFacing:0, guardFur:0x281818, guardEars:'triangle',
+        guardName:'Wolf Bodyguard 🐺',
+        riddle:{ q:'I sit above the soldiers but below the general. I carry out orders and give them in equal measure. I am the wolf officer you were sent to find. What is my rank?', hint:'The title of the wolf officer commanding this nether operation.', a:'lieutenant|officer|commander|corporal|captain|rank' } },
+      { type:'objective',   label:'Reach and capture the wolf lieutenant',          icon:'⚔️', x:0, z:-108 },
+    ],
+    // Flint-2 "Urban Strike Op" — city
+    14: [
+      { type:'reach',       label:'Penetrate the city grid perimeter',              icon:'🏙️', x:0, z:-22 },
+      { type:'riddle_door', label:'Bluff past the district checkpoint guard',       icon:'🚪',
+        guardX:0.5, guardZ:-53, guardFacing:0, guardFur:0x6080a0, guardEars:'floppy',
+        guardName:'Checkpoint Guard 👮',
+        riddle:{ q:'I am carried by every operative who walks in the open. Without me you are a stranger. With me you belong. Cities run on me. What am I?', hint:'What every agent needs to move through a controlled district without being stopped.', a:'badge|pass|id|credentials|permit|clearance|identification' } },
+      { type:'objective',   label:'Reach the target building and extract the intel', icon:'🏙️', x:0, z:-108 },
+    ],
   };
 
   function setupMissionStage(idx) {
@@ -16354,11 +16653,13 @@
       wolf_camp:'#090e08',  human_lab:'#080c12',  nether:'#0a0002',
       forest:'#04090a',     village:'#0e0c06',    cave:'#040404',
       nether_ruins:'#0a0204', human_house:'#1a1208', maze:'#060408',
+      human_mansion:'#10100c', dog_neighborhood:'#0a1208', dog_pound:'#080c0c', city:'#06080e',
     }[mapType]||'#080808';
     const skyBot = {
       wolf_camp:'#162018',  human_lab:'#101820',  nether:'#220608',
       forest:'#0c1a10',     village:'#1e1608',    cave:'#060606',
       nether_ruins:'#1a0608', human_house:'#281c10', maze:'#0c0810',
+      human_mansion:'#201e18', dog_neighborhood:'#142010', dog_pound:'#101818', city:'#0e1018',
     }[mapType]||'#101010';
     const g = ctx.createLinearGradient(0,0,0,H*0.55);
     g.addColorStop(0,skyTop); g.addColorStop(1,skyBot);
@@ -16387,6 +16688,28 @@
       const mg=ctx.createLinearGradient(0,H*0.40,0,H*0.55);
       mg.addColorStop(0,'rgba(60,20,10,0)'); mg.addColorStop(1,'rgba(60,20,10,0.22)');
       ctx.fillStyle=mg; ctx.fillRect(0,H*0.40,W,H*0.15);
+    } else if (mapType === 'human_mansion') {
+      // Warm candlelit glow at horizon
+      const mag=ctx.createLinearGradient(0,H*0.40,0,H*0.55);
+      mag.addColorStop(0,'rgba(60,40,15,0)'); mag.addColorStop(1,'rgba(60,40,15,0.18)');
+      ctx.fillStyle=mag; ctx.fillRect(0,H*0.40,W,H*0.15);
+    } else if (mapType === 'dog_neighborhood') {
+      // Overcast suburban night — faint stars
+      const dnr=mfRng(77); for (let si=0;si<35;si++) { ctx.globalAlpha=(0.15+dnr()*0.35); ctx.fillStyle='#b8c8d0'; ctx.fillRect(dnr()*W, dnr()*(H*0.38), 1.5, 1.5); } ctx.globalAlpha=1;
+    } else if (mapType === 'dog_pound') {
+      // Harsh fluorescent strip glow at horizon
+      const dpg=ctx.createLinearGradient(0,H*0.40,0,H*0.55);
+      dpg.addColorStop(0,'rgba(20,40,40,0)'); dpg.addColorStop(1,'rgba(20,40,40,0.20)');
+      ctx.fillStyle=dpg; ctx.fillRect(0,H*0.40,W,H*0.15);
+    } else if (mapType === 'city') {
+      // Urban light pollution — warm amber glow at horizon + distant building silhouettes
+      const cg=ctx.createLinearGradient(0,H*0.36,0,H*0.55);
+      cg.addColorStop(0,'rgba(70,45,15,0)'); cg.addColorStop(1,'rgba(70,45,15,0.28)');
+      ctx.fillStyle=cg; ctx.fillRect(0,H*0.36,W,H*0.19);
+      // Distant building skyline silhouette
+      ctx.fillStyle='rgba(15,12,25,0.85)';
+      const bldH=[18,28,22,35,20,30,16,32,24,28,18,36,22,26,20,34];
+      let bx=0; bldH.forEach((bh,bi)=>{ const bw=W/bldH.length; ctx.fillRect(bx,H*0.54-bh,bw-1,bh+10); bx+=bw; });
     }
 
     // Patrols as quads
@@ -17350,6 +17673,12 @@
     const rDon = (donateCount.rock  && donateCount.rock[craftSelRock])   || 0;
     if (mDon < 1 || rDon < 1) {
       toastMsg = '❌ Donate both materials to the Science Center first!'; toastTimer = 220; return;
+    }
+    // Iron + Obsidian necklace is exclusive to Obsidian
+    const _ckIronIdx = METALS.findIndex(m => m.name === 'Iron Ore');
+    const _ckObsIdx  = ROCKS.findIndex(r => r.name === 'Obsidian');
+    if (craftSelMetal === _ckIronIdx && craftSelRock === _ckObsIdx && activeCharacter !== 'obsidian') {
+      toastMsg = '🖤 The Iron & Obsidian Necklace belongs only to Obsidian.'; toastTimer = 280; return;
     }
     const piece = {
       type:     craftJewelryMode,
