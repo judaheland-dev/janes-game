@@ -2953,6 +2953,7 @@
     { x:   0, z:  -8, hw: 2.0, hd: 2.0 },  // village well
     { x:  26, z:  30, hw: 4.5, hd: 3.0 },  // Village Bakery
     { x: -26, z:  26, hw: 5.0, hd: 3.5 },  // Herbalist Shop
+    { x: -12,  z: 21.5, hw: 4.8, hd: 6.7 },  // Garden (fenced beds — solid fence)
   ];
   function buildTunnelGeometry() {
     tunnelQuads.length = 0;
@@ -3972,7 +3973,7 @@
       { wx:_nj( 17,3,-18,22), wz:_nj( -5,3,-34,38), s:1.08, fur:0x70a060, yaw:_ny(), name:'Finch',   text:'I found something shiny over here!',          type:'kid',   ears:'triangle' },
       { wx:_nj( -7,3,-18,16), wz:_nj( 24,3,-34,38), s:1.10, fur:0xa060b0, yaw:_ny(), name:'Dew',     text:'Come and play with us!',                     type:'kid',   ears:'floppy'   },
       // New adults 11–13 — near garden, bakery, herbalist
-      { wx:_nj( -6.5,2,-8,-5), wz:_nj(21,2,18,25), s:1.52, fur:0x6a9448, yaw:_ny(), name:'Sage',    text:'The garden is growing beautifully!',          type:'adult', ears:'floppy'   },
+      { wx:_nj( -5.5,1.5,-7.5,-3.5), wz:_nj(21,2,18,25), s:1.52, fur:0x6a9448, yaw:_ny(), name:'Sage',    text:'The garden is growing beautifully!',          type:'adult', ears:'floppy'   },
       { wx:_nj( 22,2,20,25),   wz:_nj(27,2,24,31), s:1.48, fur:0xd8b070, yaw:_ny(), name:'Oakley',  text:'Fresh bread from the bakery this morning!',   type:'adult', ears:'triangle' },
       { wx:_nj(-23,2,-26,-20), wz:_nj(23,2,20,26), s:1.55, fur:0x5a7848, yaw:_ny(), name:'Briar',   text:'These herbs can heal all sorts of ailments!', type:'adult', ears:'floppy'   },
     ];
@@ -12928,185 +12929,271 @@
 
   // ── W.O.B. Academy (Feature 7) ──────────────────────────────────────────────
   const ACADEMY_F1_PROFS = [
-    { x:-4.5, z:-5.2, line:'Prof. Wobble: "Good morning class! Today we study the W.O.B. method!"' },
-    { x: 4.0, z:-5.2, line:'Prof. Fern: "Eyes open, class — nature observation starts now!"' },
+    { x:-12.0, z:-12.0, line:'Prof. Wobble: "Good morning class! Today we study the W.O.B. method!"' },
+    { x: 12.0, z:-12.0, line:'Prof. Fern: "Eyes open, class — nature observation starts now!"' },
+    { x: -5.0, z: -6.0, line:'Prof. Puddles: "The library never sleeps — neither should your curiosity!"' },
+    { x:  5.0, z:  8.0, line:'Prof. Bramble: "Every trophy here was earned one step at a time."' },
   ];
   const ACADEMY_F2_PROFS = [
-    { x:-7.0, z:-4, line:'Prof. Pebble: "History is a gift — let us open it together."' },
-    { x:-7.0, z: 0, line:'Prof. Quill: "Every great paw leaves a story. What will yours say?"' },
-    { x:-7.0, z: 4, line:'Prof. Root: "Ask questions — that is how we grow!"' },
-    { x: 7.0, z:-4, line:'Prof. Dusk: "The stars remember everything we forget."' },
-    { x: 7.0, z: 0, line:'Prof. Moss: "Mathematics is the language of the universe."' },
-    { x: 7.0, z: 4, line:'Prof. Cinder: "Precision matters in all things."' },
+    { x:-15.0, z:-10, line:'Prof. Pebble: "History is a gift — let us open it together."' },
+    { x:-15.0, z:  0, line:'Prof. Quill: "Every great paw leaves a story. What will yours say?"' },
+    { x:-15.0, z: 10, line:'Prof. Root: "Ask questions — that is how we grow!"' },
+    { x: 15.0, z:-10, line:'Prof. Dusk: "The stars remember everything we forget."' },
+    { x: 15.0, z:  0, line:'Prof. Moss: "Mathematics is the language of the universe."' },
+    { x: 15.0, z: 10, line:'Prof. Cinder: "Precision matters in all things."' },
+    { x:  0.0, z:-12, line:'Prof. Slate: "The research room has answers — but first, find the questions."' },
+    { x:  0.0, z:  8, line:'Prof. Vale: "Cartography teaches us that all paths lead somewhere."' },
   ];
 
   function buildAcademyFloor1() {
     academyQuads.length = 0;
-    const W = 9.0, D = 6.0, H = 3.0;
-    // Floor — cool grey stone tiles
-    for (let fx = -W; fx < W; fx += 1.5) {
-      for (let fz = -D; fz < D + 1.5; fz += 1.5) {
-        const even = ((Math.floor(fx/1.5) + Math.floor(fz/1.5)) & 1);
-        academyQuads.push({ verts:[v3(fx,0,fz),v3(fx+1.5,0,fz),v3(fx+1.5,0,fz+1.5),v3(fx,0,fz+1.5)],
+    const W = 18.0, D = 14.0, H = 4.5;
+    // ── Floor tiles — cool grey stone ───────────────────────────────────
+    for (let fx = -W; fx < W; fx += 2.0) {
+      for (let fz = -D; fz < D + 2.0; fz += 2.0) {
+        const even = ((Math.floor(fx/2) + Math.floor(fz/2)) & 1);
+        academyQuads.push({ verts:[v3(fx,0,fz),v3(fx+2,0,fz),v3(fx+2,0,fz+2),v3(fx,0,fz+2)],
           color: even ? 0x484858 : 0x3c3c4c, normal:v3(0,1,0), isGround:true });
       }
     }
-    // Ceiling
-    academyQuads.push({ verts:[v3(-W,H*2,-D),v3(W,H*2,-D),v3(W,H*2,D+1.5),v3(-W,H*2,D+1.5)],
-      color:0x1c1c28, normal:v3(0,-1,0), isGround:false });
-    // Outer walls
-    pushBox(academyQuads,  0,     H, -D-0.1, W,    H,    0.12, 0x545468); // north
-    pushBox(academyQuads, -W-0.1, H,  0,     0.12, H,    D,    0x4a4a5c); // west
-    pushBox(academyQuads,  W+0.1, H,  0,     0.12, H,    D,    0x4a4a5c); // east
-    // South wall — side panels (entrance gap x: -2.5 to 2.5)
-    pushBox(academyQuads, -5.75, H, D+0.1, 3.25, H, 0.12, 0x4a4a5c);
-    pushBox(academyQuads,  5.75, H, D+0.1, 3.25, H, 0.12, 0x4a4a5c);
-    pushBox(academyQuads,  0, H*2-H*0.25, D+0.1, 2.5, H*0.25, 0.12, 0x4a4a5c); // lintel
-    // Central dividing wall x=0, z: -6 to 2 (lobby is z: 2 to 6)
-    // centre z = (-6+2)/2 = -2, half-depth = (2-(-6))/2 = 4
-    pushBox(academyQuads, 0, H, -2.0, 0.12, H, 4.0, 0x3a3a4c);
-    // ── LEFT CLASSROOM (x < 0) ───────────────────────────────────────
-    pushBox(academyQuads, -4.5, H*1.04, -D-0.08, 3.2, H*0.52, 0.10, 0x1c3c2c); // chalkboard
-    pushBox(academyQuads, -4.5, H*0.52, -D-0.08, 3.4, 0.06, 0.08, 0x5c3c20);   // chalk ledge
-    pushBox(academyQuads, -5.6, H*1.14, -D-0.07, 0.50, 0.05, 0.04, 0xc8e0c8);  // chalk marks
-    pushBox(academyQuads, -4.0, H*0.96, -D-0.07, 0.65, 0.05, 0.04, 0xc8e0c8);
-    pushBox(academyQuads, -3.4, H*1.20, -D-0.07, 0.38, 0.05, 0.04, 0xc8e0c8);
-    // Desks (3 rows × 2 columns)
-    [[-6.2,-3.5],[-3.2,-3.5],[-6.2,-1.5],[-3.2,-1.5],[-6.2,0.5],[-3.2,0.5]].forEach(([dx,dz]) => {
-      pushBox(academyQuads, dx, 0.46, dz, 0.55, 0.06, 0.44, 0x7a5028);
-      pushBox(academyQuads, dx-0.46, 0.22, dz-0.36, 0.05, 0.22, 0.06, 0x5a3818);
-      pushBox(academyQuads, dx+0.46, 0.22, dz-0.36, 0.05, 0.22, 0.06, 0x5a3818);
-      pushBox(academyQuads, dx-0.46, 0.22, dz+0.36, 0.05, 0.22, 0.06, 0x5a3818);
-      pushBox(academyQuads, dx+0.46, 0.22, dz+0.36, 0.05, 0.22, 0.06, 0x5a3818);
-      pushBox(academyQuads, dx, 0.29, dz+0.62, 0.27, 0.06, 0.27, 0x9a6830); // seat
-      pushBox(academyQuads, dx, 0.68, dz+0.80, 0.25, 0.34, 0.05, 0x9a6830); // back
-    });
-    addNpcDog(academyQuads, -4.5, -5.2, 1.52, 0x4a3068, 0, 'triangle'); // Prof. Wobble
-    // ── RIGHT CLASSROOM (x > 0) ───────────────────────────────────────
-    pushBox(academyQuads,  4.5, H*1.04, -D-0.08, 3.2, H*0.52, 0.10, 0x1c3c2c);
-    pushBox(academyQuads,  4.5, H*0.52, -D-0.08, 3.4, 0.06, 0.08, 0x5c3c20);
-    pushBox(academyQuads,  3.7, H*1.14, -D-0.07, 0.50, 0.05, 0.04, 0xc8e0c8);
-    pushBox(academyQuads,  5.2, H*0.96, -D-0.07, 0.65, 0.05, 0.04, 0xc8e0c8);
-    pushBox(academyQuads,  5.9, H*1.20, -D-0.07, 0.38, 0.05, 0.04, 0xc8e0c8);
-    // Desks (kept clear of staircase at x ≥ 5.8)
-    [[3.0,-3.5],[4.8,-3.5],[3.0,-1.5],[4.8,-1.5],[3.0,0.5],[4.8,0.5]].forEach(([dx,dz]) => {
-      pushBox(academyQuads, dx, 0.46, dz, 0.55, 0.06, 0.44, 0x7a5028);
-      pushBox(academyQuads, dx-0.46, 0.22, dz-0.36, 0.05, 0.22, 0.06, 0x5a3818);
-      pushBox(academyQuads, dx+0.46, 0.22, dz-0.36, 0.05, 0.22, 0.06, 0x5a3818);
-      pushBox(academyQuads, dx-0.46, 0.22, dz+0.36, 0.05, 0.22, 0.06, 0x5a3818);
-      pushBox(academyQuads, dx+0.46, 0.22, dz+0.36, 0.05, 0.22, 0.06, 0x5a3818);
-      pushBox(academyQuads, dx, 0.29, dz+0.62, 0.27, 0.06, 0.27, 0x9a6830);
-      pushBox(academyQuads, dx, 0.68, dz+0.80, 0.25, 0.34, 0.05, 0x9a6830);
-    });
-    addNpcDog(academyQuads, 4.0, -5.2, 1.52, 0x3a5840, 0, 'floppy'); // Prof. Fern
-    // ── STAIRCASE — NE corner (x≈7.2, z: -6 to -3.5) ─────────────────────
-    for (let s = 0; s < 5; s++) {
-      pushBox(academyQuads, 7.2, 0.15*(s+1), -D + 0.5*s + 0.25, 1.4, 0.10, 0.25, 0x505060);
+    // Carpet runners down the main N-S corridor
+    for (let fz = -D; fz < D; fz += 1.5) {
+      academyQuads.push({ verts:[v3(-1.5,0.008,fz),v3(1.5,0.008,fz),v3(1.5,0.008,fz+1.5),v3(-1.5,0.008,fz+1.5)],
+        color: (Math.floor(fz/1.5)&1) ? 0x2a1060 : 0x1a0840, normal:v3(0,1,0), isGround:true });
     }
-    pushBox(academyQuads, 8.4, 0.60, -D+1.25, 0.06, 0.60, 1.25, 0x686878); // east rail
-    pushBox(academyQuads, 6.0, 0.60, -D+1.25, 0.06, 0.60, 1.25, 0x686878); // west rail
-    pushBox(academyQuads, 7.2, 1.22, -D,       1.4,  0.06, 0.06, 0x686878); // top bar
-    // ── LOBBY (z: 2 to 6) ──────────────────────────────────────────
-    pushBox(academyQuads,  0,    H*1.38, D+0.08, 2.2, H*0.42, 0.08, 0x1040a8); // banner above entrance
-    pushBox(academyQuads, -5.5, 0.38, 3.8, 1.8, 0.18, 0.42, 0x6a4a20); // left bench
-    pushBox(academyQuads, -5.5, 0.54, 3.8, 1.6, 0.06, 0.12, 0x5a3a18); // bench back
-    pushBox(academyQuads,  5.5, 0.38, 3.8, 1.8, 0.18, 0.42, 0x6a4a20); // right bench
-    pushBox(academyQuads,  5.5, 0.54, 3.8, 1.6, 0.06, 0.12, 0x5a3a18);
-    pushBox(academyQuads,  0,   H*0.88, 2.10, 1.4, H*0.38, 0.08, 0x8a6030); // notice board
-    pushBox(academyQuads,  0,   H*0.88, 2.12, 1.2, H*0.32, 0.06, 0xd8c88a); // paper
-    // ── LANTERNS ───────────────────────────────────────────────────
-    [[-5.0,-3.5],[5.0,-3.5],[-5.0,1.2],[5.0,1.2],[0,4.2]].forEach(([lx,lz]) => {
-      pushBox(academyQuads, lx, H*2-0.40, lz, 0.04, 0.40, 0.04, 0x3a2a10);
-      pushBox(academyQuads, lx, H*2-0.82, lz, 0.22, 0.28, 0.22, 0xffa030);
-      pushBox(academyQuads, lx, H*2-0.62, lz, 0.26, 0.06, 0.26, 0x604010);
+    // ── Ceiling ──────────────────────────────────────────────────────────
+    academyQuads.push({ verts:[v3(-W,H*2,-D),v3(W,H*2,-D),v3(W,H*2,D+2),v3(-W,H*2,D+2)],
+      color:0x1c1c28, normal:v3(0,-1,0), isGround:false });
+    // ── Outer walls ──────────────────────────────────────────────────────
+    pushBox(academyQuads,  0,     H, -D-0.1, W,    H,    0.15, 0x545468); // north
+    pushBox(academyQuads, -W-0.1, H,  0,     0.15, H,    D,    0x4a4a5c); // west
+    pushBox(academyQuads,  W+0.1, H,  0,     0.15, H,    D,    0x4a4a5c); // east
+    // South wall — side panels + entrance gap (-3 to 3)
+    pushBox(academyQuads, -10.5, H, D+0.1, 7.5, H, 0.15, 0x4a4a5c);
+    pushBox(academyQuads,  10.5, H, D+0.1, 7.5, H, 0.15, 0x4a4a5c);
+    pushBox(academyQuads,   0, H*2-H*0.20, D+0.1, 3.0, H*0.20, 0.15, 0x4a4a5c); // lintel
+    // ── Grand hall pillars — line the central corridor ───────────────────
+    const pillarColor = 0x606070;
+    for (const pz of [-10, -6, -2, 2, 6, 10]) {
+      for (const px of [-2.8, 2.8]) {
+        pushBox(academyQuads, px, H, pz, 0.28, H, 0.28, pillarColor);
+        pushBox(academyQuads, px, H*2-0.18, pz, 0.55, 0.18, 0.55, 0x5c5c6e); // capital
+        pushBox(academyQuads, px, 0.18,     pz, 0.55, 0.18, 0.55, 0x5c5c6e); // base
+      }
+    }
+    // ── WEST WING — two classrooms (z -14 to -2) ──────────────────────────
+    // Dividing wall between west wing and corridor: x = -4.5, z: -14 to 2
+    // (pillar gaps are structural; wall runs along x=-4.5)
+    pushBox(academyQuads, -4.5, H, -6.0, 0.12, H, 8.0, 0x3a3a4c);
+    pushBox(academyQuads, -4.5, H,  4.0, 0.12, H, 5.5, 0x3a3a4c); // south of doorway
+    // Classroom door openings at z=-2 and z=-6 (gaps in wall)
+    pushBox(academyQuads, -4.5, H*2-H*0.20, -2.0, 0.12, H*0.20, 1.2, 0x3a3a4c); // lintel
+    // ── West Classroom NW (Wobble) — x: -18 to -4.5, z: -14 to -2 ──────
+    pushBox(academyQuads, -11.2, H*0.60, -D-0.08, 5.5, H*0.45, 0.12, 0x1c3c2c); // chalkboard
+    pushBox(academyQuads, -11.2, H*0.22, -D-0.08, 5.8, 0.08, 0.10, 0x5c3c20);   // chalk ledge
+    // Chalk marks
+    for (const [cx,cy] of [[-14,0.62],[-11,0.58],[-8.5,0.68],[-13,0.72],[-9.5,0.52]]) {
+      pushBox(academyQuads, cx, cy*H, -D-0.07, 0.55, 0.05, 0.04, 0xc8e0c8);
+    }
+    // Desks 4×2 grid
+    [[-15,-11],[-12,-11],[-9,-11],[-7,-11],
+     [-15, -8],[-12, -8],[-9, -8],[-7, -8]].forEach(([dx,dz]) => {
+      pushBox(academyQuads, dx, 0.46, dz, 0.55, 0.06, 0.44, 0x7a5028);
+      for (const [ox,oz] of [[-0.46,-0.36],[0.46,-0.36],[-0.46,0.36],[0.46,0.36]])
+        pushBox(academyQuads, dx+ox, 0.22, dz+oz, 0.05, 0.22, 0.06, 0x5a3818);
+      pushBox(academyQuads, dx, 0.29, dz+0.65, 0.27, 0.06, 0.27, 0x9a6830);
+      pushBox(academyQuads, dx, 0.68, dz+0.85, 0.25, 0.34, 0.05, 0x9a6830);
     });
+    addNpcDog(academyQuads, -11.5, -12.0, 1.52, 0x4a3068, 0, 'triangle'); // Prof. Wobble
+    // ── West Classroom SW (reading room) x: -18 to -4.5, z: 2 to 14 ──────
+    // Dividing wall (partial — open on east side)
+    pushBox(academyQuads, -11.2, H*0.55, 3.5, 8.5, H*0.30, 0.10, 0x1c3a5a); // big map on north wall
+    // Reading tables — longer, lower
+    [[-15,6],[-15,10],[-9,6],[-9,10]].forEach(([dx,dz]) => {
+      pushBox(academyQuads, dx, 0.46, dz, 1.2, 0.06, 0.55, 0x5a4020);
+      for (const [ox,oz] of [[-1.0,-0.40],[1.0,-0.40],[-1.0,0.40],[1.0,0.40]])
+        pushBox(academyQuads, dx+ox, 0.22, dz+oz, 0.05, 0.22, 0.06, 0x4a3018);
+      pushBox(academyQuads, dx, 0.29, dz+0.70, 0.30, 0.06, 0.30, 0x9a6830);
+    });
+    // Bookshelves on west wall
+    for (let bz = -13; bz <= 12; bz += 3.8) {
+      pushBox(academyQuads, -W+0.20, 0.72, bz, 0.12, 0.06, 1.8, 0x5a3820);
+      pushBox(academyQuads, -W+0.20, 1.44, bz, 0.12, 0.06, 1.8, 0x5a3820);
+      pushBox(academyQuads, -W+0.20, 2.16, bz, 0.12, 0.06, 1.8, 0x5a3820);
+      const bc = [0xa02020,0x2060a0,0x308040,0xc08020,0x6020a0,0x804020,0x208080,0xa06020];
+      for (let b = 0; b < 7; b++) {
+        pushBox(academyQuads, -W+0.28, 0.86,  bz-0.75+b*0.24, 0.10, 0.16, 0.12, bc[b%bc.length]);
+        pushBox(academyQuads, -W+0.28, 1.58,  bz-0.75+b*0.24, 0.10, 0.16, 0.12, bc[(b+3)%bc.length]);
+        pushBox(academyQuads, -W+0.28, 2.30,  bz-0.75+b*0.24, 0.10, 0.16, 0.12, bc[(b+5)%bc.length]);
+      }
+    }
+    addNpcDog(academyQuads, -5.5, -6.0, 1.52, 0x3a6850, Math.PI/2, 'floppy'); // Prof. Puddles (library)
+    // ── EAST WING — two classrooms + trophy hall ────────────────────────
+    // Dividing wall east wing from corridor: x = 4.5
+    pushBox(academyQuads, 4.5, H, -6.0, 0.12, H, 8.0, 0x3a3a4c);
+    pushBox(academyQuads, 4.5, H,  4.0, 0.12, H, 5.5, 0x3a3a4c);
+    pushBox(academyQuads, 4.5, H*2-H*0.20, -2.0, 0.12, H*0.20, 1.2, 0x3a3a4c);
+    // ── East Classroom NE (Fern) — x: 4.5 to 18, z: -14 to -2 ─────────
+    pushBox(academyQuads, 11.2, H*0.60, -D-0.08, 5.5, H*0.45, 0.12, 0x1c3c2c);
+    pushBox(academyQuads, 11.2, H*0.22, -D-0.08, 5.8, 0.08, 0.10, 0x5c3c20);
+    for (const [cx,cy] of [[8,0.60],[11,0.55],[14,0.65],[9.5,0.72],[12.5,0.50]]) {
+      pushBox(academyQuads, cx, cy*H, -D-0.07, 0.55, 0.05, 0.04, 0xc8e0c8);
+    }
+    [[7,-11],[10,-11],[13,-11],[16,-11],
+     [7,  -8],[10, -8],[13, -8],[16, -8]].forEach(([dx,dz]) => {
+      pushBox(academyQuads, dx, 0.46, dz, 0.55, 0.06, 0.44, 0x7a5028);
+      for (const [ox,oz] of [[-0.46,-0.36],[0.46,-0.36],[-0.46,0.36],[0.46,0.36]])
+        pushBox(academyQuads, dx+ox, 0.22, dz+oz, 0.05, 0.22, 0.06, 0x5a3818);
+      pushBox(academyQuads, dx, 0.29, dz+0.65, 0.27, 0.06, 0.27, 0x9a6830);
+      pushBox(academyQuads, dx, 0.68, dz+0.85, 0.25, 0.34, 0.05, 0x9a6830);
+    });
+    addNpcDog(academyQuads, 11.5, -12.0, 1.52, 0x3a5840, 0, 'floppy'); // Prof. Fern
+    // ── East Trophy Hall — x: 4.5 to 18, z: 2 to 14 ───────────────────
+    // Trophy shelf along east wall
+    pushBox(academyQuads, W-0.20, 0.72,  0.0, 0.12, 0.06, 11.0, 0x7a4a20); // shelf
+    pushBox(academyQuads, W-0.20, 1.44,  0.0, 0.12, 0.06, 11.0, 0x7a4a20);
+    // Trophies — gold cups
+    for (let ti = 0; ti < 9; ti++) {
+      const tz = -4.0 + ti * 1.1;
+      pushBox(academyQuads, W-0.45, 0.88, tz, 0.12, 0.25, 0.12, 0xc8960a); // cup
+      pushBox(academyQuads, W-0.45, 0.78, tz, 0.20, 0.06, 0.20, 0xa87800); // base
+      pushBox(academyQuads, W-0.45, 1.15, tz, 0.20, 0.06, 0.20, 0xc8960a); // brim
+    }
+    pushBox(academyQuads, W-0.25, H*0.62, 8.0, 0.10, H*0.28, 2.8, 0x1040a8); // W.O.B. banner
+    // Trophy hall display plaques on inner wall
+    for (const pz of [3, 6, 9, 12]) {
+      pushBox(academyQuads, 5.0, 1.20, pz, 0.08, 0.55, 0.80, 0x382808); // plaque backing
+      pushBox(academyQuads, 5.0, 1.20, pz, 0.06, 0.42, 0.65, 0xd8c870); // plaque face
+    }
+    addNpcDog(academyQuads, 5.8, 8.0, 1.52, 0xc08840, Math.PI, 'triangle'); // Prof. Bramble
+    // ── LOBBY (z: 10 to 14) — grand entrance ────────────────────────────
+    pushBox(academyQuads, 0, H*1.40, D+0.12, 3.5, H*0.38, 0.10, 0x1040a8); // banner above entrance
+    // Benches left and right
+    for (const bx of [-12, -8, 8, 12]) {
+      pushBox(academyQuads, bx, 0.38, 12.5, 2.0, 0.18, 0.50, 0x6a4a20);
+      pushBox(academyQuads, bx, 0.54, 12.5, 1.8, 0.06, 0.14, 0x5a3a18);
+    }
+    // Notice board / bulletin
+    pushBox(academyQuads,  0, H*0.85, 10.5, 2.0, H*0.36, 0.10, 0x8a6030);
+    pushBox(academyQuads,  0, H*0.85, 10.5, 1.8, H*0.30, 0.08, 0xd8c88a);
+    // ── STAIRCASE — NE corner (x≈15, z: -12 to -9) ────────────────────
+    for (let s = 0; s < 7; s++) {
+      pushBox(academyQuads, 15.5, 0.20*(s+1), -D + 0.7*s + 0.35, 2.0, 0.12, 0.35, 0x505060);
+    }
+    pushBox(academyQuads, 17.0, 0.85, -D+2.45, 0.08, 0.85, 2.45, 0x686878); // east rail
+    pushBox(academyQuads, 14.0, 0.85, -D+2.45, 0.08, 0.85, 2.45, 0x686878); // west rail
+    pushBox(academyQuads, 15.5, 1.72, -D,      2.0,  0.08, 0.08, 0x686878); // top bar
+    // ── LANTERNS ────────────────────────────────────────────────────────
+    const lantPos = [
+      [-16,-12],[ 0,-12],[16,-12],
+      [-16,  0],[ 0,  0],[16,  0],
+      [-16, 12],[ 0, 12],[16, 12],
+      [-10, -6],[10,  -6],[-10, 6],[10, 6],
+    ];
+    for (const [lx,lz] of lantPos) {
+      pushBox(academyQuads, lx, H*2-0.50, lz, 0.06, 0.50, 0.06, 0x3a2a10);
+      pushBox(academyQuads, lx, H*2-1.00, lz, 0.28, 0.36, 0.28, 0xffa030);
+      pushBox(academyQuads, lx, H*2-0.72, lz, 0.34, 0.08, 0.34, 0x604010);
+    }
     // W.O.B. blue banners on side walls
-    pushBox(academyQuads, -W-0.06, H*1.10, -1.5, 0.06, H*0.52, 1.5, 0x1040a8);
-    pushBox(academyQuads,  W+0.06, H*1.10, -1.5, 0.06, H*0.52, 1.5, 0x1040a8);
+    pushBox(academyQuads, -W-0.08, H*1.10, -4.0, 0.08, H*0.55, 2.0, 0x1040a8);
+    pushBox(academyQuads,  W+0.08, H*1.10, -4.0, 0.08, H*0.55, 2.0, 0x1040a8);
+    pushBox(academyQuads, -W-0.08, H*1.10,  8.0, 0.08, H*0.55, 2.0, 0x2860c8);
+    pushBox(academyQuads,  W+0.08, H*1.10,  8.0, 0.08, H*0.55, 2.0, 0x2860c8);
   }
 
   function buildAcademyFloor2() {
     academyQuads.length = 0;
-    const W = 9.0, D = 6.0, H = 2.8;
-    // Floor — warmer purple-grey stone
-    for (let fx = -W; fx < W; fx += 1.5) {
-      for (let fz = -D; fz < D + 1.5; fz += 1.5) {
-        const even = ((Math.floor(fx/1.5) + Math.floor(fz/1.5)) & 1);
-        academyQuads.push({ verts:[v3(fx,0,fz),v3(fx+1.5,0,fz),v3(fx+1.5,0,fz+1.5),v3(fx,0,fz+1.5)],
+    const W = 18.0, D = 14.0, H = 4.2;
+    // ── Floor — warm purple-grey stone ──────────────────────────────────
+    for (let fx = -W; fx < W; fx += 2.0) {
+      for (let fz = -D; fz < D + 2.0; fz += 2.0) {
+        const even = ((Math.floor(fx/2) + Math.floor(fz/2)) & 1);
+        academyQuads.push({ verts:[v3(fx,0,fz),v3(fx+2,0,fz),v3(fx+2,0,fz+2),v3(fx,0,fz+2)],
           color: even ? 0x504858 : 0x443c4c, normal:v3(0,1,0), isGround:true });
       }
     }
-    academyQuads.push({ verts:[v3(-W,H*2,-D),v3(W,H*2,-D),v3(W,H*2,D+1.5),v3(-W,H*2,D+1.5)],
+    // Carpet runner in central corridor
+    for (let fz = -D; fz < D; fz += 1.5) {
+      academyQuads.push({ verts:[v3(-1.5,0.008,fz),v3(1.5,0.008,fz),v3(1.5,0.008,fz+1.5),v3(-1.5,0.008,fz+1.5)],
+        color: (Math.floor(fz/1.5)&1) ? 0x401880 : 0x2a1060, normal:v3(0,1,0), isGround:true });
+    }
+    // ── Ceiling ──────────────────────────────────────────────────────────
+    academyQuads.push({ verts:[v3(-W,H*2,-D),v3(W,H*2,-D),v3(W,H*2,D+2),v3(-W,H*2,D+2)],
       color:0x1c1824, normal:v3(0,-1,0), isGround:false });
-    // All 4 outer walls solid (no entrance on floor 2)
-    pushBox(academyQuads,  0,     H, -D-0.1, W,    H, 0.12, 0x504860);
-    pushBox(academyQuads, -W-0.1, H,  0,     0.12, H, D,    0x484460);
-    pushBox(academyQuads,  W+0.1, H,  0,     0.12, H, D,    0x484460);
-    pushBox(academyQuads,  0,     H,  D+0.1, W,    H, 0.12, 0x484460);
-    // Central corridor walls at x=±1.5 with doorway gaps at z=-4, 0, 4 (each 1.2 wide)
-    // Segments: z(-6,-4.6) center=-5.3 hz=0.7 | z(-3.4,-0.6) center=-2.0 hz=1.4
-    //           z(0.6, 3.4) center= 2.0 hz=1.4 | z(4.6, 7.0) center= 5.8 hz=1.2
-    for (const cx of [-1.5, 1.5]) {
-      pushBox(academyQuads, cx, H, -5.3, 0.10, H, 0.7,  0x3c3850);
-      pushBox(academyQuads, cx, H, -2.0, 0.10, H, 1.4,  0x3c3850);
-      pushBox(academyQuads, cx, H,  2.0, 0.10, H, 1.4,  0x3c3850);
-      pushBox(academyQuads, cx, H,  5.8, 0.10, H, 1.2,  0x3c3850);
-      for (const dz of [-4, 0, 4]) {
-        pushBox(academyQuads, cx, H*2-H*0.22, dz, 0.10, H*0.22, 0.60, 0x3c3850); // lintel
+    // ── All 4 outer walls ────────────────────────────────────────────────
+    pushBox(academyQuads,  0,     H, -D-0.1, W,    H, 0.15, 0x504860);
+    pushBox(academyQuads, -W-0.1, H,  0,     0.15, H, D,    0x484460);
+    pushBox(academyQuads,  W+0.1, H,  0,     0.15, H, D,    0x484460);
+    pushBox(academyQuads,  0,     H,  D+0.1, W,    H, 0.15, 0x484460);
+    // ── Central corridor walls at x=±3 with doorway gaps ─────────────────
+    for (const cx of [-3.0, 3.0]) {
+      // Segments between doorways (gaps at z=-9,-3,3,9 each 2.0 wide)
+      for (const [cz, hz] of [[-11.5,2.5],[-5.5,1.5],[0.5,1.5],[5.5,1.5],[11.5,2.5]]) {
+        pushBox(academyQuads, cx, H, cz, 0.12, H, hz, 0x3c3850);
+      }
+      for (const dz of [-9, -3, 3, 9]) {
+        pushBox(academyQuads, cx, H*2-H*0.20, dz, 0.12, H*0.20, 1.0, 0x3c3850); // lintel
       }
     }
-    // Office partition walls at z=±2 (west side x:-9 to -1.5, east x:1.5 to 9)
-    // centre_x=±5.25, hw=3.75
-    for (const [ox, oz] of [[-5.25,-2],[-5.25,2],[5.25,-2],[5.25,2]]) {
-      pushBox(academyQuads, ox, H, oz, 3.75, H, 0.08, 0x3c3850);
-    }
-    // ── SIX PROFESSOR OFFICES ───────────────────────────────────────
-    const offices = [
-      { px:-7.0, pz:-4, deskX:-4.5, fur:0x6a4830, ears:'triangle', yaw: Math.PI/2  }, // Prof. Pebble
-      { px:-7.0, pz: 0, deskX:-4.5, fur:0x705828, ears:'triangle', yaw: Math.PI/2  }, // Prof. Quill
-      { px:-7.0, pz: 4, deskX:-4.5, fur:0x583040, ears:'triangle', yaw: Math.PI/2  }, // Prof. Root
-      { px: 7.0, pz:-4, deskX: 4.5, fur:0x3a3a68, ears:'floppy',   yaw:-Math.PI/2  }, // Prof. Dusk
-      { px: 7.0, pz: 0, deskX: 4.5, fur:0x306840, ears:'floppy',   yaw:-Math.PI/2  }, // Prof. Moss
-      { px: 7.0, pz: 4, deskX: 4.5, fur:0x584028, ears:'floppy',   yaw:-Math.PI/2  }, // Prof. Cinder
+    // ── EIGHT PROFESSOR OFFICES ──────────────────────────────────────────
+    const offices2 = [
+      { px:-13.0, pz:-10, deskX:-10.5, fur:0x6a4830, ears:'triangle', yaw: Math.PI/2  }, // Prof. Pebble
+      { px:-13.0, pz:  0, deskX:-10.5, fur:0x705828, ears:'triangle', yaw: Math.PI/2  }, // Prof. Quill
+      { px:-13.0, pz: 10, deskX:-10.5, fur:0x583040, ears:'triangle', yaw: Math.PI/2  }, // Prof. Root
+      { px: 13.0, pz:-10, deskX: 10.5, fur:0x3a3a68, ears:'floppy',   yaw:-Math.PI/2  }, // Prof. Dusk
+      { px: 13.0, pz:  0, deskX: 10.5, fur:0x306840, ears:'floppy',   yaw:-Math.PI/2  }, // Prof. Moss
+      { px: 13.0, pz: 10, deskX: 10.5, fur:0x584028, ears:'floppy',   yaw:-Math.PI/2  }, // Prof. Cinder
     ];
-    offices.forEach(({ px, pz, deskX, fur, ears, yaw }) => {
+    offices2.forEach(({ px, pz, deskX, fur, ears, yaw }) => {
       const isWest = px < 0;
       const shelfX = isWest ? -W+0.22 : W-0.22;
-      const shelfOff = isWest ? 0.14 : -0.14;
-      // Desk
-      pushBox(academyQuads, deskX, 0.46, pz, 0.60, 0.06, 0.44, 0x6a4020);
-      pushBox(academyQuads, deskX-0.46, 0.22, pz-0.36, 0.05, 0.22, 0.06, 0x5a3820);
-      pushBox(academyQuads, deskX+0.46, 0.22, pz-0.36, 0.05, 0.22, 0.06, 0x5a3820);
-      pushBox(academyQuads, deskX-0.46, 0.22, pz+0.36, 0.05, 0.22, 0.06, 0x5a3820);
-      pushBox(academyQuads, deskX+0.46, 0.22, pz+0.36, 0.05, 0.22, 0.06, 0x5a3820);
-      // Chair (behind desk toward outer wall)
-      const chairX = isWest ? deskX - 0.7 : deskX + 0.7;
-      pushBox(academyQuads, chairX, 0.29, pz, 0.27, 0.06, 0.27, 0x9a6830);
-      pushBox(academyQuads, chairX+(isWest?-0.08:0.08), 0.68, pz, 0.25, 0.34, 0.05, 0x9a6830);
-      // Bookshelf on outer wall with books
-      const bookColors = [0xa02020,0x2060a0,0x308040,0xc08020,0x6020a0,0x804020];
-      for (let sh = 0; sh < 3; sh++) {
-        pushBox(academyQuads, shelfX, 0.72+sh*0.72, pz, 0.12, 0.06, 1.5, 0x5a3820);
-        for (let b = 0; b < 5; b++) {
-          const bc = bookColors[(b+sh*2+(isWest?0:3))%bookColors.length];
-          pushBox(academyQuads, shelfX+shelfOff, 0.82+sh*0.72, pz-0.52+b*0.24, 0.06, 0.14, 0.10, bc);
+      const shelfOff = isWest ? 0.15 : -0.15;
+      pushBox(academyQuads, deskX, 0.46, pz, 0.65, 0.06, 0.48, 0x6a4020);
+      for (const [ox,oz] of [[-0.50,-0.38],[0.50,-0.38],[-0.50,0.38],[0.50,0.38]])
+        pushBox(academyQuads, deskX+ox, 0.22, pz+oz, 0.05, 0.22, 0.06, 0x5a3820);
+      const chairX = isWest ? deskX - 0.8 : deskX + 0.8;
+      pushBox(academyQuads, chairX, 0.29, pz, 0.30, 0.06, 0.30, 0x9a6830);
+      pushBox(academyQuads, chairX+(isWest?-0.08:0.08), 0.68, pz, 0.28, 0.36, 0.05, 0x9a6830);
+      const bookColors = [0xa02020,0x2060a0,0x308040,0xc08020,0x6020a0,0x804020,0x208080,0xa06020];
+      for (let sh = 0; sh < 4; sh++) {
+        pushBox(academyQuads, shelfX, 0.72+sh*0.82, pz, 0.12, 0.06, 2.2, 0x5a3820);
+        for (let b = 0; b < 8; b++) {
+          const bc = bookColors[(b+sh*3+(isWest?0:4))%bookColors.length];
+          pushBox(academyQuads, shelfX+shelfOff, 0.86+sh*0.82, pz-1.0+b*0.28, 0.06, 0.16, 0.12, bc);
         }
       }
       addNpcDog(academyQuads, px, pz, 1.52, fur, yaw, ears);
     });
-    // Staircase (same NE corner)
-    for (let s = 0; s < 5; s++) {
-      pushBox(academyQuads, 7.2, 0.15*(s+1), -D + 0.5*s + 0.25, 1.4, 0.10, 0.25, 0x505060);
+    // ── RESEARCH ROOM (north, centre: x: -3 to 3, z: -14 to -9) ─────────
+    pushBox(academyQuads, 0, H*0.55, -D-0.08, 5.5, H*0.35, 0.10, 0x1c2a4a); // large map mural
+    // Lab bench with equipment
+    for (const [lx,lz] of [[-1.5,-12],[0,-11.5],[1.5,-12]]) {
+      pushBox(academyQuads, lx, 0.52, lz, 0.38, 0.08, 0.34, 0x5a4820);
+      pushBox(academyQuads, lx, 0.72, lz, 0.10, 0.24, 0.10, 0x80c0d0); // flask
     }
-    pushBox(academyQuads, 8.4, 0.60, -D+1.25, 0.06, 0.60, 1.25, 0x686878);
-    pushBox(academyQuads, 6.0, 0.60, -D+1.25, 0.06, 0.60, 1.25, 0x686878);
-    // Corridor lanterns
-    [[0,-4],[0,0],[0,4]].forEach(([lx,lz]) => {
-      pushBox(academyQuads, lx, H*2-0.40, lz, 0.04, 0.40, 0.04, 0x3a2a10);
-      pushBox(academyQuads, lx, H*2-0.82, lz, 0.22, 0.28, 0.22, 0xffa030);
-      pushBox(academyQuads, lx, H*2-0.62, lz, 0.26, 0.06, 0.26, 0x604010);
-    });
-    pushBox(academyQuads, 0, H*1.30, -D-0.06, 1.6, H*0.30, 0.08, 0x1040a8); // 2F plaque
+    addNpcDog(academyQuads,  0.0, -12.0, 1.52, 0x2a4868, 0, 'triangle'); // Prof. Slate
+    // ── MAP ROOM (south, centre: x: -3 to 3, z: 9 to 14) ───────────────
+    pushBox(academyQuads, 0, H*0.50, D+0.08, 8.0, H*0.40, 0.10, 0x2a3060); // world map mural
+    // Round map table
+    pushBox(academyQuads, 0, 0.48, 11.0, 2.0, 0.06, 1.5, 0x604020); // table top
+    for (const [ox,oz] of [[-1.5,-0.6],[1.5,-0.6],[-1.5,0.6],[1.5,0.6]])
+      pushBox(academyQuads, ox, 0.24, 11.0+oz, 0.06, 0.24, 0.06, 0x4a3010);
+    addNpcDog(academyQuads,  0.0,  8.0, 1.52, 0x4a7848, Math.PI, 'floppy'); // Prof. Vale
+    // ── STAIRCASE — NE corner ────────────────────────────────────────────
+    for (let s = 0; s < 7; s++) {
+      pushBox(academyQuads, 15.5, 0.20*(s+1), -D + 0.7*s + 0.35, 2.0, 0.12, 0.35, 0x505060);
+    }
+    pushBox(academyQuads, 17.0, 0.85, -D+2.45, 0.08, 0.85, 2.45, 0x686878);
+    pushBox(academyQuads, 14.0, 0.85, -D+2.45, 0.08, 0.85, 2.45, 0x686878);
+    // ── Corridor lanterns ────────────────────────────────────────────────
+    for (const [lx,lz] of [[-17,-10],[-17,0],[-17,10],[0,-10],[0,0],[0,10],[17,-10],[17,0],[17,10]]) {
+      pushBox(academyQuads, lx, H*2-0.50, lz, 0.06, 0.50, 0.06, 0x3a2a10);
+      pushBox(academyQuads, lx, H*2-1.00, lz, 0.28, 0.36, 0.28, 0xffa030);
+      pushBox(academyQuads, lx, H*2-0.72, lz, 0.34, 0.08, 0.34, 0x604010);
+    }
+    pushBox(academyQuads, 0, H*1.38, -D-0.08, 2.0, H*0.28, 0.10, 0x1040a8); // 2F plaque north
+    pushBox(academyQuads, 0, H*1.38,  D+0.08, 2.0, H*0.28, 0.10, 0x1040a8); // 2F plaque south
   }
 
   function enterAcademy() {
@@ -13115,10 +13202,10 @@
     showEnterScreen('Entering the W.O.B. Academy…', () => {
       inAcademy = true;
       buildAcademyFloor1();
-      dogState.x = 0; dogState.z = 5.5; dogState.y = DOG_FLOOR;
+      dogState.x = 0; dogState.z = 13.0; dogState.y = DOG_FLOOR;
       dogState.yaw = Math.PI; dogState.velY = 0; dogState.grounded = true;
       cam.yaw   = Math.PI;
-      cam.pos.x = 0; cam.pos.y = DOG_FLOOR + 3.5; cam.pos.z = 5.5 + 6.5;
+      cam.pos.x = 0; cam.pos.y = DOG_FLOOR + 3.5; cam.pos.z = 13.0 + 6.5;
       document.getElementById('academy-floor-text').textContent = '1F';
       document.getElementById('academy-floor').classList.remove('hidden');
       if (warkPouch) document.getElementById('bag-btn').classList.remove('hidden');
@@ -13155,12 +13242,12 @@
       ds.frontLegAngle = sw; ds.backLegAngle = -sw;
     }
     ds.wagT += 0.05;
-    ds.x = Math.max(-8.2, Math.min(8.2, ds.x));
-    ds.z = Math.max(-5.7, Math.min(5.7, ds.z));
+    ds.x = Math.max(-17.2, Math.min(17.2, ds.x));
+    ds.z = Math.max(-13.7, Math.min(13.7, ds.z));
     // Floor 1 only: walk south to exit
-    if (academyFloor === 1 && ds.z > 5.5 && Math.abs(ds.x) < 3.0) { exitAcademy(); return; }
+    if (academyFloor === 1 && ds.z > 13.5 && Math.abs(ds.x) < 3.5) { exitAcademy(); return; }
     // Staircase (NE corner) — press E to change floor
-    if (ds.x > 5.5 && ds.z < -4.0 && keysJustPressed.has('KeyE')) {
+    if (ds.x > 13.5 && ds.z < -11.5 && keysJustPressed.has('KeyE')) {
       keysJustPressed.delete('KeyE');
       if (academyFloor === 1) {
         academyFloor = 2; buildAcademyFloor2();
@@ -13169,7 +13256,7 @@
         academyFloor = 1; buildAcademyFloor1();
         document.getElementById('academy-floor-text').textContent = '1F';
       }
-      ds.x = 7.2; ds.z = -3.8;
+      ds.x = 15.5; ds.z = -12.5;
     }
     // Professor proximity dialogue
     if (toastTimer === 0) {
@@ -13220,11 +13307,11 @@
       if (!isGround) { ctx.strokeStyle='rgba(0,0,0,0.12)'; ctx.lineWidth=0.5; ctx.stroke(); }
     });
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = 'bold 13px Arial';
-    if (academyFloor === 1 && dogState.z > 4.2) {
+    if (academyFloor === 1 && dogState.z > 12.0) {
       ctx.fillStyle = 'rgba(168,184,240,0.78)';
       ctx.fillText('Walk south to exit the Academy', W/2, H - 55);
     }
-    if (dogState.x > 5.0 && dogState.z < -3.2) {
+    if (dogState.x > 12.5 && dogState.z < -10.5) {
       ctx.fillStyle = 'rgba(200,210,255,0.92)';
       ctx.fillText(academyFloor === 1 ? '🏛️  E  ·  Go upstairs' : '🏛️  E  ·  Go downstairs', W/2, H - 80);
     }
@@ -14302,8 +14389,8 @@
         pushBox(missionFieldQuads, fi, 3.2, pFZ-pFD, 0.3, 3.2, 0.3, 0x2a1808);
       }
 
-      // Inside camp: wolf dens (rough log huts)
-      [[-14,-36],[10,-36],[-6,-50],[14,-52],[-18,-54],[4,-42]].forEach(([tx,tz],i) => {
+      // Inside camp: wolf dens — off the centre path (x deliberately skewed away from 0)
+      [[-14,-36],[10,-36],[-8,-50],[15,-52],[-18,-54],[4,-42]].forEach(([tx,tz],i) => {
         const hw=3.5+rng(), hd=3+rng();
         pushBox(missionFieldQuads, tx, 1.8, tz, hw, 1.8, hd, 0x4a3420);          // walls
         pushBox(missionFieldQuads, tx, 3.8, tz, hw+0.5, 0.4, hd+0.5, 0x6a4428); // roof
@@ -14333,9 +14420,11 @@
         const bx = (rng()-0.5)*38, bz = pFZ-8 - rng()*26;
         pushBox(missionFieldQuads, bx, 0.15, bz, 0.5, 0.15, 0.3, 0xc8c0a8);
       }
-      // Wooden barrels and crates for cover
+      // Wooden barrels and crates for cover — kept off the main centre path (|x|>6)
       for (let ci2=0; ci2<14; ci2++) {
-        const cx2=(rng()-0.5)*38, cz2=pFZ-8-rng()*28;
+        let cx2=(rng()-0.5)*36, cz2=pFZ-8-rng()*28;
+        // Push away from the center walkway
+        if (Math.abs(cx2) < 6) cx2 += (cx2 >= 0 ? 1 : -1) * (6 - Math.abs(cx2) + 1.5);
         if (rng()<0.5) { // barrel
           pushBox(missionFieldQuads, cx2, 0.7, cz2, 0.55, 0.7, 0.55, 0x5a3818); addWall(cx2,cz2,0.8,0.8);
           pushBox(missionFieldQuads, cx2, 1.4, cz2, 0.55, 0.08, 0.55, 0x3a2010);
@@ -14579,17 +14668,19 @@
         }
       }
 
-      // Fallen logs (solid obstacles)
-      [[-16,-28,12,false],[10,-38,10,true],[-8,-55,14,false],[18,-70,10,true],[-20,-88,12,false],[8,-98,10,false]].forEach(([lx,lz,ll,horiz]) => {
+      // Fallen logs (solid obstacles) — placed well off path nodes (|x|>8 or path gap)
+      [[-18,-28,10,false],[12,-38,8,true],[-10,-55,10,false],[20,-70,8,true],[-22,-88,10,false],[10,-98,8,false]].forEach(([lx,lz,ll,horiz]) => {
         if (horiz) { pushBox(missionFieldQuads, lx, 0.5, lz, ll, 0.5, 0.8, 0x4a3018); addWall(lx,lz,ll+0.2,1.0); }
         else       { pushBox(missionFieldQuads, lx, 0.5, lz, 0.8, 0.5, ll, 0x4a3018); addWall(lx,lz,1.0,ll+0.2); }
       });
 
-      // Mossy boulders for cover
+      // Mossy boulders for cover — kept off the winding path corridor (|x|>6)
       for (let bi=0; bi<18; bi++) {
-        const bx=(rng()-0.5)*72, bz=-14-rng()*95;
+        let bx=(rng()-0.5)*68, bz=-14-rng()*95;
         const bs=0.5+rng()*1.2;
-        if (Math.abs(bx)<4 && bz>-18) continue;
+        // Find nearest path node and stay at least 5 units away
+        const nearest = pathNodes.reduce((best, [nx,nz]) => { const d=Math.hypot(bx-nx,bz-nz); return d<best.d?{d,nx,nz}:best; }, {d:9999});
+        if (nearest.d < 5) continue;
         pushBox(missionFieldQuads, bx, bs*0.5, bz, bs*1.4, bs*0.5, bs*1.1, 0x4a5038);
         addWall(bx, bz, bs*1.6, bs*1.3);
       }
@@ -14604,10 +14695,12 @@
         const ffx=(rng()-0.5)*72, ffz=-18-rng()*85, ffh=0.3+rng()*1.5;
         pushBox(missionFieldQuads, ffx, ffh, ffz, 0.08, 0.08, 0.08, rng()<0.5?0xc0ff80:0x80ffc0);
       }
-      // Ancient stone markers (weathered monoliths)
+      // Ancient stone markers (weathered monoliths) — stay off the winding path
       for (let smi=0;smi<6;smi++) {
         const smx=(rng()-0.5)*68, smz=-20-rng()*82;
         const smh=1.5+rng()*2.5, smw=0.4+rng()*0.5;
+        const nearPath = pathNodes.some(([nx,nz]) => Math.hypot(smx-nx,smz-nz) < 5);
+        if (nearPath) continue;
         pushBox(missionFieldQuads, smx, smh, smz, smw, smh, smw*0.5, 0x484840);
         addWall(smx, smz, smw+0.3, smw*0.5+0.3);
       }
@@ -14676,14 +14769,14 @@
         addWall(hx, hz, hw+0.2, hd+0.2);
       });
 
-      // Market stalls (open canopies — only posts are solid)
-      [[-12,-26],[8,-26],[-12,-55],[8,-55],[-12,-84],[8,-84]].forEach(([sx,sz]) => {
+      // Market stalls (open canopies — moved further off centre so x=0 path stays clear)
+      [[-16,-26],[14,-26],[-16,-55],[14,-55],[-16,-84],[14,-84]].forEach(([sx,sz]) => {
         pushBox(missionFieldQuads, sx, 2.5, sz, 4, 0.15, 3, 0xd09840); // canopy
         [[-1.5,-1],[1.5,-1],[-1.5,1],[1.5,1]].forEach(([dx,dz]) => {
           pushBox(missionFieldQuads, sx+dx*2, 1.3, sz+dz*1.4, 0.2, 1.3, 0.2, 0x6a4820); addWall(sx+dx*2,sz+dz*1.4,0.4,0.4);
         });
         pushBox(missionFieldQuads, sx, 0.5, sz, 3.5, 0.5, 1.5, 0x9a7050); // table
-        addWall(sx, sz, 3.7, 1.7);
+        // No full-stall wall — individual post walls only
       });
 
       // Town well at centre-ish — larger, more detailed
@@ -14694,15 +14787,15 @@
       pushBox(missionFieldQuads,  1.5, 3.0, -64, 0.2, 3.0, 0.2, 0x5a4020);
       pushBox(missionFieldQuads,  0,   6.2, -64, 2.0, 0.25, 0.8, 0x4a3018);
       addWall(0, -64, 2.4, 2.4);
-      // Lamp posts along main street
-      [[-18,-22],[-18,-48],[-18,-74],[18,-22],[18,-48],[18,-74]].forEach(([lpx,lpz]) => {
-        pushBox(missionFieldQuads, lpx, 4.5, lpz, 0.18, 4.5, 0.18, 0x5a4820); addWall(lpx,lpz,0.4,0.4);
+      // Lamp posts along side streets — visual only (thin posts don't need wall collision)
+      [[-20,-22],[-20,-48],[-20,-74],[20,-22],[20,-48],[20,-74]].forEach(([lpx,lpz]) => {
+        pushBox(missionFieldQuads, lpx, 4.5, lpz, 0.18, 4.5, 0.18, 0x5a4820);
         pushBox(missionFieldQuads, lpx, 9.2, lpz, 0.8, 0.3, 0.8, 0x4a3818);
         pushBox(missionFieldQuads, lpx, 9.6, lpz, 0.5, 0.3, 0.5, 0xf0d850); // lamp
       });
-      // Decorative barrels / carts near houses
+      // Decorative barrels / carts near houses — visual only, no wall collision
       houses.forEach(([hx2,hz2,hw2,hd2]) => {
-        pushBox(missionFieldQuads, hx2+hw2+1.5, 0.6, hz2, 0.5, 0.6, 0.5, 0x6a4820); addWall(hx2+hw2+1.5,hz2,0.7,0.7);
+        pushBox(missionFieldQuads, hx2+hw2+1.5, 0.6, hz2, 0.5, 0.6, 0.5, 0x6a4820);
         pushBox(missionFieldQuads, hx2+hw2+1.5, 1.25, hz2, 0.5, 0.08, 0.5, 0x3a2010);
       });
       // Objective: chieftain's hall — large building at the back
@@ -14765,10 +14858,10 @@
         addWall(sx, sz, sw+0.4, sw+0.4);
       });
 
-      // Scattered cave boulders
+      // Scattered cave boulders — keep a 10-unit clear corridor at x=0
       for (let ri=0; ri<16; ri++) {
-        const rx=(rng()-0.5)*70, rz=-12-rng()*95;
-        if (Math.abs(rx)<8 && rz>-20) continue;
+        let rx=(rng()-0.5)*70, rz=-12-rng()*95;
+        if (Math.abs(rx)<10) continue; // always clear the main passage
         const rs=0.6+rng()*1.4;
         pushBox(missionFieldQuads, rx, rs*0.55, rz, rs*1.3, rs*0.55, rs*1.1, ri%3?0x2a2018:0x201810);
         addWall(rx, rz, rs*1.5, rs*1.3);
@@ -14830,9 +14923,14 @@
         // Crumbled top sections (rubble piles)
         pushBox(missionFieldQuads, wx+(rng()-0.5)*1.5, 0.5, wz+(rng()-0.5)*wl, 1.8, 0.5, 1.4, 0x3a2020);
       });
-      // E-W partial walls
+      // E-W partial walls — split so there's always a gap at x=0 (6-unit passage)
       [[-4,-30,14],[6,-52,18],[-8,-68,16],[4,-88,14],[0,-102,10]].forEach(([wx,wz,wl],i) => {
-        pushBox(missionFieldQuads, wx, 3.5, wz, wl, 3.5, 0.9, 0x3a2428); addWall(wx, wz, wl, 1.1);
+        // Left half: up to x-6 from centre
+        const lhw = wl - 6, lcx = wx - 6;
+        if (lhw > 0) { pushBox(missionFieldQuads, lcx, 3.5, wz, lhw, 3.5, 0.9, 0x3a2428); addWall(lcx, wz, lhw, 1.1); }
+        // Right half: from x+6 from centre
+        const rhw = wl - 6, rcx = wx + 6;
+        if (rhw > 0) { pushBox(missionFieldQuads, rcx, 3.5, wz, rhw, 3.5, 0.9, 0x3a2428); addWall(rcx, wz, rhw, 1.1); }
       });
 
       // Ancient pillars (standing)
@@ -16470,10 +16568,12 @@
     const grid = document.getElementById('jewelry-grid');
     const bar  = document.getElementById('jewelry-equipped-bar');
     grid.innerHTML = '';
+    const box = getCurrentJewelryBox();
+    const eqIdx = getCurrentEquippedNecklace();
     // Equipped bar
-    const ne = equippedNecklace >= 0 ? jewelryBox[equippedNecklace]?.name ?? '—' : '—';
+    const ne = eqIdx >= 0 ? box[eqIdx]?.name ?? '—' : '—';
     bar.textContent = `📿 ${ne}`;
-    const pieces = jewelryBox.map((j,i) => ({...j,i})).filter(j => j.type === jewelryBoxTab);
+    const pieces = box.map((j,i) => ({...j,i})).filter(j => j.type === jewelryBoxTab);
     if (pieces.length === 0) {
       grid.innerHTML = `<div style="color:#9070b8;font:13px Arial;text-align:center;margin-top:20px">No ${jewelryBoxTab}s crafted yet.</div>`;
       return;
@@ -16482,7 +16582,7 @@
       const eff    = j.effect ?? getJewelryEffect(j.metalIdx, j.rockIdx);
       const str    = j.strength ?? jewelryEffectStrength(j.metalIdx, j.rockIdx);
       const pct    = Math.round(str * 100);
-      const isEq   = equippedNecklace === j.i;
+      const isEq   = eqIdx === j.i;
       const div    = document.createElement('div');
       div.className = 'jw-entry' + (isEq ? ' equipped' : '');
       const mDef   = j.metalIdx >= 0 ? METALS[j.metalIdx] : null;
@@ -16504,47 +16604,49 @@
     });
   }
   window.equipJewelry = function(idx) {
-    if (idx < 0 || idx >= jewelryBox.length) return;
-    const j = jewelryBox[idx];
-    equippedNecklace = idx;
-    saveProgress(); renderJewelryGrid();
-    // New Moon special reaction to moonstone + silver jewelry
-    if (activeCharacter === 'newmoon') {
-      const mDef = METALS[j.metalIdx];
-      const rDef = ROCKS[j.rockIdx];
-      const hasMoonstone = rDef && (rDef.name === 'Moonstone' || rDef.name === 'Aurora Moonstone');
-      const hasSilver    = mDef && mDef.name === 'Silver Ore';
-      if (hasMoonstone && hasSilver) {
-        toastMsg   = '✨ "That\'s weird, I feel... enhanced."';
-        toastTimer = 420;
+      const box = getCurrentJewelryBox();
+      if (idx < 0 || idx >= box.length) return;
+      const j = box[idx];
+      setCurrentEquippedNecklace(idx);
+      saveProgress(); renderJewelryGrid();
+      // New Moon special reaction to moonstone + silver jewelry
+      if (activeCharacter === 'newmoon') {
+        const mDef = METALS[j.metalIdx];
+        const rDef = ROCKS[j.rockIdx];
+        const hasMoonstone = rDef && (rDef.name === 'Moonstone' || rDef.name === 'Aurora Moonstone');
+        const hasSilver    = mDef && mDef.name === 'Silver Ore';
+        if (hasMoonstone && hasSilver) {
+          toastMsg   = '✨ "That\'s weird, I feel... enhanced."';
+          toastTimer = 420;
+        }
       }
-    }
-    // Wark special reaction to Quartz + Platinum Ore necklace
-    if (activeCharacter === 'wark' && j.type === 'necklace') {
-      const mDef = j.metalIdx >= 0 ? METALS[j.metalIdx] : null;
-      const rDef = j.rockIdx  >= 0 ? ROCKS[j.rockIdx]   : null;
-      const isPlatinum = mDef && mDef.name === 'Platinum Ore';
-      const isQuartz   = rDef && (rDef.name === 'Quartz' || rDef.name === 'Rose Quartz');
-      if (isPlatinum && isQuartz) {
-        setTimeout(() => {
-          toastMsg   = '💙 "That\'s weird… I feel enhanced."';
-          toastTimer = 480;
-        }, 200);
+      // Wark special reaction to Quartz + Platinum Ore necklace
+      if (activeCharacter === 'wark' && j.type === 'necklace') {
+        const mDef = j.metalIdx >= 0 ? METALS[j.metalIdx] : null;
+        const rDef = j.rockIdx  >= 0 ? ROCKS[j.rockIdx]   : null;
+        const isPlatinum = mDef && mDef.name === 'Platinum Ore';
+        const isQuartz   = rDef && (rDef.name === 'Quartz' || rDef.name === 'Rose Quartz');
+        if (isPlatinum && isQuartz) {
+          setTimeout(() => {
+            toastMsg   = '💙 "That\'s weird… I feel enhanced."';
+            toastTimer = 480;
+          }, 200);
+        }
       }
-    }
-  };
+    };
   window.unequipJewelry = function(idx) {
-    if (equippedNecklace === idx) equippedNecklace = -1;
-    saveProgress(); renderJewelryGrid();
-  };
+      if (getCurrentEquippedNecklace() === idx) setCurrentEquippedNecklace(-1);
+      saveProgress(); renderJewelryGrid();
+    };
   window.trashJewelry = function(idx) {
-    if (!confirm('Trash this forever?')) return;
-    if (equippedNecklace === idx) equippedNecklace = -1;
-    // Adjust equipped index if it's above the removed item
-    if (equippedNecklace > idx) equippedNecklace--;
-    jewelryBox.splice(idx, 1);
-    saveProgress(); renderJewelryGrid();
-  };
+      const box = getCurrentJewelryBox();
+      if (!confirm('Trash this forever?')) return;
+      if (getCurrentEquippedNecklace() === idx) setCurrentEquippedNecklace(-1);
+      // Adjust equipped index if it's above the removed item
+      if (getCurrentEquippedNecklace() > idx) setCurrentEquippedNecklace(getCurrentEquippedNecklace() - 1);
+      box.splice(idx, 1);
+      saveProgress(); renderJewelryGrid();
+    };
 
   // ── Craft Jewelry UI ─────────────────────────────────────────────────────
   function openCraftJewelry(mode) {
