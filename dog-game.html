@@ -1076,7 +1076,7 @@
     #ov-dc-subtitle { color: #6090b0; font: 13px Arial; margin-bottom: 18px; }
     #ov-dc-body { display: flex; gap: 22px; width: 100%; max-width: 820px; flex-wrap: wrap; justify-content: center; }
     #ov-dc-preview-col { display: flex; flex-direction: column; align-items: center; gap: 10px; flex-shrink: 0; }
-    #ov-dc-canvas { border-radius: 14px; background: rgba(8,22,40,0.90); border: 1.5px solid #2060a0; display: block; }
+    #ov-dc-canvas { border-radius: 14px; background: rgba(8,22,40,0.90); border: 1.5px solid #2060a0; display: block; width: 260px; height: 260px; }
     #ov-dc-name-wrap { display: flex; flex-direction: column; gap: 5px; align-items: center; width: 200px; }
     #ov-dc-name-label { color: #80a8c8; font: 12px Arial; align-self: flex-start; }
     #ov-dc-name { width: 200px; padding: 8px 12px; border-radius: 9px; border: 1.5px solid #2c70a0; background: rgba(6,18,36,0.92); color: #d0eeff; font: 14px Arial; outline: none; text-align: center; }
@@ -9160,6 +9160,10 @@
   window.pickCanine = function(who) {
     activeCharacter = who || 'newmoon';
     const cfg       = CHAR_CONFIG[activeCharacter] || {};
+    // Reset per-dog state before loading so a character with no save starts fresh
+    // (loadProgress will override these if a save exists for this character)
+    jewelryBox       = [];
+    equippedNecklace = -1;
     const restored  = loadProgress();
     if (!restored) {
       dogState.x = cfg.startX ?? 0; dogState.z = cfg.startZ ?? 0; dogState.yaw = 0;
@@ -14083,27 +14087,77 @@
       ].sort((a, b) => a.difficulty - b.difficulty)
     },
     {
+      name: 'Prof. Flint 🔩', icon: '🔩', color: 0xd0c020,
+      title: 'Urban Intelligence',
+      brief: "Every city block hides a secret. We need someone who can blend in and find them.",
+      missions: [
+        { title: 'Steal the Wolf DNA Database',
+          brief: "Wolves moved their DNA research to a city-outskirts lab. Pose as maintenance, reach the server room, and grab the files before anyone notices.",
+          role: 'New Moon', roleEmoji: '🌙',
+          objective: 'Extract the wolf DNA database from the lab server room',
+          reward: '🪙 55 WOB + Data Badge',
+          difficulty: 1 },
+        { title: 'Investigate the Dog Neighborhood',
+          brief: "Wolves are recruiting sympathisers in the suburbs. Blend into the streets, gather intel from locals, and reach the community hall for the dossier.",
+          role: 'Wark', roleEmoji: '🐾',
+          objective: 'Reach the community hall and retrieve the dossier',
+          reward: '🪙 60 WOB + Field Pin',
+          difficulty: 2 },
+        { title: 'Bring Down the Alpha',
+          brief: "The wolf alpha is directing raids from a forward camp north of the border. Get deep inside, disrupt their command post, and force a retreat.",
+          role: 'Obsidian', roleEmoji: '🌑',
+          objective: 'Penetrate the alpha wolf camp and destroy the command post',
+          reward: '🪙 70 WOB + Alpha Crest',
+          difficulty: 3 },
+      ].sort((a, b) => a.difficulty - b.difficulty)
+    },
+    {
+      name: 'Prof. Slate 🪨', icon: '🪨', color: 0x8888a0,
+      title: 'Deep Cover Operations',
+      brief: "We don't break in. We walk through the front door — as someone else.",
+      missions: [
+        { title: 'Infiltrate the Dog House',
+          brief: "Captive dogs are being held in a human-run facility on the nether side. Pose as a stray, slip inside, and open the rear escape gate.",
+          role: 'Bark', roleEmoji: '🐶',
+          objective: 'Enter the dog house undetected and unlock the rear escape gate',
+          reward: '🪙 50 WOB + Undercover Badge',
+          difficulty: 1 },
+        { title: 'Mansion Heist',
+          brief: "Stolen W.O.B. documents are locked inside a wolf-sympathiser's grand estate. Three guards, a butler cat, and a fortified private wing stand in your way.",
+          role: 'Cheeseball', roleEmoji: '🧀',
+          objective: 'Retrieve the stolen documents from the private wing',
+          reward: "🪙 65 WOB + Thief's Star",
+          difficulty: 2 },
+        { title: 'Escape the Vault',
+          brief: "Our agent grabbed the intel but triggered the alarm. Now trapped in a labyrinthine vault below the estate. Navigate the maze and get them out.",
+          role: 'Ruff', roleEmoji: '🐕',
+          objective: 'Navigate the vault maze and reach the extraction point',
+          reward: '🪙 75 WOB + Master Key',
+          difficulty: 3 },
+      ].sort((a, b) => a.difficulty - b.difficulty)
+    },
+    {
       name: 'Prof. Ember 🌸', icon: '🌸', color: 0xe06080,
       title: 'Rescue Division',
       brief: "No pup gets left behind. We bring everyone home — no exceptions.",
       missions: [
-        { title: 'Find the Missing Scout',
-          brief: "Scout Bramblefur went dark three days ago. Last known position: near the nether ridge. Find out what happened to her.",
-          role: 'Scratch', roleEmoji: '🐾',
-          objective: 'Locate Scout Bramblefur or find evidence of what happened',
-          reward: '🪙 35 WOB + Search Pin',
-          difficulty: 1 },
         { title: 'Rescue the Hostage Pup',
           brief: "A young pup from the east forest wandered into nether territory and was taken by wolves. They're using her as leverage. Get her out of that cage.",
           role: 'Ruff', roleEmoji: '🐕',
           objective: 'Find and rescue the hostage pup from the nether holding camp',
           reward: '🪙 60 WOB + Rescue Star',
+          difficulty: 1 },
+        { title: 'Rescue from the Dog Pound',
+          brief: "A squad of W.O.B. agents was captured and locked up in the city dog pound. They can't break out alone. Get in, trick the keeper, and free them before dawn.",
+          role: 'Scratch', roleEmoji: '🐾',
+          objective: 'Open the back kennel gate and free the dogs',
+          reward: '🪙 70 WOB + Liberator Pin',
           difficulty: 2 },
         { title: 'Extract the Double Agent',
-          brief: "Our contact inside the wolf pack has been compromised. She needs to be pulled out tonight before they discover who she is.",
+          brief: "Our contact inside the wolf pack has been compromised. She needs to be pulled out tonight before they discover who she really is.",
           role: 'Obsidian', roleEmoji: '🌑',
           objective: 'Rendezvous with the double agent and escort her to Warbark Village',
-          reward: '🪙 70 WOB + Agent Commendation',
+          reward: '🪙 80 WOB + Agent Commendation',
           difficulty: 3 },
       ].sort((a, b) => a.difficulty - b.difficulty)
     },
@@ -14536,9 +14590,9 @@
     'human_lab','cave','nether',            // 1 Birch  — lab raid, cave prison, nether stream
     'wolf_camp','maze','cave',              // 2 Cedar  — border cache, maze escort, cave ammo dump
     'village','nether','nether_ruins',      // 3 Ash    — defend gate, capture lieutenant, retake outpost
-    'human_lab','wolf_camp','wolf_camp',    // 4 Flint  — lab data, raider camp, alpha territory
-    'human_house','nether_ruins','maze',    // 5 Slate  — house infiltration, ruins recon, maze vault
-    'nether','forest','wolf_camp',          // 6 Ember  — nether rescue, forest search, wolf extract
+    'human_lab','dog_neighborhood','wolf_camp',  // 4 Flint  — lab data, neighborhood recon, alpha camp
+    'human_house','human_mansion','maze',        // 5 Slate  — house infiltration, mansion heist, vault maze
+    'nether','dog_pound','wolf_camp',            // 6 Ember  — nether rescue, pound break-out, wolf extract
   ];
 
   function getMissionMapType() {
@@ -15928,6 +15982,33 @@
         guardName:'Nether Spirit 👻',
         riddle:{ q:'I am the smallest and the most afraid, held in darkness, waiting for someone who may never come. Who am I?', hint:'The young dog taken captive — the whole reason for this mission.', a:'pup|puppy|hostage|cub|young dog' } },
       { type:'objective',   label:'Find and rescue the hostage pup',          icon:'🔮', x:0,    z:-108 },
+    ],
+    // Flint-2 "Bring Down the Alpha" — wolf_camp
+    14: [
+      { type:'reach',       label:'Breach the alpha perimeter',                    icon:'🐺', x:0, z:-22 },
+      { type:'riddle_door', label:'Bluff past the alpha\'s honour guard',          icon:'🚪',
+        guardX:0.5, guardZ:-53, guardFacing:0, guardFur:0x281818, guardEars:'triangle',
+        guardName:'Honour Guard 🐺',
+        riddle:{ q:'The alpha sends me before every charge. I travel faster than any wolf and arrive before the battle begins. What am I?', hint:'What generals send before an army — the signal of intent.', a:'signal|howl|warning|order|message|call' } },
+      { type:'objective',   label:'Destroy the alpha\'s command post',             icon:'💥', x:0, z:-108 },
+    ],
+    // Slate-2 "Escape the Vault" — maze
+    17: [
+      { type:'reach',       label:'Find the first corridor junction',              icon:'🧱', x:0, z:-22 },
+      { type:'riddle_door', label:'Bypass the vault\'s mechanical door guardian',  icon:'🚪',
+        guardX:0.5, guardZ:-53, guardFacing:0, guardFur:0x606060, guardEars:'triangle',
+        guardName:'Vault Sentinel 🤖',
+        riddle:{ q:'I have no key but many paths. Every dead end teaches you. Follow the right wall and I will let you through. What am I?', hint:'The puzzle-like structure you are literally standing in.', a:'maze|labyrinth|vault|puzzle' } },
+      { type:'objective',   label:'Reach the extraction shaft and escape',         icon:'🚪', x:0, z:-108 },
+    ],
+    // Ember-2 "Extract the Double Agent" — wolf_camp
+    20: [
+      { type:'reach',       label:'Reach the rendezvous clearing',                 icon:'🌙', x:0, z:-22 },
+      { type:'riddle_door', label:'Prove your identity to the agent\'s handler',   icon:'🚪',
+        guardX:0.5, guardZ:-53, guardFacing:0, guardFur:0x383028, guardEars:'floppy',
+        guardName:'Handler 🐶',
+        riddle:{ q:'She goes by two names, serves two masters, and trusts no one completely. What do we call someone like her?', hint:'A spy working both sides of a conflict simultaneously.', a:'double agent|mole|spy|undercover|infiltrator' } },
+      { type:'objective',   label:'Escort the double agent to the extraction point', icon:'🐾', x:0, z:-108 },
     ],
   };
 
@@ -18475,142 +18556,95 @@
     if (sec) sec.classList.toggle('ov-hidden-section', ovcSpotPatIdx === 0);
   }
 
-  // ── Dog Creator Canvas Preview (simple 2D cartoon) ──────────────────────
-  function ovCreatorDrawPreview() {
-    const cv = document.getElementById('ov-dc-canvas');
-    if (!cv) return;
-    const ctx2 = cv.getContext('2d');
-    const W = cv.width, H = cv.height;
-    ctx2.clearRect(0,0,W,H);
-    // Background
-    ctx2.fillStyle = 'rgba(8,22,40,0.90)';
-    ctx2.fillRect(0,0,W,H);
-    // Draw a simple flat cartoon dog
-    const fur = OV_FUR_COLORS[ovcFurIdx].hex;
-    const furCss = '#'+fur.toString(16).padStart(6,'0');
-    const sc = OV_SIZES[ovcSizeIdx];
-    const body = OV_BODY_TYPES[ovcBodyIdx];
-    ovDrawCartoonDog(ctx2, W/2, H*0.64, sc, fur, body, OV_EAR_TYPES[ovcEarIdx],
-      OV_SPOT_PATS[ovcSpotPatIdx], ovcSpotPatIdx > 0 ? OV_SPOT_COLORS[ovcSpotColIdx].hex : null,
-      OV_COLLAR_COLORS[ovcCollarIdx].hex);
-  }
-
-  function ovDrawCartoonDog(ctx2, cx, cy, sc, furHex, bodyType, earType, spotPat, spotHex, collarHex) {
-    const furCss = '#'+furHex.toString(16).padStart(6,'0');
-    const dark   = ovDarken(furHex, 0.55);
-    // Body proportions by type
-    let bw=38, bh=24, bl=50, legH=22, headR=17;
-    if (bodyType==='chubby')   { bw=46; bh=30; bl=52; legH=18; headR=19; }
-    if (bodyType==='slim')     { bw=30; bh=18; bl=48; legH=24; headR=15; }
-    if (bodyType==='tall')     { bw=34; bh=20; bl=50; legH=30; headR=16; }
-    if (bodyType==='tiny')     { bw=28; bh=16; bl=36; legH=16; headR=13; }
-    if (bodyType==='fluffy')   { bw=42; bh=28; bl=52; legH=20; headR=20; }
-    if (bodyType==='athletic') { bw=32; bh=22; bl=54; legH=26; headR=15; }
-    bw*=sc; bh*=sc; bl*=sc; legH*=sc; headR*=sc;
-    const bodyX = cx - bl*0.1, bodyY = cy - bh;
-    // Legs
-    ctx2.fillStyle = dark;
-    const legW = bw*0.22, legOffs = bw*0.65;
-    [[bodyX-legOffs,-legH],[bodyX-legOffs*0.28,-legH],[bodyX+legOffs*0.28,-legH],[bodyX+legOffs,-legH]].forEach(([lx,ly])=>{
-      ctx2.beginPath(); ctx2.roundRect(cx+lx-legW/2, bodyY+bh*2-2, legW, Math.abs(ly)+2, 4*sc); ctx2.fill();
-    });
-    // Spot socks
-    if (spotPat==='socks' && spotHex) {
-      const sockCss = '#'+spotHex.toString(16).padStart(6,'0');
-      ctx2.fillStyle = sockCss;
-      [[bodyX-legOffs],[bodyX-legOffs*0.28],[bodyX+legOffs*0.28],[bodyX+legOffs]].forEach(([lx])=>{
-        ctx2.beginPath(); ctx2.roundRect(cx+lx-legW/2, bodyY+bh*2+legH*0.45, legW, legH*0.55+2, 4*sc); ctx2.fill();
-      });
-    }
-    // Body
-    ctx2.fillStyle = furCss;
-    ctx2.beginPath(); ctx2.ellipse(cx+bodyX, bodyY+bh, bw, bh, 0, 0, Math.PI*2); ctx2.fill();
-    // Spot patches/stripe on body
-    if (spotHex && spotPat !== 'none' && spotPat !== 'socks') {
-      const sCss = '#'+spotHex.toString(16).padStart(6,'0');
-      ctx2.fillStyle = sCss; ctx2.globalAlpha = 0.65;
-      if (spotPat==='spots') {
-        [[0,0,8*sc],[bw*0.6,bh*0.4,6*sc],[-bw*0.55,bh*0.2,7*sc]].forEach(([ox,oy,r])=>{
-          ctx2.beginPath(); ctx2.arc(cx+bodyX+ox, bodyY+bh+oy, r, 0, Math.PI*2); ctx2.fill();
-        });
-      } else if (spotPat==='patches') {
-        ctx2.beginPath(); ctx2.ellipse(cx+bodyX+bw*0.4, bodyY+bh*0.6, bw*0.35, bh*0.55, 0.3, 0, Math.PI*2); ctx2.fill();
-        ctx2.beginPath(); ctx2.ellipse(cx+bodyX-bw*0.4, bodyY+bh*1.4, bw*0.3, bh*0.5, -0.2, 0, Math.PI*2); ctx2.fill();
-      } else if (spotPat==='stripe') {
-        ctx2.beginPath(); ctx2.roundRect(cx+bodyX-bw*0.12, bodyY, bw*0.24, bh*2, 4*sc); ctx2.fill();
-      }
-      ctx2.globalAlpha = 1;
-    }
-    // Tail
-    ctx2.fillStyle = furCss;
-    ctx2.beginPath(); ctx2.ellipse(cx+bodyX-bw*0.9, bodyY+bh*0.4, bw*0.18, bh*0.38, -0.8, 0, Math.PI*2); ctx2.fill();
-    // Head
-    const headX = cx+bodyX+bw*0.85, headY = bodyY-headR*0.6;
-    ctx2.fillStyle = furCss;
-    ctx2.beginPath(); ctx2.arc(headX, headY, headR, 0, Math.PI*2); ctx2.fill();
-    // Spots on head
-    if (spotHex && spotPat==='patches') {
-      ctx2.fillStyle = '#'+spotHex.toString(16).padStart(6,'0'); ctx2.globalAlpha=0.6;
-      ctx2.beginPath(); ctx2.arc(headX+headR*0.3, headY-headR*0.2, headR*0.45, 0, Math.PI*2); ctx2.fill();
-      ctx2.globalAlpha=1;
-    }
-    // Ears
-    ctx2.fillStyle = dark;
-    if (earType==='triangle') {
-      [[-0.52],[0.52]].forEach(([ex])=>{
-        ctx2.beginPath(); ctx2.moveTo(headX+ex*headR, headY-headR*0.3); ctx2.lineTo(headX+ex*headR*0.4, headY-headR*1.7); ctx2.lineTo(headX+ex*headR*1.2, headY-headR*0.6); ctx2.closePath(); ctx2.fill();
-      });
-    } else if (earType==='floppy') {
-      [[-0.7],[0.7]].forEach(([ex])=>{
-        ctx2.beginPath(); ctx2.ellipse(headX+ex*headR, headY+headR*0.5, headR*0.4, headR*0.7, ex*0.5, 0, Math.PI*2); ctx2.fill();
-      });
-    } else if (earType==='rounded') {
-      [[-0.55],[0.55]].forEach(([ex])=>{
-        ctx2.beginPath(); ctx2.arc(headX+ex*headR, headY-headR*0.8, headR*0.5, 0, Math.PI*2); ctx2.fill();
-      });
-    } else if (earType==='bat') {
-      [[-0.3],[0.3]].forEach(([ex])=>{
-        ctx2.beginPath(); ctx2.moveTo(headX+ex*headR*0.4, headY-headR*0.2); ctx2.lineTo(headX+ex*headR*1.4, headY-headR*1.8); ctx2.lineTo(headX+ex*headR*0.9, headY-headR*0.6); ctx2.lineTo(headX, headY-headR*0.8); ctx2.closePath(); ctx2.fill();
-      });
-    } else if (earType==='tufted') {
-      [[-0.52],[0.52]].forEach(([ex])=>{
-        ctx2.beginPath(); ctx2.moveTo(headX+ex*headR, headY-headR*0.3); ctx2.lineTo(headX+ex*headR*0.4, headY-headR*1.6); ctx2.lineTo(headX+ex*headR*1.2, headY-headR*0.6); ctx2.closePath(); ctx2.fill();
-        ctx2.fillStyle=furCss; ctx2.beginPath(); ctx2.arc(headX+ex*headR*0.4, headY-headR*1.7, headR*0.22, 0, Math.PI*2); ctx2.fill();
-        ctx2.fillStyle=dark;
-      });
-    } else if (earType==='perky') {
-      [[-0.45],[0.45]].forEach(([ex])=>{
-        ctx2.beginPath(); ctx2.moveTo(headX+ex*headR, headY-headR*0.4); ctx2.lineTo(headX+ex*headR*0.5, headY-headR*1.3); ctx2.lineTo(headX+ex*headR*1.0, headY-headR*0.6); ctx2.closePath(); ctx2.fill();
-      });
-    }
-    // Muzzle
-    ctx2.fillStyle = ovLighten(furHex, 0.25);
-    ctx2.beginPath(); ctx2.ellipse(headX+headR*0.55, headY+headR*0.22, headR*0.38, headR*0.28, 0, 0, Math.PI*2); ctx2.fill();
-    // Nose
-    ctx2.fillStyle = '#1a0a08';
-    ctx2.beginPath(); ctx2.ellipse(headX+headR*0.9, headY+headR*0.1, headR*0.14, headR*0.10, 0, 0, Math.PI*2); ctx2.fill();
-    // Eyes
-    ctx2.fillStyle = '#101018';
-    ctx2.beginPath(); ctx2.arc(headX+headR*0.5, headY-headR*0.2, headR*0.13, 0, Math.PI*2); ctx2.fill();
-    ctx2.fillStyle = '#fff';
-    ctx2.beginPath(); ctx2.arc(headX+headR*0.52, headY-headR*0.22, headR*0.05, 0, Math.PI*2); ctx2.fill();
-    // Collar
-    if (collarHex !== null) {
-      ctx2.fillStyle = '#'+collarHex.toString(16).padStart(6,'0');
-      ctx2.beginPath(); ctx2.ellipse(headX, headY+headR*0.75, headR*0.9, headR*0.18, 0, 0, Math.PI*2); ctx2.fill();
-      ctx2.fillStyle = ovLighten(collarHex, 0.35);
-      ctx2.beginPath(); ctx2.arc(headX, headY+headR*0.92, headR*0.12, 0, Math.PI*2); ctx2.fill();
-    }
-  }
-  function ovDarken(hex, f) {
-    const r=((hex>>16)&0xff)*f, g=((hex>>8)&0xff)*f, b=(hex&0xff)*f;
-    return ((r|0)<<16)|((g|0)<<8)|(b|0);
-  }
   function ovLighten(hex, f) {
     const r=Math.min(255,((hex>>16)&0xff)+(255*(1-((hex>>16)&0xff)/255)*f));
     const g=Math.min(255,((hex>>8 )&0xff)+(255*(1-((hex>>8 )&0xff)/255)*f));
     const b=Math.min(255,((hex    )&0xff)+(255*(1-((hex    )&0xff)/255)*f));
     return ((r|0)<<16)|((g|0)<<8)|(b|0);
+  }
+
+  // ── Dog Creator Canvas Preview — real 3D render using the game engine ──
+  function ovCreatorDrawPreview() {
+    const cv = document.getElementById('ov-dc-canvas');
+    if (!cv) return;
+    const ctx2 = cv.getContext('2d');
+    const PW = cv.width, PH = cv.height;
+    ctx2.clearRect(0,0,PW,PH);
+
+    // Background gradient matching village night sky
+    const bg = ctx2.createLinearGradient(0,0,0,PH);
+    bg.addColorStop(0,'#080e18'); bg.addColorStop(1,'#121c10');
+    ctx2.fillStyle = bg; ctx2.fillRect(0,0,PW,PH);
+    // Ground plane hint
+    ctx2.fillStyle = 'rgba(40,60,30,0.55)';
+    ctx2.fillRect(0, PH*0.72, PW, PH*0.28);
+
+    // Build dog quads at origin
+    const previewQuads = [];
+    const p = onlineDogProfile || {};
+    const sc    = OV_SIZES[Math.min(ovcSizeIdx, 2)];
+    const fur   = OV_FUR_COLORS[Math.min(ovcFurIdx, OV_FUR_COLORS.length-1)].hex;
+    const ear   = OV_EAR_TYPES[Math.min(ovcEarIdx, OV_EAR_TYPES.length-1)];
+    const body  = Math.min(ovcBodyIdx, OV_BODY_TYPES.length-1);
+    const sPat  = OV_SPOT_PATS[Math.min(ovcSpotPatIdx, OV_SPOT_PATS.length-1)];
+    const sCol  = ovcSpotPatIdx > 0 ? (OV_SPOT_COLORS[Math.min(ovcSpotColIdx, OV_SPOT_COLORS.length-1)].hex) : null;
+    const col   = OV_COLLAR_COLORS[Math.min(ovcCollarIdx, OV_COLLAR_COLORS.length-1)].hex;
+
+    addOnlineCustomDog(previewQuads, 0, 0, sc, fur, 0.0, ear, sPat, sCol, col, body);
+
+    // Mini camera — 3/4 view from front-right, matching in-game feel
+    const camDist  = 3.8 * sc;
+    const camYaw   = 0.52;   // yaw: slightly right of front
+    const camPitch = 0.30;   // pitch: looking slightly down
+    const camH     = 1.6 * sc;
+    const camPos   = v3(
+      Math.sin(camYaw) * camDist,
+      0.21 + camH,
+     -Math.cos(camYaw) * camDist
+    );
+    const f = (PH / 2) / FOV;
+
+    function miniProjectClipped(verts) {
+      const NEAR = 0.05;
+      const cs = verts.map(pt => {
+        let v = sub(pt, camPos);
+        v = rotY(v, -camYaw);
+        v = rotX(v, -camPitch);
+        return v;
+      });
+      const out = [];
+      for (let i = 0; i < cs.length; i++) {
+        const a = cs[(i + cs.length - 1) % cs.length], b = cs[i];
+        const aIn = a.z >= NEAR, bIn = b.z >= NEAR;
+        if (bIn) {
+          if (!aIn) { const t=(NEAR-a.z)/(b.z-a.z); out.push(v3(a.x+t*(b.x-a.x),a.y+t*(b.y-a.y),NEAR)); }
+          out.push(b);
+        } else if (aIn) {
+          const t = (NEAR-a.z)/(b.z-a.z); out.push(v3(a.x+t*(b.x-a.x),a.y+t*(b.y-a.y),NEAR));
+        }
+      }
+      if (out.length < 3) return null;
+      return out.map(v => ({ x: PW/2+(v.x/v.z)*f, y: PH/2-(v.y/v.z)*f+PH*0.08, z: v.z }));
+    }
+
+    // Project, sort back-to-front, draw
+    const toRender = previewQuads.map(q => {
+      const pts = miniProjectClipped(q.verts);
+      if (!pts) return null;
+      const avgZ = pts.reduce((s,p2)=>s+p2.z,0)/pts.length;
+      return { pts, avgZ, color: q.color, normal: q.normal };
+    }).filter(Boolean);
+
+    toRender.sort((a,b) => b.avgZ - a.avgZ);
+    toRender.forEach(({ pts, color, normal }) => {
+      ctx2.beginPath();
+      ctx2.moveTo(pts[0].x, pts[0].y);
+      for (let i = 1; i < pts.length; i++) ctx2.lineTo(pts[i].x, pts[i].y);
+      ctx2.closePath();
+      ctx2.fillStyle = shade(color, normal, 0, undefined);
+      ctx2.fill();
+      ctx2.strokeStyle = 'rgba(0,0,0,0.18)'; ctx2.lineWidth = 0.5; ctx2.stroke();
+    });
   }
 
   // ── Enter / Exit Online Village ──────────────────────────────────────────
@@ -19283,7 +19317,7 @@
     <div id="ov-dc-body">
       <!-- Preview + name -->
       <div id="ov-dc-preview-col">
-        <canvas id="ov-dc-canvas" width="200" height="200"></canvas>
+        <canvas id="ov-dc-canvas" width="260" height="260"></canvas>
         <div id="ov-dc-name-wrap">
           <div id="ov-dc-name-label">Dog name</div>
           <input id="ov-dc-name" type="text" maxlength="18" placeholder="Enter a name…" autocomplete="off" spellcheck="false">
