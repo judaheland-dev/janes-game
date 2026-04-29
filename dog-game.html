@@ -15334,110 +15334,103 @@
       });
 
     } else if (mapType === 'human_house') {
-      // Inside a human house — carpeted rooms, furniture obstacles, humans + a cat patrol
+      // ── Procedural Human House ────────────────────────────────────────
+      // 3–4 rooms stacked along the hall. Walls, carpet, furniture vary per seed.
 
-      const wCol = 0xb8a890, wCol2 = 0xa89878; // plaster wall colors
-      // Warm carpet floor (overwrite base tiles inside rooms)
-      for (let fx=-20; fx<20; fx+=3) {
-        for (let fz=-115; fz<4; fz+=3) {
-          const e=((Math.floor(fx/3)+Math.floor(fz/3))&1);
-          missionFieldQuads.push({ verts:[v3(fx,0.01,fz),v3(fx+3,0.01,fz),v3(fx+3,0.01,fz+3),v3(fx,0.01,fz+3)], color:e?0x7a5848:0x6a4838, normal:v3(0,1,0), isGround:true });
+      const HW=20; // half-width of house interior
+      // Fixed: ceiling, outer north wall, side walls
+      missionFieldQuads.push({verts:[v3(-HW-1,4.2,8),v3(HW+1,4.2,8),v3(HW+1,4.2,-118),v3(-HW-1,4.2,-118)],color:0xd8d0c0,normal:v3(0,-1,0),isGround:false});
+      const hwall=(cx,cz,hw,hd)=>{pushBox(missionFieldQuads,cx,2.5,cz,hw,2.5,hd,0xb8a890);addWall(cx,cz,hw+.1,hd+.1);};
+      hwall(0,-118,HW,.5);           // north wall
+      hwall(-HW-.5,-57,.5,61);       // west wall
+      hwall( HW+.5,-57,.5,61);       // east wall
+      // Warm carpet floor
+      for(let fx=-HW;fx<HW;fx+=3)for(let fz=-117;fz<5;fz+=3){
+        const e=((Math.floor(fx/3)+Math.floor(fz/3))&1);
+        missionFieldQuads.push({verts:[v3(fx,.01,fz),v3(fx+3,.01,fz),v3(fx+3,.01,fz+3),v3(fx,.01,fz+3)],color:e?0x7a5848:0x6a4838,normal:v3(0,1,0),isGround:true});
+      }
+      // Ceiling lamps (fixed positions)
+      [0,-20,0,-48,0,-80,0,-108].forEach((_,i,a)=>{if(i%2)return;pushBox(missionFieldQuads,a[i]*.5,3.9,a[i+1],.5,.15,.5,0xfff0d8);});
+
+      // Shared furniture helpers
+      const sofa=(sx,sz,sd)=>{pushBox(missionFieldQuads,sx,.8,sz,4,.8,1.6,0x8a6858);addWall(sx,sz,4.2,1.8);pushBox(missionFieldQuads,sx,1.8,sz-sd*1.4,4,.9,.4,0x7a5848);};
+      const bed=(bx,bz)=>{pushBox(missionFieldQuads,bx,.5,bz,3.5,.5,5,0xa090b0);addWall(bx,bz,3.7,5.2);pushBox(missionFieldQuads,bx,1.5,bz-2.3,3.5,1,.4,0x5a4860);};
+      const desk=(dx,dz)=>{pushBox(missionFieldQuads,dx,.8,dz,2.5,.8,1.4,0x9a7040);addWall(dx,dz,2.7,1.6);pushBox(missionFieldQuads,dx,1.8,dz-.5,2,1,.15,0x181818);};
+      const shelf=(sx,sz)=>{pushBox(missionFieldQuads,sx,2,sz,.5,2,4,0x6a4820);addWall(sx,sz,.7,4.2);};
+      const table=(tx,tz)=>{pushBox(missionFieldQuads,tx,.8,tz,3,.8,1.8,0x8a6030);addWall(tx,tz,3.2,2);};
+      const rug=(rx,rz,rw,rd,col)=>missionFieldQuads.push({verts:[v3(rx-rw,.02,rz-rd),v3(rx+rw,.02,rz-rd),v3(rx+rw,.02,rz+rd),v3(rx-rw,.02,rz+rd)],color:col,normal:v3(0,1,0),isGround:true});
+      const plant=(px,pz)=>{pushBox(missionFieldQuads,px,1,pz,.5,1,.5,0x4a5030);addWall(px,pz,.7,.7);};
+      const hhHints=['The cat wanders the living area — wait for it to turn before crossing.','Check the study — there\'s a way through the back if you time the patrol.','The bedroom window side is a blind spot. The human paces from the hall.','Objects on the desk may have the answer. The resident keeps the key close.'];
+
+      // Hallway (entry zone): always fixed
+      pushBox(missionFieldQuads,0,.4,2,.5*2.5,.4,.7,0x6a4820);addWall(0,2,2.7,.9); // shoe rack
+      rug(0,-12,5,8,0x904040);
+      hwall(-14,-12,6,14);hwall(14,-12,6,14); // hallway side walls
+      missionFieldNpcs.push({x:0,z:-8,label:'Resident 🏠',color:'#c0a880',fur:0xa08860,ears:'floppy',hint:hhHints[0]});
+
+      // 3–4 procedural rooms stacking z=-26 → z=-116
+      const nR=3+Math.floor(rng()*2), rStep=90/nR;
+      // Divider wall helper with centre door gap (x=−3.5..3.5 open)
+      const divW=(dz)=>{hwall(-12,dz,8,.5);hwall(12,dz,8,.5);pushBox(missionFieldQuads,-3.5,2.5,dz,.25,2.5,.25,0x7a5830);pushBox(missionFieldQuads,3.5,2.5,dz,.25,2.5,.25,0x7a5830);};
+      const roomColors=[0x904040,0x604850,0x4858a0,0x506048];
+
+      for(let ri=0;ri<nR;ri++){
+        const rZ=-26-ri*rStep, rM=rZ-rStep*.5;
+        const rv=Math.floor(rng()*4), sd=rng()<.5?-1:1;
+        divW(rZ); // doorway into this room
+        rug(0,rM,HW-3,rStep*.44,roomColors[ri%4]);
+
+        if(rv===0){
+          // Living room: sofa, TV, armchair, coffee table, plant
+          sofa(sd*(HW-6),rM,sd);
+          pushBox(missionFieldQuads,-sd*(HW-3),.8,rM-rStep*.22,3,.8,.6,0x202020);addWall(-sd*(HW-3),rM-rStep*.22,3.2,.8);
+          pushBox(missionFieldQuads,-sd*(HW-3),2.2,rM-rStep*.22-.4,2.4,1.1,.12,0x101010);
+          pushBox(missionFieldQuads,sd*9,.7,rM+rStep*.15,1.5,.7,1.5,0x9a7858);addWall(sd*9,rM+rStep*.15,1.7,1.7);
+          pushBox(missionFieldQuads,sd*5,.4,rM,1.5,.4,1,0x5a3a18);addWall(sd*5,rM,1.7,1.2);
+          plant(-sd*(HW-2),rM+rStep*.3);
+          if(missionFieldNpcs.length<3)missionFieldNpcs.push({x:0,z:rM+rStep*.25,label:'Resident 🛋️',color:'#c09878',fur:0xa08060,ears:'floppy',hint:hhHints[1]});
+          missionFieldPatrols.push({x:sd*8,z:rM,startX:sd*8,startZ:rM,dx:1,dz:0,t:rng()*Math.PI*2,range:HW*.55,tSpeed:.012,fur:0x9090a0,ears:'floppy',isHuman:true,spotted:false});
+
+        }else if(rv===1){
+          // Kitchen/dining: table, chairs, counters along one wall
+          table(sd*(HW-8),rM);
+          [-1,1].forEach(s=>{ pushBox(missionFieldQuads,sd*(HW-8)+s*4.2,.6,rM,1,.6,1,0x6a4828);addWall(sd*(HW-8)+s*4.2,rM,1.2,1.2); });
+          pushBox(missionFieldQuads,-sd*(HW-.5),.9,rM,.5,1,rStep*.4,0xe0e0d8);addWall(-sd*(HW-.5),rM,.7,rStep*.4);
+          pushBox(missionFieldQuads,-sd*(HW-5),.9,rZ-rStep*.85,HW*.45,.9,.6,0xd0c8b8);addWall(-sd*(HW-5),rZ-rStep*.85,HW*.47,.8);
+          plant(sd*(HW-2),rZ-rStep*.9);
+          missionFieldPatrols.push({x:-sd*6,z:rM,startX:-sd*6,startZ:rM,dx:0,dz:1,t:rng()*Math.PI*2,range:rStep*.38,tSpeed:.013,fur:0x9090a0,ears:'floppy',isHuman:true,spotted:false});
+          // Cat prowling the kitchen
+          missionFieldPatrols.push({x:sd*5,z:rM,startX:sd*5,startZ:rM,dx:1,dz:0,t:rng()*Math.PI*2,range:HW*.45,tSpeed:.02,fur:0xe07820,ears:'triangle',isHuman:false,spotted:false});
+
+        }else if(rv===2){
+          // Study/library: desk, bookshelf, chair, papers on floor
+          desk(sd*(HW-6),rM);
+          shelf(-sd*(HW-.5),rM);
+          pushBox(missionFieldQuads,sd*(HW-9),.6,rM+2,1,.6,1,0x7a5848);addWall(sd*(HW-9),rM+2,1.2,1.2);
+          for(let pi=0;pi<5;pi++)missionFieldQuads.push({verts:[v3((rng()-.5)*28,.015,rM-rStep*.4+rng()*rStep*.7),v3((rng()-.5)*28+.7,.015,rM-rStep*.4+rng()*rStep*.7),v3((rng()-.5)*28+.7,.015,rM-rStep*.4+rng()*rStep*.7+.5),v3((rng()-.5)*28,.015,rM-rStep*.4+rng()*rStep*.7+.5)],color:0xd0c0a0,normal:v3(0,1,0),isGround:true});
+          if(missionFieldNpcs.length<3)missionFieldNpcs.push({x:-sd*(HW-5),z:rM,label:'Scholar 📚',color:'#90a0b0',fur:0x8090a0,ears:'floppy',hint:hhHints[2]});
+          missionFieldPatrols.push({x:0,z:rM,startX:0,startZ:rM,dx:1,dz:0,t:rng()*Math.PI*2,range:HW*.5,tSpeed:.011,fur:0x9090a0,ears:'floppy',isHuman:true,spotted:false});
+
+        }else{
+          // Bedroom: bed, wardrobe, bedside table
+          bed(sd*(HW-7),rM);
+          pushBox(missionFieldQuads,-sd*(HW-.5),2.5,rM-rStep*.25,1.5,2.5,3,0x6a5040);addWall(-sd*(HW-.5),rM-rStep*.25,1.7,3.2);
+          pushBox(missionFieldQuads,sd*(HW-10),.5,rM-2,.8,.5,.8,0x7a5830);addWall(sd*(HW-10),rM-2,1,1);
+          plant(-sd*(HW-2),rM+rStep*.3);
+          // Cat napping then patrolling
+          missionFieldPatrols.push({x:sd*4,z:rM,startX:sd*4,startZ:rM,dx:0,dz:1,t:rng()*Math.PI*2,range:rStep*.35,tSpeed:.021,fur:0xa05810,ears:'triangle',isHuman:false,spotted:false});
+          if(profIdx>=2)missionFieldPatrols.push({x:-sd*8,z:rM,startX:-sd*8,startZ:rM,dx:1,dz:0,t:rng()*Math.PI*2,range:HW*.4,tSpeed:.012,fur:0x9090a0,ears:'floppy',isHuman:true,spotted:false});
         }
       }
-      // Ceiling slab (visual only — sells the indoors feeling)
-      missionFieldQuads.push({ verts:[v3(-22,4.2,8),v3(22,4.2,8),v3(22,4.2,-118),v3(-22,4.2,-118)], color:0xd8d0c0, normal:v3(0,-1,0), isGround:false });
 
-      // ── Structural walls ──────────────────────────────────────────────
-      const hwall = (cx,cz,hw,hd,col=wCol) => { pushBox(missionFieldQuads, cx, 2.5, cz, hw, 2.5, hd, col); addWall(cx,cz,hw+0.1,hd+0.1); };
-      // Outer house perimeter
-      hwall( 0,    -118, 20, 0.5);          // north wall
-      hwall(-20.5, -57,  0.5, 61);          // west wall full
-      hwall( 20.5, -57,  0.5, 61);          // east wall full
-      // Hallway inner walls (entry z=4 to z=-26, corridor ±8)
-      hwall(-14, -11, 6.5, 15);             // west corridor wall
-      hwall( 14, -11, 6.5, 15);             // east corridor wall
-      // Divider 1: hallway → living room at z=-26 (door gap x=[-3.5,3.5])
-      hwall(-12, -26, 8, 0.5);              // left of door
-      hwall( 12, -26, 8, 0.5);             // right of door
-      // Living room side walls (z=-26 to z=-70)
-      hwall(-20.5, -48, 0.5, 22);           // living west
-      hwall( 20.5, -48, 0.5, 22);           // living east
-      // Divider 2: living room → bedroom at z=-70 (door gap x=[-3.5,3.5])
-      hwall(-12, -70, 8, 0.5);             // left of door
-      hwall( 12, -70, 8, 0.5);             // right of door
-      // Bedroom side walls (z=-70 to z=-118)
-      hwall(-17, -94, 0.5, 24);             // bedroom west
-      hwall( 17, -94, 0.5, 24);             // bedroom east
+      // Extra patrols by professor rank
+      for(let pi=0;pi<profIdx-1;pi++){const px=(rng()-.5)*34,pz=-28-rng()*78;missionFieldPatrols.push({x:px,z:pz,startX:px,startZ:pz,dx:rng()<.5?1:0,dz:rng()<.5?0:1,t:rng()*Math.PI*2,range:8+rng()*6,tSpeed:.012+rng()*.006,fur:rng()<.3?0xe07820:0x9090a0,ears:rng()<.3?'triangle':'floppy',isHuman:rng()>.3,spotted:false});}
 
-      // Door frames (decorative trim)
-      [[-3.5,-26,true],[3.5,-26,true],[-3.5,-70,true],[3.5,-70,true]].forEach(([dx,dz,v]) => {
-        pushBox(missionFieldQuads, dx, 2.5, dz, 0.2, 2.5, 0.2, 0x7a5830);
-      });
-
-      // ── Furnishings: Hallway ──────────────────────────────────────────
-      // Shoe rack at south end
-      pushBox(missionFieldQuads, 0, 0.4, 2.5, 2.5, 0.4, 0.7, 0x6a4820); addWall(0, 2.5, 2.7, 0.9);
-      // Coat rack post
-      pushBox(missionFieldQuads, -12, 1.5, -5, 0.2, 1.5, 0.2, 0x5a3810); addWall(-12, -5, 0.4, 0.4);
-      // Hallway rug
-      missionFieldQuads.push({ verts:[v3(-6,0.02,-8),v3(6,0.02,-8),v3(6,0.02,-22),v3(-6,0.02,-22)], color:0x904040, normal:v3(0,1,0), isGround:true });
-
-      // ── Furnishings: Living Room ──────────────────────────────────────
-      // Long sofa (west side)
-      pushBox(missionFieldQuads, -13, 0.8, -40, 5, 0.8, 2.0, 0x8a6858); addWall(-13, -40, 5.2, 2.2);
-      pushBox(missionFieldQuads, -13, 1.8, -41.8, 5, 1.0, 0.4, 0x7a5848); // sofa back
-      // Coffee table in front of sofa
-      pushBox(missionFieldQuads, -8,  0.4, -39, 2.0, 0.4, 1.2, 0x5a3a18); addWall(-8, -39, 2.2, 1.4);
-      // TV unit against living room south wall (faces north into room)
-      pushBox(missionFieldQuads, 4,   0.8, -28, 4.0, 0.8, 0.7, 0x202020); addWall(4, -28, 4.2, 0.9);
-      pushBox(missionFieldQuads, 4,   2.2, -27.8, 3.2, 1.2, 0.15, 0x101010); // TV screen
-      // Armchair
-      pushBox(missionFieldQuads, 14,  0.7, -36, 2.0, 0.7, 2.0, 0x9a7858); addWall(14, -36, 2.2, 2.2);
-      // Plant stand
-      pushBox(missionFieldQuads, 18,  1.0, -52, 0.6, 1.0, 0.6, 0x4a5030); addWall(18, -52, 0.8, 0.8);
-      // Dining table + chairs
-      pushBox(missionFieldQuads, 8,   0.8, -58, 4.0, 0.8, 2.5, 0x8a6030); addWall(8, -58, 4.2, 2.7);
-      [-1,1].forEach(s => { pushBox(missionFieldQuads, 8+s*5.5, 0.6, -58, 1.2, 0.6, 1.0, 0x6a4828); addWall(8+s*5.5, -58, 1.4, 1.2); });
-      // Bookshelf against east wall
-      pushBox(missionFieldQuads, 19,  1.8, -48, 0.5, 1.8, 5, 0x6a4820); addWall(19, -48, 0.7, 5.2);
-      // Kitchen counter / fridge near west wall
-      pushBox(missionFieldQuads, -18, 1.0, -55, 0.5, 1.0, 6, 0xe0e0d8); addWall(-18, -55, 0.7, 6.2); // fridge+counter
-      pushBox(missionFieldQuads, -14, 0.9, -62, 5, 0.9, 0.6, 0xd0c8b8); addWall(-14, -62, 5.2, 0.8); // counter surface
-      // Living room rug
-      missionFieldQuads.push({ verts:[v3(-18,0.02,-30),v3(8,0.02,-30),v3(8,0.02,-68),v3(-18,0.02,-68)], color:0x604850, normal:v3(0,1,0), isGround:true });
-
-      // ── Furnishings: Bedroom ─────────────────────────────────────────
-      // Double bed
-      pushBox(missionFieldQuads, -8,  0.5, -90, 4.5, 0.5, 6.5, 0xa090b0); addWall(-8, -90, 4.7, 6.7);
-      pushBox(missionFieldQuads, -8,  1.6, -93.8, 4.5, 1.2, 0.4, 0x5a4860); // headboard
-      // Bedside table
-      pushBox(missionFieldQuads, -4,  0.5, -93, 1.0, 0.5, 1.0, 0x7a5830); addWall(-4, -93, 1.2, 1.2);
-      // Wardrobe (against east wall)
-      pushBox(missionFieldQuads, 14,  2.5, -96, 2.5, 2.5, 4.0, 0x6a5040); addWall(14, -96, 2.7, 4.2);
-      // Desk (where objective is) on west side
-      pushBox(missionFieldQuads, -14, 0.8, -108, 3.0, 0.8, 1.8, 0x9a7040); addWall(-14, -108, 3.2, 2.0);
-      pushBox(missionFieldQuads, -14, 2.0, -107, 2.5, 1.0, 0.15, 0x181818); // monitor
-      // Bedroom rug
-      missionFieldQuads.push({ verts:[v3(-16,0.02,-74),v3(16,0.02,-74),v3(16,0.02,-116),v3(-16,0.02,-116)], color:0x4858a0, normal:v3(0,1,0), isGround:true });
-      // Overhead lights (ceiling lamps — warm spheres)
-      [[-8,-14],[0,-48],[-4,-92],[8,-92]].forEach(([lx,lz]) => pushBox(missionFieldQuads, lx, 3.9, lz, 0.5, 0.15, 0.5, 0xfff0d8));
-
-      // Objective — item on the desk in the bedroom
-      pushBox(missionFieldQuads, -14, 1.8, -109, 0.6, 0.4, 0.4, 0xc0a020); // glowing item
-      addWall(-14, -109, 0.8, 0.6);
-      missionFieldItems.push({ id:0, x:-14, z:-109, type:'objective', label:m.objective, icon:'🔑', collected:false });
-
-      // Patrols — humans walking room routes + a cat (extremely alert)
-      // Human in hallway pacing
-      missionFieldPatrols.push({ x:0, z:-14, startX:0, startZ:-14, dx:0, dz:1, t:rng()*Math.PI*2, range:9, tSpeed:0.012, fur:0x6080a0, ears:'floppy', patrolType:'human', isHuman:true, spotted:false });
-      // Human in living room
-      missionFieldPatrols.push({ x:0, z:-48, startX:0, startZ:-48, dx:1, dz:0, t:rng()*Math.PI*2, range:14, tSpeed:0.012, fur:0x6080a0, ears:'floppy', patrolType:'human', isHuman:true, spotted:false });
-      // Human in bedroom
-      if (profIdx >= 2) missionFieldPatrols.push({ x:0, z:-92, startX:0, startZ:-92, dx:1, dz:0, t:rng()*Math.PI*2, range:12, tSpeed:0.012, fur:0x6080a0, ears:'floppy', patrolType:'human', isHuman:true, spotted:false });
-      // The cat — patrols the living room, extremely wide vision, faster movement
-      missionFieldPatrols.push({ x:6, z:-44, startX:6, startZ:-44, dx:1, dz:0, t:rng()*Math.PI*2, range:12, tSpeed:0.020, fur:0xe07820, ears:'triangle', patrolType:'cat', isHuman:false, spotted:false });
-      // Extra cat in bedroom for higher professor levels
-      if (profIdx >= 3) missionFieldPatrols.push({ x:-2, z:-88, startX:-2, startZ:-88, dx:0, dz:1, t:rng()*Math.PI*2, range:10, tSpeed:0.022, fur:0xa05810, ears:'triangle', patrolType:'cat', isHuman:false, spotted:false });
+      // Objective — item on a desk or sideboard in the deepest room
+      const oSD=rng()<.5?-1:1;
+      desk(oSD*(HW-6),-106);
+      pushBox(missionFieldQuads,oSD*(HW-6),1.8,-107,.6,.4,.4,0xc0a020);addWall(oSD*(HW-6),-107,.8,.6);
+      missionFieldItems.push({id:0,x:oSD*(HW-6),z:-107,type:'objective',label:m.objective,icon:'🔑',collected:false});
 
     } else if (mapType === 'human_mansion') {
       // ── Human Mansion: three-zone grand estate ────────────────────────
