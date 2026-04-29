@@ -957,6 +957,160 @@
       border-radius: 10px; color: #60a8c0; cursor: pointer; font: 13px Arial;
     }
     #sci-collection-close:hover { background: rgba(8,40,60,0.88); }
+
+    /* ══════════════ ONLINE VILLAGE UI ══════════════ */
+    #ov-connect-screen {
+      position: fixed; inset: 0; z-index: 300;
+      background: rgba(0,0,0,0.82);
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+    }
+    #ov-connect-screen.hidden { display: none; }
+    #ov-connect-screen h2 { color: #a0e8ff; font: bold 26px Arial; letter-spacing: 2px; }
+    #ov-connect-screen p { color: #88aacc; font: 13px Arial; text-align: center; max-width: 340px; line-height: 1.6; }
+    #ov-name-input {
+      padding: 9px 16px; border-radius: 10px; border: 1.5px solid #3080b0;
+      background: rgba(8,20,38,0.92); color: #d0eeff; font: 15px Arial;
+      width: 260px; text-align: center; outline: none;
+    }
+    #ov-color-pick { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin: 4px 0; }
+    .ov-color-swatch {
+      width: 28px; height: 28px; border-radius: 50%; cursor: pointer;
+      border: 2.5px solid transparent; transition: border-color 0.15s;
+    }
+    .ov-color-swatch.selected { border-color: #fff; }
+    #ov-enter-btn {
+      padding: 10px 38px; background: #1a6090; border: none; border-radius: 12px;
+      color: #d0f0ff; font: bold 15px Arial; cursor: pointer; letter-spacing: 1px;
+    }
+    #ov-enter-btn:hover { background: #2280b8; }
+    #ov-cancel-btn {
+      background: transparent; border: none; color: #6090a8; font: 13px Arial;
+      cursor: pointer; text-decoration: underline;
+    }
+    #ov-badge {
+      position: fixed; top: 12px; left: 50%; transform: translateX(-50%);
+      background: rgba(0,20,40,0.82); border: 1px solid #2070a0;
+      border-radius: 20px; padding: 5px 18px; color: #80d0ff;
+      font: bold 13px Arial; pointer-events: none; z-index: 50; letter-spacing: 1px;
+    }
+    #ov-badge.hidden { display: none; }
+    #ov-player-count {
+      position: fixed; top: 46px; left: 50%; transform: translateX(-50%);
+      background: rgba(0,20,40,0.70); border-radius: 14px; padding: 3px 14px;
+      color: #60b0d8; font: 12px Arial; pointer-events: none; z-index: 50;
+    }
+    #ov-player-count.hidden { display: none; }
+    #ov-chat { position: fixed; bottom: 80px; left: 16px; width: 300px; z-index: 60; display: flex; flex-direction: column; gap: 6px; }
+    #ov-chat.hidden { display: none; }
+    #ov-chat-log {
+      background: rgba(0,10,24,0.78); border-radius: 10px; padding: 8px 10px;
+      max-height: 180px; overflow-y: auto;
+      display: flex; flex-direction: column; gap: 4px;
+    }
+    .ov-chat-msg { font: 12px Arial; color: #c8e8ff; word-break: break-word; }
+    .ov-chat-msg .ov-chat-name { color: #80d8ff; font-weight: bold; margin-right: 4px; }
+    .ov-chat-msg.ov-chat-system { color: #8aaabb; font-style: italic; }
+    #ov-chat-row { display: flex; gap: 6px; }
+    #ov-chat-input {
+      flex: 1; padding: 7px 12px; border-radius: 8px;
+      border: 1px solid #2060a0; background: rgba(4,16,34,0.90);
+      color: #d0eeff; font: 13px Arial; outline: none;
+    }
+    #ov-chat-send { padding: 7px 14px; background: #1a6090; border: none; border-radius: 8px; color: #d0f0ff; font: bold 12px Arial; cursor: pointer; }
+    #ov-chat-toggle {
+      position: fixed; bottom: 80px; left: 16px; z-index: 61;
+      background: rgba(0,20,40,0.82); border: 1px solid #2060a0;
+      border-radius: 10px; padding: 5px 12px; color: #70b8d8; font: 12px Arial; cursor: pointer;
+    }
+    #ov-chat-toggle.hidden { display: none; }
+    #ov-custom-panel {
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
+      background: rgba(4,14,30,0.96); border: 1.5px solid #2060a0;
+      border-radius: 18px; padding: 24px 28px; z-index: 200;
+      min-width: 300px; color: #c0e0f8; font: 14px Arial;
+      display: flex; flex-direction: column; gap: 14px;
+    }
+    #ov-custom-panel.hidden { display: none; }
+    #ov-custom-panel h3 { color: #90d0f0; font-size: 18px; text-align: center; }
+    .ov-custom-label { color: #80aac8; font: 12px Arial; margin-bottom: 2px; }
+    #ov-custom-close { align-self: center; padding: 8px 28px; background: #1a6090; border: none; border-radius: 10px; color: #d0f0ff; font: bold 13px Arial; cursor: pointer; }
+    #ov-trade-panel {
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
+      background: rgba(4,14,30,0.97); border: 1.5px solid #30a060;
+      border-radius: 18px; padding: 24px 28px; z-index: 200;
+      min-width: 320px; color: #c0f0d8; font: 14px Arial;
+      display: flex; flex-direction: column; gap: 14px;
+    }
+    #ov-trade-panel.hidden { display: none; }
+    #ov-trade-panel h3 { color: #80e8b0; font-size: 18px; text-align: center; }
+    #ov-trade-items { display: flex; gap: 12px; flex-wrap: wrap; }
+    .ov-trade-item { background: rgba(10,30,20,0.80); border: 1px solid #208050; border-radius: 8px; padding: 6px 10px; cursor: pointer; font: 12px Arial; }
+    .ov-trade-item.selected { border-color: #60e090; background: rgba(20,60,40,0.90); }
+    #ov-trade-row { display: flex; gap: 10px; justify-content: center; }
+    #ov-trade-send, #ov-trade-cancel { padding: 8px 22px; border: none; border-radius: 10px; font: bold 13px Arial; cursor: pointer; }
+    #ov-trade-send { background: #208050; color: #d0ffea; }
+    #ov-trade-cancel { background: rgba(30,10,10,0.80); color: #f08080; border: 1px solid #804040; }
+    #ov-trade-incoming {
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
+      background: rgba(4,14,30,0.97); border: 1.5px solid #40c080;
+      border-radius: 18px; padding: 20px 28px; z-index: 210;
+      min-width: 280px; color: #c0f0d8; font: 14px Arial;
+      display: flex; flex-direction: column; gap: 12px; align-items: center;
+    }
+    #ov-trade-incoming.hidden { display: none; }
+    #ov-trade-incoming h3 { color: #80e8b0; font-size: 16px; }
+    #ov-trade-inc-row { display: flex; gap: 12px; }
+    #ov-trade-accept, #ov-trade-decline { padding: 8px 22px; border: none; border-radius: 10px; font: bold 13px Arial; cursor: pointer; }
+    #ov-trade-accept { background: #208050; color: #d0ffea; }
+    #ov-trade-decline { background: rgba(60,10,10,0.80); color: #f08080; border: 1px solid #804040; }
+
+    /* ── Dog Creator ── */
+    #ov-dog-creator {
+      position: fixed; inset: 0; z-index: 400;
+      background: radial-gradient(ellipse at 50% 30%, #0a1828 0%, #04080f 100%);
+      display: flex; flex-direction: column; align-items: center;
+      overflow-y: auto; padding: 24px 12px 40px;
+    }
+    #ov-dog-creator.hidden { display: none; }
+    #ov-dc-title { color: #a0e8ff; font: bold 26px Arial; letter-spacing: 3px; margin-bottom: 4px; text-shadow: 0 0 20px #40a8e0; }
+    #ov-dc-subtitle { color: #6090b0; font: 13px Arial; margin-bottom: 18px; }
+    #ov-dc-body { display: flex; gap: 22px; width: 100%; max-width: 820px; flex-wrap: wrap; justify-content: center; }
+    #ov-dc-preview-col { display: flex; flex-direction: column; align-items: center; gap: 10px; flex-shrink: 0; }
+    #ov-dc-canvas { border-radius: 14px; background: rgba(8,22,40,0.90); border: 1.5px solid #2060a0; display: block; }
+    #ov-dc-name-wrap { display: flex; flex-direction: column; gap: 5px; align-items: center; width: 200px; }
+    #ov-dc-name-label { color: #80a8c8; font: 12px Arial; align-self: flex-start; }
+    #ov-dc-name { width: 200px; padding: 8px 12px; border-radius: 9px; border: 1.5px solid #2c70a0; background: rgba(6,18,36,0.92); color: #d0eeff; font: 14px Arial; outline: none; text-align: center; }
+    #ov-dc-options-col { flex: 1; min-width: 280px; max-width: 540px; display: flex; flex-direction: column; gap: 14px; }
+    .ov-dc-section { background: rgba(6,18,36,0.70); border-radius: 12px; padding: 12px 14px; border: 1px solid rgba(40,100,160,0.40); }
+    .ov-dc-section-title { color: #70b8d8; font: bold 12px Arial; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 9px; }
+    .ov-btn-group { display: flex; flex-wrap: wrap; gap: 7px; }
+    .ov-opt-btn {
+      padding: 6px 13px; border-radius: 8px; border: 1.5px solid rgba(40,90,150,0.60);
+      background: rgba(10,24,46,0.80); color: #90c0e0; font: 12px Arial; cursor: pointer;
+      transition: all 0.15s;
+    }
+    .ov-opt-btn:hover { border-color: #4090d0; color: #c0e8ff; }
+    .ov-opt-btn.ov-selected { border-color: #40b0f0; background: rgba(20,60,110,0.90); color: #d0f0ff; font-weight: bold; }
+    .ov-swatch-row { display: flex; flex-wrap: wrap; gap: 8px; }
+    .ov-swatch {
+      width: 26px; height: 26px; border-radius: 50%; cursor: pointer;
+      border: 2.5px solid transparent; transition: border-color 0.15s, transform 0.1s;
+      flex-shrink: 0;
+    }
+    .ov-swatch:hover { transform: scale(1.15); }
+    .ov-swatch.ov-selected { border-color: #fff; transform: scale(1.18); }
+    .ov-swatch-label { font: 10px Arial; color: #6090b0; text-align: center; margin-top: 2px; max-width: 26px; overflow: hidden; white-space: nowrap; }
+    .ov-swatch-wrap { display: flex; flex-direction: column; align-items: center; }
+    #ov-dc-enter-btn {
+      width: 100%; padding: 14px; background: linear-gradient(135deg, #1a5080, #0e3060);
+      border: 1.5px solid #3090d0; border-radius: 14px; color: #a0e0ff;
+      font: bold 16px Arial; cursor: pointer; letter-spacing: 2px;
+      text-shadow: 0 0 12px #2080c0; transition: all 0.2s; margin-top: 4px;
+    }
+    #ov-dc-enter-btn:hover { background: linear-gradient(135deg, #2068a0, #1a4a90); color: #d0f0ff; }
+    #ov-dc-back-btn { background: transparent; border: none; color: #507090; font: 13px Arial; cursor: pointer; text-decoration: underline; margin-top: 2px; }
+    #ov-dc-spot-color-section { transition: opacity 0.2s; }
+    #ov-dc-spot-color-section.ov-hidden-section { opacity: 0.3; pointer-events: none; }
   </style>
 </head>
 <body>
@@ -1135,7 +1289,7 @@
   <!-- Craft Jewelry overlay -->
   <div id="craft-jewelry-overlay" class="hidden">
     <div id="craft-jewelry-title">✨ Craft a <span id="craft-jewelry-type-label">Necklace</span></div>
-    <div id="craft-jewelry-sub">Pick one metal and one stone from your field guide.<br>You need to have found 2 or more of a type to spare one for crafting.</div>
+    <div id="craft-jewelry-sub">Pick one metal and one stone from your field guide.<br>Any material you've donated to the Science Center can be crafted — no pouch needed.</div>
     <div id="craft-jewelry-body">
       <div class="craft-pick-col">
         <div class="craft-pick-label">⚙️ Metal</div>
@@ -3304,9 +3458,9 @@
   }
 
   // ── Scratch: detailed NPC dog with layered multi-colour fur ──────────────
-  function buildScratch(list, wx, wz, yaw, legAngle, wagAngle, sleeping) {
+  function buildScratch(list, wx, wz, yaw, legAngle, wagAngle, sleeping, wy) {
     const s     = 0.85;
-    const fl    = 0.21;
+    const fl    = (wy !== undefined) ? wy : 0.21;
     const base  = SCRATCH_FUR;   // 0x7a4e28 warm dark brown base
     const dark  = SCRATCH_DARK;  // 0x3e2010 deep merle / saddle patches
     const cream = SCRATCH_CREAM; // 0xdecba8 cream muzzle / chest / tail tip
@@ -3700,6 +3854,8 @@
 
   // ── Village (warkPhase 2) ──────────────────────────────────────────────────
   function buildVillage() {
+    document.getElementById('map-btn').classList.add('hidden');
+    document.getElementById('obs-map-btn').classList.add('hidden');
     villageQuads.length = 0;
     npcQuads.length = 0;
     clearingNPCs.length = 0;
@@ -4175,11 +4331,16 @@
     dogQuads = [];
     const { x, y, z, yaw, walkT, wagT, frontLegAngle, backLegAngle } = dogState;
 
-    // Growth scale: Obsidian slowly grows; Bark starts as a tiny newborn pup
+    // Growth scale: Obsidian slowly grows; Bark starts as a tiny newborn pup;
+    // Cheeseball is a small pom; Scratch is a larger dog
     const dogGrowScale = (activeCharacter === 'obsidian' && obsidianShardPhase >= 3)
       ? 1.0 + Math.min(obsidianDaysPostNecklace * 0.14, 0.42)
       : (activeCharacter === 'bark' && !barkInVillage && !barkInForest && !barkDeepForest)
       ? 0.38
+      : (activeCharacter === 'cheeseball')
+      ? 0.72
+      : (activeCharacter === 'scratch')
+      ? 1.22
       : 1.0;
 
     // helper: push a box in dog-local space, then translate to world
@@ -4340,46 +4501,47 @@
       dbox(-0.25, 1.48, 0.65, 0.06, 0.08, 0.06, orangeFur);
 
       // ── Fluffy curled tail ──────────────────────────────────────────────
+      const _scCB = dogGrowScale;
       const tailWagCB = sin(wagT) * 0.55;
-      const ctw0 = add(rotY(v3(0, 0.70, -0.62), yaw), v3(x,y,z));
-      pushBox(dogQuads, ctw0.x, ctw0.y, ctw0.z, 0.10,0.10,0.22, orangeFur, yaw+tailWagCB*0.5);
-      const ctw1dir = rotY(rotX(v3(0,0.22,-0.18), -0.7+tailWagCB*0.3), yaw);
+      const ctw0 = add(rotY(v3(0, 0.70*_scCB, -0.62*_scCB), yaw), v3(x,y,z));
+      pushBox(dogQuads, ctw0.x, ctw0.y, ctw0.z, 0.10*_scCB,0.10*_scCB,0.22*_scCB, orangeFur, yaw+tailWagCB*0.5);
+      const ctw1dir = rotY(rotX(v3(0,0.22*_scCB,-0.18*_scCB), -0.7+tailWagCB*0.3), yaw);
       const ctw1    = add(ctw0, ctw1dir);
-      pushBox(dogQuads, ctw1.x, ctw1.y, ctw1.z, 0.09,0.09,0.18, deepOrange, yaw+tailWagCB*0.8, -0.7);
-      const ctw2dir = rotY(rotX(v3(0,0.16,-0.08), -1.2+tailWagCB*0.4), yaw);
+      pushBox(dogQuads, ctw1.x, ctw1.y, ctw1.z, 0.09*_scCB,0.09*_scCB,0.18*_scCB, deepOrange, yaw+tailWagCB*0.8, -0.7);
+      const ctw2dir = rotY(rotX(v3(0,0.16*_scCB,-0.08*_scCB), -1.2+tailWagCB*0.4), yaw);
       const ctw2    = add(ctw1, ctw2dir);
-      pushBox(dogQuads, ctw2.x, ctw2.y, ctw2.z, 0.11,0.11,0.12, orangeFur, yaw+tailWagCB, -1.2);
+      pushBox(dogQuads, ctw2.x, ctw2.y, ctw2.z, 0.11*_scCB,0.11*_scCB,0.12*_scCB, orangeFur, yaw+tailWagCB, -1.2);
 
       // ── Legs (blue-gray, compact pomeranian) ────────────────────────────
       const legPairsCB = [
-        [ 0.28, 0.18,  0.40, frontLegAngle],
-        [-0.28, 0.18,  0.40,-frontLegAngle],
-        [ 0.28, 0.18, -0.40,-backLegAngle],
-        [-0.28, 0.18, -0.40, backLegAngle],
+        [ 0.28*_scCB, 0.18,  0.40*_scCB, frontLegAngle],
+        [-0.28*_scCB, 0.18,  0.40*_scCB,-frontLegAngle],
+        [ 0.28*_scCB, 0.18, -0.40*_scCB,-backLegAngle],
+        [-0.28*_scCB, 0.18, -0.40*_scCB, backLegAngle],
       ];
       legPairsCB.forEach(([lx,ly,lz,ang]) => {
-        const hipLocal  = v3(lx, 0.36, lz);
+        const hipLocal  = v3(lx, 0.36*_scCB, lz);
         const hipWorld  = add(rotY(hipLocal, yaw), v3(x,y,z));
-        const legOffset = rotY(rotX(v3(0,-0.19,0), ang), yaw);
+        const legOffset = rotY(rotX(v3(0,-0.19*_scCB,0), ang), yaw);
         const legCentre = add(hipWorld, legOffset);
         pushBox(dogQuads, legCentre.x, legCentre.y, legCentre.z,
-                0.10, 0.19, 0.10, grayLeg, yaw, ang);
-        const pawOffset = rotY(rotX(v3(0,-0.20,0), ang), yaw);
+                0.10*_scCB, 0.19*_scCB, 0.10*_scCB, grayLeg, yaw, ang);
+        const pawOffset = rotY(rotX(v3(0,-0.20*_scCB,0), ang), yaw);
         const pawCentre = add(hipWorld, pawOffset);
-        pushBox(dogQuads, pawCentre.x, pawCentre.y-0.05, pawCentre.z,
-                0.13, 0.06, 0.13, lightGray, yaw, ang);
+        pushBox(dogQuads, pawCentre.x, pawCentre.y-0.05*_scCB, pawCentre.z,
+                0.13*_scCB, 0.06*_scCB, 0.13*_scCB, lightGray, yaw, ang);
       });
 
       // ── Gold + ruby collar ────────────────────────────────────────────
       if (cbCollarOn) {
-        const cbColR = 0.20, cbColY = 0.69;
+        const cbColR = 0.20*_scCB, cbColY = 0.69*_scCB;
         for (let b = 0; b < 12; b++) {
           const ba   = (b / 12) * PI * 2;
           const bxl  = sin(ba) * cbColR;
-          const byy  = cos(ba) * 0.035;
-          const bwp  = add(rotY(v3(bxl, cbColY + byy, 0.52), yaw), v3(x,y,z));
+          const byy  = cos(ba) * 0.035*_scCB;
+          const bwp  = add(rotY(v3(bxl, cbColY + byy, 0.52*_scCB), yaw), v3(x,y,z));
           const bCol = (b % 3 === 0) ? 0xcc1010 : 0xd4a200; // ruby every 3rd, gold otherwise
-          pushBox(dogQuads, bwp.x, bwp.y, bwp.z, 0.028, 0.028, 0.028, bCol, yaw);
+          pushBox(dogQuads, bwp.x, bwp.y, bwp.z, 0.028*_scCB, 0.028*_scCB, 0.028*_scCB, bCol, yaw);
         }
       }
 
@@ -4389,19 +4551,19 @@
         const bowCol  = BOW_COLORS[cbBowIndex];
         const bowDark = 0x1a0810; // near-black knot centre
         // left loop
-        const bl = add(rotY(v3(-0.15, 1.56, 0.67), yaw), v3(x,y,z));
-        pushBox(dogQuads, bl.x, bl.y, bl.z, 0.10, 0.07, 0.06, bowCol, yaw);
+        const bl = add(rotY(v3(-0.15*_scCB, 1.56*_scCB, 0.67*_scCB), yaw), v3(x,y,z));
+        pushBox(dogQuads, bl.x, bl.y, bl.z, 0.10*_scCB, 0.07*_scCB, 0.06*_scCB, bowCol, yaw);
         // right loop
-        const br = add(rotY(v3( 0.15, 1.56, 0.67), yaw), v3(x,y,z));
-        pushBox(dogQuads, br.x, br.y, br.z, 0.10, 0.07, 0.06, bowCol, yaw);
+        const br = add(rotY(v3( 0.15*_scCB, 1.56*_scCB, 0.67*_scCB), yaw), v3(x,y,z));
+        pushBox(dogQuads, br.x, br.y, br.z, 0.10*_scCB, 0.07*_scCB, 0.06*_scCB, bowCol, yaw);
         // centre knot
-        const bk = add(rotY(v3(0, 1.56, 0.67), yaw), v3(x,y,z));
-        pushBox(dogQuads, bk.x, bk.y, bk.z, 0.04, 0.045, 0.045, bowDark, yaw);
+        const bk = add(rotY(v3(0, 1.56*_scCB, 0.67*_scCB), yaw), v3(x,y,z));
+        pushBox(dogQuads, bk.x, bk.y, bk.z, 0.04*_scCB, 0.045*_scCB, 0.045*_scCB, bowDark, yaw);
         // ribbon tails hanging down
-        const btl = add(rotY(v3(-0.09, 1.48, 0.65), yaw), v3(x,y,z));
-        pushBox(dogQuads, btl.x, btl.y, btl.z, 0.045, 0.04, 0.04, bowCol, yaw + 0.25);
-        const btr = add(rotY(v3( 0.09, 1.48, 0.65), yaw), v3(x,y,z));
-        pushBox(dogQuads, btr.x, btr.y, btr.z, 0.045, 0.04, 0.04, bowCol, yaw - 0.25);
+        const btl = add(rotY(v3(-0.09*_scCB, 1.48*_scCB, 0.65*_scCB), yaw), v3(x,y,z));
+        pushBox(dogQuads, btl.x, btl.y, btl.z, 0.045*_scCB, 0.04*_scCB, 0.04*_scCB, bowCol, yaw + 0.25);
+        const btr = add(rotY(v3( 0.09*_scCB, 1.48*_scCB, 0.65*_scCB), yaw), v3(x,y,z));
+        pushBox(dogQuads, btr.x, btr.y, btr.z, 0.045*_scCB, 0.04*_scCB, 0.04*_scCB, bowCol, yaw - 0.25);
       }
 
       return;
@@ -4615,7 +4777,8 @@
       buildScratch(dogQuads, x, z, yaw,
         sin(walkT) * 0.5,    // legAngle — walk cycle
         sin(wagT) * 0.4,     // wagAngle — tail wag
-        false);              // not sleeping
+        false,               // not sleeping
+        y);                  // vertical position (enables jumping)
       return;
     }
 
@@ -5403,6 +5566,7 @@
   }
 
   let _moon = false;   // updated each frame by update(); read by renderScene()
+  let _moonWasActive = false; // tracks previous frame's moon blessing state for toast
 
   function update() {
     const ds = dogState;
@@ -5420,10 +5584,15 @@
     // Speed bonus from equipped jewelry + moon blessing + Ruff opal/copper necklace
     const _eff = (typeof getActiveEffects === 'function') ? getActiveEffects() : {};
     _moon = getMoonBlessing();
+    if (_moon && !_moonWasActive) {
+      toastMsg   = '🌙 Moonstone awakens! New Moon is invisible, jumps higher, and moves faster!';
+      toastTimer = 420;
+    }
+    _moonWasActive = _moon;
     const _ruffBoost = hasRuffSpeedNecklace() ? 2.4 : 1;
     const _spd = MOVE_SPEED * (1 + (_eff.speed || 0) * 0.20) * (_moon ? 1.40 : 1) * _ruffBoost;
     const _bck = BACK_SPEED * (1 + (_eff.speed || 0) * 0.20) * (_moon ? 1.40 : 1) * _ruffBoost;
-    const _jumpVel = JUMP_VEL * (_moon ? 1.55 : 1);
+    const _jumpVel = JUMP_VEL * (_moon ? 1.55 : 1) * (_moon && activeCharacter === 'newmoon' ? 1.80 : 1);
 
     if (keys['ArrowUp']) {
       ds.x = Math.max(-FIELD_HALF, Math.min(FIELD_HALF, ds.x + sx * _spd));
@@ -8953,6 +9122,24 @@
       cam.yaw   = 0; cam.pos.x = dogState.x;
       cam.pos.y = DOG_FLOOR + 3.5;
       cam.pos.z = dogState.z - 6.5;
+      // New character: still inherit shared WOB coins and Field Guide from global save
+      const _gnew = getGlobalSave();
+      if (_gnew.wobCoins != null) wobCoins = _gnew.wobCoins;
+      if (_gnew.collectionLog) {
+        ['mushroom','animal','rock','metal'].forEach(cat => {
+          (_gnew.collectionLog[cat] || []).forEach(v => collectionLog[cat].add(v));
+        });
+      }
+      if (_gnew.donateCount) {
+        ['mushroom','animal','rock','metal'].forEach(cat => {
+          const gc = _gnew.donateCount[cat] || {};
+          Object.keys(gc).forEach(k => {
+            donateCount[cat][k] = Math.max(donateCount[cat][k] || 0, gc[k] || 0);
+          });
+        });
+      }
+      if (_gnew.jewelryBox) { try { jewelryBox = JSON.parse(_gnew.jewelryBox); } catch(e) {} }
+      if (_gnew.equippedNecklace != null) equippedNecklace = _gnew.equippedNecklace;
     }
     document.getElementById('pick-screen').classList.add('hidden');
     showEnterScreen(cfg.enterTitle || 'Entering…', () => {
@@ -12694,7 +12881,7 @@
       document.getElementById('shop-overlay').classList.remove('hidden');
     } else if (type === 'customize') {
       document.getElementById('factory-menu-text').textContent =
-        'Hmm… customization is still in the works! Come back soon! 🔨';
+        'Customization is only available in the online village!';
       setTimeout(() => {
         document.getElementById('factory-menu-text').textContent =
           'Welcome to the Pouch Factory! What can I do for you?';
@@ -13711,18 +13898,21 @@
           brief: "Wolves have built a forward camp north of the nether border. Scout the perimeter, count their numbers, and return without being seen.",
           role: 'Wark', roleEmoji: '🐾',
           objective: 'Scout the wolf camp — reach the northern overlook and return',
-          reward: '🪙 25 WOB + Scout Badge' },
+          reward: '🪙 25 WOB + Scout Badge',
+          difficulty: 1 },
         { title: 'Steal the Battle Plans',
           brief: "Our informant says blueprints for the wolf offensive are stored in a tent near the camp's eastern gate. Get in, grab them, get out.",
           role: 'New Moon', roleEmoji: '🌙',
           objective: 'Retrieve the battle plans from the wolf camp tent',
-          reward: '🪙 30 WOB + Stealth Pin' },
+          reward: '🪙 30 WOB + Stealth Pin',
+          difficulty: 2 },
         { title: 'Sabotage the Signal Tower',
           brief: "The wolves communicate via a howl-relay tower at grid point W-7. Disable it so they can't coordinate their next assault.",
           role: 'Cheeseball', roleEmoji: '🧀',
           objective: 'Reach the signal tower and destroy the relay crystal',
-          reward: '🪙 35 WOB + Disruptor Tag' },
-      ]
+          reward: '🪙 35 WOB + Disruptor Tag',
+          difficulty: 3 },
+      ].sort((a, b) => a.difficulty - b.difficulty)
     },
     {
       name: 'Prof. Birch 🌿', icon: '🌿', color: 0x4a9040,
@@ -13733,18 +13923,21 @@
           brief: "Humans at the eastern research station stockpile DNA testers, bandages, and stimulant vials. Sneak in through the ventilation shaft and bring back what you can carry.",
           role: 'Ruff', roleEmoji: '🐕',
           objective: 'Collect 3 DNA testers from the human lab',
-          reward: '🪙 40 WOB + Lab Key' },
+          reward: '🪙 40 WOB + Lab Key',
+          difficulty: 1 },
         { title: 'Rescue the Captured Medic',
           brief: "Dr. Fernwhistle was taken by wolves three days ago. She's being held in the dog house on the nether side. Get her out alive.",
           role: 'Bark', roleEmoji: '🐶',
           objective: 'Reach the dog house holding cell and escort Dr. Fernwhistle back',
-          reward: '🪙 45 WOB + Medic Ribbon' },
+          reward: '🪙 45 WOB + Medic Ribbon',
+          difficulty: 2 },
         { title: 'Poison the Wolf Water Supply',
           brief: "A harmless-to-dogs but wolf-debilitating compound needs to be added to the stream feeding their camp. Don't get caught near the stream.",
           role: 'Obsidian', roleEmoji: '🌑',
           objective: 'Reach the nether stream and add the compound without detection',
-          reward: '🪙 50 WOB + Chemist Badge' },
-      ]
+          reward: '🪙 50 WOB + Chemist Badge',
+          difficulty: 3 },
+      ].sort((a, b) => a.difficulty - b.difficulty)
     },
     {
       name: 'Prof. Cedar 🌲', icon: '🌲', color: 0x6b4226,
@@ -13755,18 +13948,21 @@
           brief: "Wolves raided our western food depot and took three crates. The crates are stashed at their border post — retrieve them before they're consumed.",
           role: 'Cheeseball', roleEmoji: '🧀',
           objective: 'Recover all three food crates from the wolf border post',
-          reward: '🪙 30 WOB + Logistics Star' },
+          reward: '🪙 30 WOB + Logistics Star',
+          difficulty: 1 },
         { title: 'Escort the Supply Convoy',
           brief: "A convoy of medical and food supplies is moving through nether territory. Run interference — keep it safe until it reaches Warbark Village.",
           role: 'Wark', roleEmoji: '🐾',
           objective: 'Protect the supply convoy through 3 checkpoints',
-          reward: '🪙 35 WOB + Convoy Medal' },
+          reward: '🪙 35 WOB + Convoy Medal',
+          difficulty: 2 },
         { title: 'Destroy the Wolf Ammunition Dump',
           brief: "They've been stockpiling howl-bombs in a cave near the nether ridge. One well-placed spark will set the whole cache off. Don't be anywhere near it when it blows.",
           role: 'Scratch', roleEmoji: '🐾',
           objective: 'Plant the spark charge and escape the cave before detonation',
-          reward: '🪙 55 WOB + Demolitions Badge' },
-      ]
+          reward: '🪙 55 WOB + Demolitions Badge',
+          difficulty: 3 },
+      ].sort((a, b) => a.difficulty - b.difficulty)
     },
     {
       name: 'Prof. Ash 🔥', icon: '🔥', color: 0xc04020,
@@ -13777,84 +13973,96 @@
           brief: "Wolf scouts have been probing our southern gate each night. Tonight we set an ambush — hold them off until Prof. Maple can organise a counter-strike.",
           role: 'Bark', roleEmoji: '🐶',
           objective: 'Repel 5 waves of wolf scouts at the southern gate',
-          reward: '🪙 40 WOB + Defender Crest' },
-        { title: 'Capture the Wolf Lieutenant',
-          brief: "Lieutenant Fang commands the nether patrol. If we bring him in for questioning, we'll finally know their invasion timeline. He won't come quietly.",
-          role: 'Ruff', roleEmoji: '🐕',
-          objective: 'Locate and capture Lieutenant Fang alive',
-          reward: '🪙 60 WOB + Capture Pin' },
+          reward: '🪙 40 WOB + Defender Crest',
+          difficulty: 1 },
         { title: 'Retake the Outpost',
           brief: "Outpost Dusk — our forward listening post — was overrun two days ago. A fire team of one has to go in, clear it, and raise our flag again.",
           role: 'New Moon', roleEmoji: '🌙',
           objective: 'Clear Outpost Dusk of all wolves and hoist the Warbark flag',
-          reward: '🪙 50 WOB + Outpost Medal' },
-      ]
+          reward: '🪙 50 WOB + Outpost Medal',
+          difficulty: 2 },
+        { title: 'Capture the Wolf Lieutenant',
+          brief: "Lieutenant Fang commands the nether patrol. If we bring him in for questioning, we'll finally know their invasion timeline. He won't come quietly.",
+          role: 'Ruff', roleEmoji: '🐕',
+          objective: 'Locate and capture Lieutenant Fang alive',
+          reward: '🪙 60 WOB + Capture Pin',
+          difficulty: 3 },
+      ].sort((a, b) => a.difficulty - b.difficulty)
     },
     {
       name: 'Prof. Flint ⚡', icon: '⚡', color: 0xd0c020,
       title: 'Science & Technology',
       brief: "Technology wins wars. The wolves have new gear — we need to reverse-engineer it.",
       missions: [
-        { title: 'Steal the Wolf DNA Database',
-          brief: "The wolves have been cataloguing dog DNA for something sinister. Their databank is stored in a mobile lab on the nether plains. Get us a copy.",
-          role: 'Obsidian', roleEmoji: '🌑',
-          objective: 'Hack the wolf mobile lab and extract the DNA database',
-          reward: '🪙 55 WOB + Data Core' },
         { title: 'Retrieve the Stolen Necklace',
           brief: "A pup from Warbark Village had their necklace stolen by a wolf raider. It has sentimental value — and we think it might be enchanted. Get it back.",
           role: 'Scratch', roleEmoji: '🐾',
           objective: "Find the wolf raider's camp and recover the stolen necklace",
-          reward: '🪙 30 WOB + Recovered Necklace' },
+          reward: '🪙 30 WOB + Recovered Necklace',
+          difficulty: 1 },
         { title: 'Plant a Tracking Device',
           brief: "We need to know where the wolf alpha goes each night. Plant a tracking mushroom spore on his fur without him noticing. Easier said than done.",
           role: 'Cheeseball', roleEmoji: '🧀',
           objective: 'Get close enough to the wolf alpha to plant the tracking spore',
-          reward: '🪙 45 WOB + Spy Spore' },
-      ]
+          reward: '🪙 45 WOB + Spy Spore',
+          difficulty: 2 },
+        { title: 'Steal the Wolf DNA Database',
+          brief: "The wolves have been cataloguing dog DNA for something sinister. Their databank is stored in a mobile lab on the nether plains. Get us a copy.",
+          role: 'Obsidian', roleEmoji: '🌑',
+          objective: 'Hack the wolf mobile lab and extract the DNA database',
+          reward: '🪙 55 WOB + Data Core',
+          difficulty: 3 },
+      ].sort((a, b) => a.difficulty - b.difficulty)
     },
     {
       name: 'Prof. Slate 🪨', icon: '🪨', color: 0x8888a0,
       title: 'Undercover Ops',
       brief: "Some missions need a light touch. Our best agents go in alone — and come back with answers.",
       missions: [
-        { title: 'Infiltrate the Dog House',
-          brief: "The wolves are keeping several captive dogs in a fortified kennel on the nether side. Pose as a stray, get inside, and open the back gate.",
-          role: 'Bark', roleEmoji: '🐶',
-          objective: 'Enter the dog house undetected and unlock the rear escape gate',
-          reward: '🪙 50 WOB + Undercover Badge' },
         { title: 'Photograph the Wolf General',
           brief: "We need proof of the wolf general's identity for the neutral-territory tribunal. Get close enough for a clear picture. Do NOT be seen.",
           role: 'New Moon', roleEmoji: '🌙',
           objective: 'Photograph the wolf general at the nether command tent',
-          reward: '🪙 40 WOB + Observer Medal' },
+          reward: '🪙 40 WOB + Observer Medal',
+          difficulty: 1 },
         { title: 'Recover the Warbark Seal',
           brief: "Our official village seal was stolen in the last raid — the wolves are using it to forge orders. Retrieve it from their record vault.",
           role: 'Wark', roleEmoji: '🐾',
           objective: 'Locate and retrieve the Warbark Seal from the wolf vault',
-          reward: '🪙 45 WOB + Honour Crest' },
-      ]
+          reward: '🪙 45 WOB + Honour Crest',
+          difficulty: 2 },
+        { title: 'Infiltrate the Dog House',
+          brief: "The wolves are keeping several captive dogs in a fortified kennel on the nether side. Pose as a stray, get inside, and open the back gate.",
+          role: 'Bark', roleEmoji: '🐶',
+          objective: 'Enter the dog house undetected and unlock the rear escape gate',
+          reward: '🪙 50 WOB + Undercover Badge',
+          difficulty: 3 },
+      ].sort((a, b) => a.difficulty - b.difficulty)
     },
     {
       name: 'Prof. Ember 🌸', icon: '🌸', color: 0xe06080,
       title: 'Rescue Division',
       brief: "No pup gets left behind. We bring everyone home — no exceptions.",
       missions: [
-        { title: 'Rescue the Hostage Pup',
-          brief: "A young pup from the east forest wandered into nether territory and was taken by wolves. They're using her as leverage. Get her out of that cage.",
-          role: 'Ruff', roleEmoji: '🐕',
-          objective: 'Find and rescue the hostage pup from the nether holding camp',
-          reward: '🪙 60 WOB + Rescue Star' },
         { title: 'Find the Missing Scout',
           brief: "Scout Bramblefur went dark three days ago. Last known position: near the nether ridge. Find out what happened to her.",
           role: 'Scratch', roleEmoji: '🐾',
           objective: 'Locate Scout Bramblefur or find evidence of what happened',
-          reward: '🪙 35 WOB + Search Pin' },
+          reward: '🪙 35 WOB + Search Pin',
+          difficulty: 1 },
+        { title: 'Rescue the Hostage Pup',
+          brief: "A young pup from the east forest wandered into nether territory and was taken by wolves. They're using her as leverage. Get her out of that cage.",
+          role: 'Ruff', roleEmoji: '🐕',
+          objective: 'Find and rescue the hostage pup from the nether holding camp',
+          reward: '🪙 60 WOB + Rescue Star',
+          difficulty: 2 },
         { title: 'Extract the Double Agent',
           brief: "Our contact inside the wolf pack has been compromised. She needs to be pulled out tonight before they discover who she is.",
           role: 'Obsidian', roleEmoji: '🌑',
           objective: 'Rendezvous with the double agent and escort her to Warbark Village',
-          reward: '🪙 70 WOB + Agent Commendation' },
-      ]
+          reward: '🪙 70 WOB + Agent Commendation',
+          difficulty: 3 },
+      ].sort((a, b) => a.difficulty - b.difficulty)
     },
   ];
 
@@ -14323,8 +14531,8 @@
     }
 
     // ── Floor tiles ──────────────────────────────────────────────────────
-    const fc = { wolf_camp:0x2a3018, human_lab:0x3c3c3c, nether:0x180606, forest:0x182810, village:0x6a5848 }[mapType]||0x282820;
-    const fa = { wolf_camp:0x201e10, human_lab:0x303030, nether:0x100404, forest:0x142010, village:0x5a4838 }[mapType]||0x1e1e18;
+    const fc = { wolf_camp:0x2a3018, human_lab:0x3c3c3c, nether:0x180606, forest:0x182810, village:0x6a5848, human_mansion:0x3a3428, dog_neighborhood:0x263814, dog_pound:0x343c3c }[mapType]||0x282820;
+    const fa = { wolf_camp:0x201e10, human_lab:0x303030, nether:0x100404, forest:0x142010, village:0x5a4838, human_mansion:0x2e2820, dog_neighborhood:0x1e2e0e, dog_pound:0x2a3030 }[mapType]||0x1e1e18;
     // Ground in 4-unit tiles for performance
     for (let fx = -FIELD_W; fx < FIELD_W; fx += 4) {
       for (let fz = -FIELD_D; fz < 10; fz += 4) {
@@ -14335,7 +14543,7 @@
     // Ground detail overlay — scattered variation patches
     {
       const pr = mfRng(mKey * 1337 + 11);
-      const patchCol = { wolf_camp:0x1e2410, human_lab:0x282828, nether:0x140202, forest:0x102008, village:0x504030, cave:0x161010, nether_ruins:0x180a0a, human_house:0x5a4030, maze:0x141018 }[mapType]||0x181810;
+      const patchCol = { wolf_camp:0x1e2410, human_lab:0x282828, nether:0x140202, forest:0x102008, village:0x504030, cave:0x161010, nether_ruins:0x180a0a, human_house:0x5a4030, maze:0x141018, human_mansion:0x302820, dog_neighborhood:0x182a0c, dog_pound:0x283030 }[mapType]||0x181810;
       for (let pi=0;pi<80;pi++) {
         const px=(pr()-0.5)*(FIELD_W*2-8), pz=-8-pr()*FIELD_D*0.95;
         const pw=1.5+pr()*3.5, pd=1.0+pr()*2.5;
@@ -15316,14 +15524,32 @@
     if (mapType !== 'human_house' && mapType !== 'maze') {
       const mazeCount = 4 + Math.floor(rng()*4);
       const wallCol = { wolf_camp:0x3a2810, human_lab:0x606868, nether:0x1a0c1c, forest:0x3a2808, village:0x907868, cave:0x2a2018, nether_ruins:0x3a2028 }[mapType]||0x383028;
+      // Collect guard/reach z-values for this mission so we never wall them off
+      const stageKey2 = profIdx * 3 + mIdx;
+      const guardZones = (MISSION_STAGES[stageKey2]||[]).flatMap(s =>
+        [s.guardZ, s.z].filter(z => z != null)
+      );
       for (let mi2=0; mi2<mazeCount; mi2++) {
         const mx=(rng()-0.5)*60, mz=-20-rng()*70;
         if (Math.abs(mx) < 4 && mz > -18) continue; // keep entry clear
         const mlen=6+rng()*12, mh=2.5+rng()*1.5, horiz=rng()<0.5;
         if (horiz) {
-          pushBox(missionFieldQuads, mx, mh, mz, mlen, mh, 0.45, wallCol);
-          addWall(mx, mz, mlen, 0.6);
+          // Horizontal wall — split it around x=0 to keep a 12-unit centre gap
+          // Also skip if this z is within 8 units of any guard/reach zone
+          if (guardZones.some(gz => Math.abs(mz - gz) < 8)) continue;
+          const gap = 6; // half-gap either side of x=0
+          const lEnd = mx - mlen, rEnd = mx + mlen; // rough extents
+          // Left segment: from lEnd to -gap
+          const lhw = Math.max(0, (-gap - lEnd) / 2);
+          const lcx = lEnd + lhw;
+          if (lhw > 0.5) { pushBox(missionFieldQuads, lcx, mh, mz, lhw, mh, 0.45, wallCol); addWall(lcx, mz, lhw, 0.6); }
+          // Right segment: from +gap to rEnd
+          const rhw = Math.max(0, (rEnd - gap) / 2);
+          const rcx = rEnd - rhw;
+          if (rhw > 0.5) { pushBox(missionFieldQuads, rcx, mh, mz, rhw, mh, 0.45, wallCol); addWall(rcx, mz, rhw, 0.6); }
         } else {
+          // Vertical wall — skip if it runs along the centre corridor
+          if (Math.abs(mx) < 7) continue;
           pushBox(missionFieldQuads, mx, mh, mz, 0.45, mh, mlen, wallCol);
           addWall(mx, mz, 0.6, mlen);
         }
@@ -15423,6 +15649,33 @@
         guardName:'Hall Cat 🐱',
         riddle:{ q:'I look like one of them, yet I serve a different master. I walk with two names in shadow. What am I?', hint:'Someone secretly working for the other side while blending in.', a:'spy|agent|double agent|undercover|mole' } },
       { type:'objective',   label:'Open the rear gate and free the dogs',     icon:'🔑', x:-14, z:-109 },
+    ],
+    // Flint-1 "Investigate the Dog Neighborhood" — dog_neighborhood
+    13: [
+      { type:'reach',       label:'Blend into the neighborhood streets',       icon:'🏘️', x:0,    z:-22 },
+      { type:'riddle_door', label:'Get past the neighborhood watch captain',    icon:'🚪',
+        guardX:0.5, guardZ:-53, guardFacing:0, guardFur:0x9a7050, guardEars:'floppy',
+        guardName:'Watch Captain 🐶',
+        riddle:{ q:'Every community has one — the one who knows every face and every schedule. They see all. What are they called?', hint:'The one who organises safety patrols in a neighbourhood.', a:'captain|warden|watch|guard|watchman|neighbourhood watch' } },
+      { type:'objective',   label:'Reach the community hall and retrieve the dossier', icon:'🐾', x:0, z:-108 },
+    ],
+    // Slate-1 "Mansion Heist" — human_mansion
+    16: [
+      { type:'reach',       label:'Slip through the grand foyer unseen',          icon:'🏛️', x:0,    z:-26 },
+      { type:'riddle_door', label:'Outsmart the butler in the ballroom',           icon:'🚪',
+        guardX:0.5, guardZ:-55, guardFacing:0, guardFur:0x202020, guardEars:'triangle',
+        guardName:'Butler Cat 🐱',
+        riddle:{ q:'I am always present in a mansion but never invited. I gather in corners and follow footsteps. The maids chase me away. What am I?', hint:'What accumulates in dusty corners and under beds.', a:'dust|dirt|dust bunny|cobweb' } },
+      { type:'objective',   label:'Retrieve the stolen documents from the private wing', icon:'📄', x:14, z:-105 },
+    ],
+    // Ember-1 "Rescue from the Dog Pound" — dog_pound
+    19: [
+      { type:'reach',       label:'Sneak through the reception area',              icon:'🏢', x:0,    z:-22 },
+      { type:'riddle_door', label:'Trick the control-room keeper',                 icon:'🚪',
+        guardX:0.5, guardZ:-74, guardFacing:0, guardFur:0x6080a0, guardEars:'floppy',
+        guardName:'Pound Keeper 👮',
+        riddle:{ q:'I am what every captive longs for and every jailer guards. Turn me and the cage swings open. What am I?', hint:'The tool that opens every lock in this facility.', a:'key|keycard|access key' } },
+      { type:'objective',   label:'Open the back kennel gate and free the dogs',   icon:'🔓', x:0, z:-116 },
     ],
     // Ember-0 "Rescue the Hostage Pup" — nether
     18: [
@@ -16671,63 +16924,49 @@
     const rl = document.getElementById('craft-rock-list');
     ml.innerHTML = ''; rl.innerHTML = '';
 
-    // ── Metals: show everything ever collected (from field guide) ──────
-    const metalKeys = Object.keys(lifetimeCollected.metal).map(Number)
-      .sort((a, b) => a - b);
+    // ── Metals: show everything in the field guide (collectionLog) ──────
+    const metalKeys = [...collectionLog.metal].map(Number).sort((a, b) => a - b);
     if (metalKeys.length === 0) {
       ml.innerHTML = '<div style="color:#907090;font:12px Arial">No metals found yet</div>';
     }
     metalKeys.forEach(dIdx => {
       const def      = METALS[dIdx];
       const donated  = (donateCount.metal && donateCount.metal[dIdx]) || 0;
-      const inPouch  = inventory.find(it => it.type === 'metal' && it.defIdx === dIdx)?.count || 0;
-      // Need to have donated at least once; also need 1 in pouch right now to consume
-      const canUnlock = donated >= 1;
-      const canSelect = canUnlock && inPouch >= 1;
+      const canCraft = donated >= 1;
       const btn = document.createElement('button');
       btn.className = 'craft-item-btn'
         + (craftSelMetal === dIdx ? ' selected' : '')
-        + (!canUnlock ? ' locked' : (!canSelect ? ' locked' : ''));
-      if (!canUnlock) {
-        btn.title     = `Donate one ${def.name} to the Science Center first to unlock necklace crafting`;
+        + (!canCraft ? ' locked' : '');
+      if (!canCraft) {
+        btn.title     = `Donate one ${def.name} to the Science Center first to unlock crafting`;
         btn.innerHTML = `${def.icon} ${def.name} <span style="color:${RARITY_COLOR[def.rarity]};font-size:10px">${def.rarity}</span> <span style="color:#e06060;font-size:10px">🔒 donate first</span>`;
-      } else if (!canSelect) {
-        btn.title     = `You have 0 in your pouch right now — go find one to bring back`;
-        btn.innerHTML = `${def.icon} ${def.name} <span style="color:${RARITY_COLOR[def.rarity]};font-size:10px">${def.rarity}</span> <span style="color:#e0a020;font-size:10px">not in pouch</span>`;
       } else {
         btn.title     = '';
-        btn.innerHTML = `${def.icon} ${def.name} <span style="color:${RARITY_COLOR[def.rarity]};font-size:10px">${def.rarity}</span> <span style="color:#a0c080;font-size:10px">×${inPouch} in pouch</span>`;
+        btn.innerHTML = `${def.icon} ${def.name} <span style="color:${RARITY_COLOR[def.rarity]};font-size:10px">${def.rarity}</span> <span style="color:#a0c080;font-size:10px">✓ donated</span>`;
         btn.onclick   = () => { craftSelMetal = dIdx; renderCraftLists(); updateCraftPreview(); };
       }
       ml.appendChild(btn);
     });
 
-    // ── Rocks: show everything ever collected (from field guide) ───────
-    const rockKeys = Object.keys(lifetimeCollected.rock).map(Number)
-      .sort((a, b) => a - b);
+    // ── Rocks: show everything in the field guide (collectionLog) ───────
+    const rockKeys = [...collectionLog.rock].map(Number).sort((a, b) => a - b);
     if (rockKeys.length === 0) {
       rl.innerHTML = '<div style="color:#907090;font:12px Arial">No stones found yet</div>';
     }
     rockKeys.forEach(dIdx => {
       const def      = ROCKS[dIdx];
       const donated  = (donateCount.rock && donateCount.rock[dIdx]) || 0;
-      const inPouch  = inventory.find(it => it.type === 'rock' && it.defIdx === dIdx)?.count || 0;
-      // Need to have donated at least once; also need 1 in pouch right now to consume
-      const canUnlock = donated >= 1;
-      const canSelect = canUnlock && inPouch >= 1;
+      const canCraft = donated >= 1;
       const btn = document.createElement('button');
       btn.className = 'craft-item-btn'
         + (craftSelRock === dIdx ? ' selected' : '')
-        + (!canUnlock ? ' locked' : (!canSelect ? ' locked' : ''));
-      if (!canUnlock) {
-        btn.title     = `Donate one ${def.name} to the Science Center first to unlock necklace crafting`;
+        + (!canCraft ? ' locked' : '');
+      if (!canCraft) {
+        btn.title     = `Donate one ${def.name} to the Science Center first to unlock crafting`;
         btn.innerHTML = `${def.icon} ${def.name} <span style="color:${RARITY_COLOR[def.rarity]};font-size:10px">${def.rarity}</span> <span style="color:#e06060;font-size:10px">🔒 donate first</span>`;
-      } else if (!canSelect) {
-        btn.title     = `You have 0 in your pouch right now — go find one to bring back`;
-        btn.innerHTML = `${def.icon} ${def.name} <span style="color:${RARITY_COLOR[def.rarity]};font-size:10px">${def.rarity}</span> <span style="color:#e0a020;font-size:10px">not in pouch</span>`;
       } else {
         btn.title     = '';
-        btn.innerHTML = `${def.icon} ${def.name} <span style="color:${RARITY_COLOR[def.rarity]};font-size:10px">${def.rarity}</span> <span style="color:#a0c080;font-size:10px">×${inPouch} in pouch</span>`;
+        btn.innerHTML = `${def.icon} ${def.name} <span style="color:${RARITY_COLOR[def.rarity]};font-size:10px">${def.rarity}</span> <span style="color:#a0c080;font-size:10px">✓ donated</span>`;
         btn.onclick   = () => { craftSelRock = dIdx; renderCraftLists(); updateCraftPreview(); };
       }
       rl.appendChild(btn);
@@ -16745,28 +16984,23 @@
     const rDef    = ROCKS[craftSelRock];
     const eff     = getJewelryEffect(craftSelMetal, craftSelRock);
     const str     = jewelryEffectStrength(craftSelMetal, craftSelRock);
-    const mPouch  = (inventory.find(it => it.type === 'metal' && it.defIdx === craftSelMetal)?.count || 0);
-    const rPouch  = (inventory.find(it => it.type === 'rock'  && it.defIdx === craftSelRock )?.count || 0);
-    const canCraft = mPouch >= 1 && rPouch >= 1;
-    const mColor  = mPouch >= 1 ? '#a0c080' : '#e06060';
-    const rColor  = rPouch >= 1 ? '#a0c080' : '#e06060';
+    const mDon    = (donateCount.metal && donateCount.metal[craftSelMetal]) || 0;
+    const rDon    = (donateCount.rock  && donateCount.rock[craftSelRock])   || 0;
+    const canCraft = mDon >= 1 && rDon >= 1;
     previewEl.innerHTML = `
       ✨ <b>${buildJewelryName(craftSelMetal, craftSelRock, craftJewelryMode)}</b><br>
       Effect: ${EFFECT_LABELS[eff]} · <span style="color:#d0b060">${Math.round(str*100)}% power</span><br>
-      <span style="color:#c0a8b0">Uses: </span><span style="color:${mColor}">${mDef.icon} ${mDef.name} ×1 (have ${mPouch})</span>
-      <span style="color:#c0a8b0"> + </span><span style="color:${rColor}">${rDef.icon} ${rDef.name} ×1 (have ${rPouch})</span>`;
+      <span style="color:#c0a8b0">Uses: </span>${mDef.icon} ${mDef.name} + ${rDef.icon} ${rDef.name}`;
     confirmEl.disabled = !canCraft;
   }
   window.confirmCraftJewelry = function() {
     if (craftSelMetal < 0 || craftSelRock < 0) return;
-    // Consume 1 metal + 1 rock from pouch
-    const mInv = inventory.find(it => it.type === 'metal' && it.defIdx === craftSelMetal);
-    const rInv = inventory.find(it => it.type === 'rock'  && it.defIdx === craftSelRock);
-    if (!mInv || (mInv.count || 0) < 1 || !rInv || (rInv.count || 0) < 1) {
-      toastMsg = '❌ You need 1 of each material in your pouch to craft!'; toastTimer = 220; return;
+    // Require prior donation of both materials — no pouch consumption
+    const mDon = (donateCount.metal && donateCount.metal[craftSelMetal]) || 0;
+    const rDon = (donateCount.rock  && donateCount.rock[craftSelRock])   || 0;
+    if (mDon < 1 || rDon < 1) {
+      toastMsg = '❌ Donate both materials to the Science Center first!'; toastTimer = 220; return;
     }
-    mInv.count = (mInv.count || 1) - 1; if (mInv.count <= 0) inventory.splice(inventory.indexOf(mInv), 1);
-    rInv.count = (rInv.count || 1) - 1; if (rInv.count <= 0) inventory.splice(inventory.indexOf(rInv), 1);
     const piece = {
       type:     craftJewelryMode,
       metalIdx: craftSelMetal,
@@ -16783,14 +17017,9 @@
   };
 
   window.craftFieldGuideNecklace = function(type, defIdx) {
-    const invItem = inventory.find(it => it.type === type && it.defIdx === defIdx);
-    const donatedAmt = (donateCount[type] && donateCount[type][defIdx]) || 0;
-    if (donatedAmt < 1) {
-      toastMsg = '❌ Donate one to the Science Center first to unlock this necklace!';
-      toastTimer = 260; return;
-    }
-    if (!invItem || (invItem.count || 1) < 1) {
-      toastMsg = '❌ You need at least 1 in your pouch to craft a necklace!';
+    const logSet = collectionLog[type] || new Set();
+    if (!logSet.has(defIdx)) {
+      toastMsg = '❌ You haven\'t discovered this material yet!';
       toastTimer = 220; return;
     }
     const def  = (type === 'metal' ? METALS : ROCKS)[defIdx];
@@ -16809,12 +17038,9 @@
       effect:   eff,
       strength: str,
     };
-    // Consume 1 from pouch
-    invItem.count = (invItem.count || 1) - 1;
-    if (invItem.count <= 0) inventory.splice(inventory.indexOf(invItem), 1);
     jewelryBox.push(piece);
     saveProgress();
-    renderSciCollectionGrid(); // refresh counts
+    renderSciCollectionGrid();
     toastMsg   = `✨ Crafted: ${piece.name}! (${EFFECT_LABELS[eff]}) Check your Jewelry Box.`;
     toastTimer = 360;
   };
@@ -17091,12 +17317,9 @@
       // Craft necklace button for rocks and metals
       let craftHtml = '';
       if (known && (tab === 'rock' || tab === 'metal')) {
-        const canCraft = donated >= 1 && inPouch >= 1;
-        const lockReason = donated < 1 ? 'Donate one to Science Center first'
-                         : `Need 1 in pouch to craft (have ${inPouch})`;
-        craftHtml = `<button class="sci-entry-craft-btn" ${canCraft ? '' : 'disabled'}
-          onclick="craftFieldGuideNecklace('${tab}',${i})" title="${canCraft ? 'Craft a necklace (−1 from pouch)' : lockReason}">
-          ${canCraft ? '✨ Craft Necklace' : donated < 1 ? '🔒 Donate first' : '🔒 Need ×1 (' + inPouch + '/1)'}</button>`;
+        craftHtml = `<button class="sci-entry-craft-btn"
+          onclick="craftFieldGuideNecklace('${tab}',${i})" title="Craft a necklace from this material">
+          ✨ Craft Necklace</button>`;
       }
       entry.innerHTML = `<div class="sci-entry-icon">${known ? def.icon : '?'}</div>
         <div class="sci-entry-name">${known ? def.name : '???'}</div>
@@ -17788,5 +18011,119 @@
     }, 0);
   }, 0));
   </script>
+  <!-- ═══════════════ ONLINE VILLAGE PANELS ═══════════════ -->
+
+  <!-- Dog Creator (full-screen, first time entering) -->
+  <div id="ov-dog-creator" class="hidden">
+    <div id="ov-dc-title">🌐 Create Your Online Dog</div>
+    <div id="ov-dc-subtitle">This dog only lives in the Online Village</div>
+    <div id="ov-dc-body">
+      <!-- Preview + name -->
+      <div id="ov-dc-preview-col">
+        <canvas id="ov-dc-canvas" width="200" height="200"></canvas>
+        <div id="ov-dc-name-wrap">
+          <div id="ov-dc-name-label">Dog name</div>
+          <input id="ov-dc-name" type="text" maxlength="18" placeholder="Enter a name…" autocomplete="off" spellcheck="false">
+        </div>
+      </div>
+      <!-- Options -->
+      <div id="ov-dc-options-col">
+        <!-- Body type -->
+        <div class="ov-dc-section">
+          <div class="ov-dc-section-title">Body Type</div>
+          <div class="ov-btn-group" id="ov-dc-body-type"></div>
+        </div>
+        <!-- Ear type -->
+        <div class="ov-dc-section">
+          <div class="ov-dc-section-title">Ears</div>
+          <div class="ov-btn-group" id="ov-dc-ear-type"></div>
+        </div>
+        <!-- Size -->
+        <div class="ov-dc-section">
+          <div class="ov-dc-section-title">Size</div>
+          <div class="ov-btn-group" id="ov-dc-size-btns">
+            <button class="ov-opt-btn" data-size="0">🐾 Tiny</button>
+            <button class="ov-opt-btn ov-selected" data-size="1">🐕 Medium</button>
+            <button class="ov-opt-btn" data-size="2">🐘 Large</button>
+          </div>
+        </div>
+        <!-- Fur color -->
+        <div class="ov-dc-section">
+          <div class="ov-dc-section-title">Fur Colour</div>
+          <div class="ov-swatch-row" id="ov-dc-fur-colors"></div>
+        </div>
+        <!-- Spot pattern -->
+        <div class="ov-dc-section">
+          <div class="ov-dc-section-title">Spot Pattern</div>
+          <div class="ov-btn-group" id="ov-dc-spot-pattern"></div>
+        </div>
+        <!-- Spot color -->
+        <div class="ov-dc-section" id="ov-dc-spot-color-section">
+          <div class="ov-dc-section-title">Spot / Marking Colour</div>
+          <div class="ov-swatch-row" id="ov-dc-spot-colors"></div>
+        </div>
+        <!-- Collar color -->
+        <div class="ov-dc-section">
+          <div class="ov-dc-section-title">Collar</div>
+          <div class="ov-swatch-row" id="ov-dc-collar-colors"></div>
+        </div>
+        <!-- Enter button -->
+        <button id="ov-dc-enter-btn">🌐 ENTER ONLINE VILLAGE</button>
+        <button id="ov-dc-back-btn">← go back</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Online village HUD badge -->
+  <div id="ov-badge" class="hidden">🌐 Online Village</div>
+  <div id="ov-player-count" class="hidden"></div>
+
+  <!-- Chat toggle button -->
+  <button id="ov-chat-toggle" class="hidden" onclick="ovToggleChat()">💬 Chat</button>
+  <!-- Chat panel -->
+  <div id="ov-chat" class="hidden">
+    <div id="ov-chat-log"></div>
+    <div id="ov-chat-row">
+      <input id="ov-chat-input" type="text" maxlength="120" placeholder="Say something…" autocomplete="off" spellcheck="false">
+      <button id="ov-chat-send" onclick="ovSendChat()">Send</button>
+    </div>
+  </div>
+
+  <!-- Customization panel (edit dog while in village) -->
+  <div id="ov-custom-panel" class="hidden">
+    <h3>✨ Customise Dog</h3>
+    <div class="ov-custom-label">Fur Colour</div>
+    <div class="ov-swatch-row" id="ov-cp-fur-colors"></div>
+    <div class="ov-custom-label" style="margin-top:10px">Collar</div>
+    <div class="ov-swatch-row" id="ov-cp-collar-colors"></div>
+    <div class="ov-custom-label" style="margin-top:10px">Spot Pattern</div>
+    <div class="ov-btn-group" id="ov-cp-spot-pattern" style="margin-bottom:8px"></div>
+    <div class="ov-custom-label">Spot Colour</div>
+    <div class="ov-swatch-row" id="ov-cp-spot-colors"></div>
+    <button id="ov-custom-close" onclick="ovCloseCustom()" style="margin-top:14px">✔ Done</button>
+  </div>
+
+  <!-- Trade offer panel -->
+  <div id="ov-trade-panel" class="hidden">
+    <h3>🤝 Offer a Trade</h3>
+    <p id="ov-trade-to-name" style="color:#80e8b0;font:13px Arial;text-align:center"></p>
+    <div style="color:#70b890;font:12px Arial">Select an item to offer:</div>
+    <div id="ov-trade-items"></div>
+    <div id="ov-trade-row">
+      <button id="ov-trade-send" onclick="ovSendTrade()">Send Offer</button>
+      <button id="ov-trade-cancel" onclick="ovCancelTrade()">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Incoming trade panel -->
+  <div id="ov-trade-incoming" class="hidden">
+    <h3>📬 Trade Offer!</h3>
+    <p id="ov-trade-inc-desc" style="font:13px Arial;text-align:center;color:#c0f0d8"></p>
+    <div id="ov-trade-inc-row">
+      <button id="ov-trade-accept" onclick="ovAcceptTrade()">Accept</button>
+      <button id="ov-trade-decline" onclick="ovDeclineTrade()">Decline</button>
+    </div>
+  </div>
+
 </body>
 </html>
