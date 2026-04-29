@@ -1588,7 +1588,13 @@
   // Push a box (axis-aligned or pre-rotated via transform) into a quad list
   // cx,cy,cz = centre; w,h,d = half-extents; color = 0xRRGGBB
   // yaw = rotation around Y before world translation
+  // Global XZ-scale used by buildOnlineVillage() to create a 2× bigger map
+  // Set to 1 normally; temporarily set to 2 when building online village geometry.
+  let _pbXZ = 1;
+
   function pushBox(list, cx, cy, cz, w, h, d, color, yaw=0, rx=0) {
+    const S = _pbXZ;
+    cx *= S; cz *= S; w *= S; d *= S;
     const corners = [
       v3(-w,-h,-d), v3( w,-h,-d), v3( w, h,-d), v3(-w, h,-d),
       v3(-w,-h, d), v3( w,-h, d), v3( w, h, d), v3(-w, h, d),
@@ -5569,6 +5575,9 @@
   let _moonWasActive = false; // tracks previous frame's moon blessing state for toast
 
   function update() {
+    // Online village gets its own update path
+    if (inOnlineVillage) { updateOnlineVillage(); return; }
+
     const ds = dogState;
 
     // During Ruff's 3D battle, arrow keys move rather than turn
@@ -5855,8 +5864,7 @@
         const satDist = Math.hypot(ds.x - 10.5, ds.z - 5);
         if (satDist < 3.5 && keysJustPressed.has('KeyE') && gameState === 'playing') {
           keysJustPressed.delete('KeyE');
-          toastMsg = '🌐 Unit-7: Online Village access — coming soon!';
-          toastTimer = 240;
+          tryEnterOnlineVillage();
         }
       }
       // (World-space [E] door badges are drawn by drawVillageDoorHints())
@@ -6141,6 +6149,7 @@
     }
 
     // camera follows behind dog
+    if (inOnlineVillage) { ovUpdateCamera(); } else {
     camYawTarget = ds.yaw;
     cam.yaw = lerp(cam.yaw, camYawTarget, 0.08);
     const CAM_DIST = (activeCharacter === 'bark' && !barkInVillage && !barkInForest) ? 3.5 : 6.5;
@@ -6154,6 +6163,7 @@
     cam.pos.y = lerp(cam.pos.y, targetPos.y, 0.08);
     cam.pos.z = lerp(cam.pos.z, targetPos.z, 0.08);
     cam.pitch = (activeCharacter === 'bark' && !barkInVillage && !barkInForest) ? 0.36 : 0.28;
+    }
   }
 
   function buildArrivalNpcQuads() {
@@ -6334,6 +6344,49 @@
     }
 
     // collect all quads
+    // Online village: render its geometry + other players' dogs + own online dog
+    if (inOnlineVillage) {
+      buildOnlinePlayerQuads();
+      const ovOwnQuads = [];
+      const p = onlineDogProfile;
+      if (p) {
+        addOnlineCustomDog(ovOwnQuads, ovDog.x, ovDog.z,
+          OV_SIZES[Math.min(p.sizeIdx||1,2)],
+          OV_FUR_COLORS[Math.min(p.furIdx||0,OV_FUR_COLORS.length-1)].hex,
+          ovDog.yaw,
+          OV_EAR_TYPES[Math.min(p.earIdx||0,OV_EAR_TYPES.length-1)],
+          OV_SPOT_PATS[Math.min(p.spotPatIdx||0,OV_SPOT_PATS.length-1)],
+          p.spotColIdx>0 ? OV_SPOT_COLORS[Math.min(p.spotColIdx||1,OV_SPOT_COLORS.length-1)].hex : null,
+          OV_COLLAR_COLORS[Math.min(p.collarIdx||0,OV_COLLAR_COLORS.length-1)].hex,
+          Math.min(p.bodyIdx||0,OV_BODY_TYPES.length-1));
+      }
+      const ovAll = [...ovVillageQuads, ...ovPlayerQuads, ...ovOwnQuads];
+      const toRenderOV = ovAll.map(q => {
+        const pts = projectClipped(q.verts, cam); if (!pts) return null;
+        const avgZ = pts.reduce((s2,p2)=>s2+p2.z,0)/pts.length;
+        const cx=q.verts.reduce((s2,v)=>s2+v.x,0)/4, cz=q.verts.reduce((s2,v)=>s2+v.z,0)/4;
+        const worldDist = Math.hypot(cx-cam.pos.x, cz-cam.pos.z);
+        const fogStart=44, fogRange=60, fogMax=0.72;
+        const vp=villageDayPhase();
+        const dayness=Math.max(0,Math.sin(Math.max(0,(vp-0.10)/(0.72-0.10))*Math.PI));
+        const fr=Math.round(0x20+(0x90-0x20)*dayness), fg=Math.round(0x28+(0xb8-0x28)*dayness), fb=Math.round(0x38+(0xc8-0x38)*dayness);
+        const fogHex=(fr<<16)|(fg<<8)|fb;
+        const fogT=Math.min(1,Math.max(0,(worldDist-fogStart)/fogRange))*fogMax*(q.isGround?0.3:1.0);
+        return {pts,avgZ,color:q.color,normal:q.normal,fogT,fogHex,isGround:!!q.isGround,worldDist};
+      }).filter(Boolean);
+      const FAR=40;
+      const gnd=toRenderOV.filter(q=>q.isGround); const wld=toRenderOV.filter(q=>!q.isGround);
+      const bg=wld.filter(q=>q.worldDist>FAR); const nr=wld.filter(q=>q.worldDist<=FAR);
+      bg.sort((a,b)=>b.worldDist-a.worldDist); nr.sort((a,b)=>b.avgZ-a.avgZ);
+      [...gnd,...bg,...nr].forEach(({pts,color,normal,fogT,fogHex,isGround})=>{
+        ctx.beginPath(); ctx.moveTo(pts[0].x,pts[0].y);
+        for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i].x,pts[i].y);
+        ctx.closePath(); ctx.fillStyle=shade(color,normal,fogT,fogHex); ctx.fill();
+        if (!isGround){ctx.strokeStyle='rgba(0,0,0,0.13)';ctx.lineWidth=0.5;ctx.stroke();}
+      });
+      renderOnlineNameTags();
+      return; // skip normal scene rendering when in online village
+    }
     buildDog();
     if (_moon) dogQuads.forEach(q => { q._isDog = true; });
     if (isInVillage()) buildLostPupQuads();
@@ -7251,9 +7304,6 @@
                           rock:{...donateCount.rock},     metal:{...donateCount.metal} };
     _gcur.collectionLog = { mushroom:[...collectionLog.mushroom], animal:[...collectionLog.animal],
                             rock:[...collectionLog.rock],     metal:[...collectionLog.metal] };
-    // Jewelry/necklaces are shared across all games
-    _gcur.jewelryBox       = JSON.stringify(jewelryBox);
-    _gcur.equippedNecklace = equippedNecklace;
     // Time of day is shared across all dog games
     _gcur.dayPhaseMs       = dayPhaseMs;
     // Village position — so other characters can see where we left off
@@ -7558,11 +7608,6 @@
           (_gcl[cat] || []).forEach(v => collectionLog[cat].add(v));
         });
       }
-      // Jewelry: always load from global save (shared)
-      if (_gcoins.jewelryBox) {
-        try { jewelryBox = JSON.parse(_gcoins.jewelryBox); } catch(e) {}
-      }
-      if (_gcoins.equippedNecklace != null) equippedNecklace = _gcoins.equippedNecklace;
       renderMissionHUD();
       return true;
     } catch(e) { return false; }
@@ -9138,8 +9183,6 @@
           });
         });
       }
-      if (_gnew.jewelryBox) { try { jewelryBox = JSON.parse(_gnew.jewelryBox); } catch(e) {} }
-      if (_gnew.equippedNecklace != null) equippedNecklace = _gnew.equippedNecklace;
     }
     document.getElementById('pick-screen').classList.add('hidden');
     showEnterScreen(cfg.enterTitle || 'Entering…', () => {
@@ -15282,6 +15325,206 @@
       // Extra cat in bedroom for higher professor levels
       if (profIdx >= 3) missionFieldPatrols.push({ x:-2, z:-88, startX:-2, startZ:-88, dx:0, dz:1, t:rng()*Math.PI*2, range:10, tSpeed:0.022, fur:0xa05810, ears:'triangle', patrolType:'cat', isHuman:false, spotted:false });
 
+    } else if (mapType === 'human_mansion') {
+      // ── Human Mansion: three-zone grand estate ────────────────────────
+      // Foyer → Ballroom → Private Wing. Marble floors, columns, chandelier, guards + butler cat.
+
+      const mwall = (cx,cz,hw,hd,col=0xd8d0c8) => { pushBox(missionFieldQuads,cx,3.5,cz,hw,3.5,hd,col); addWall(cx,cz,hw+0.1,hd+0.1); };
+      // Marble floor
+      for (let fx=-22;fx<22;fx+=3) for (let fz=-118;fz<5;fz+=3) {
+        const e=((Math.floor(fx/3)+Math.floor(fz/3))&1);
+        missionFieldQuads.push({verts:[v3(fx,0.01,fz),v3(fx+3,0.01,fz),v3(fx+3,0.01,fz+3),v3(fx,0.01,fz+3)],color:e?0xe8e4dc:0xc0b8ac,normal:v3(0,1,0),isGround:true});
+      }
+      // Ceiling
+      missionFieldQuads.push({verts:[v3(-22,6,6),v3(22,6,6),v3(22,6,-120),v3(-22,6,-120)],color:0xf0ece4,normal:v3(0,-1,0),isGround:false});
+      // Outer walls
+      mwall(0,-120,22,0.5); mwall(-22,-57,0.5,63); mwall(22,-57,0.5,63);
+
+      // Zone 1: Foyer (z=4 to z=-28)
+      mwall(-16,-12,6,16); mwall(16,-12,6,16);
+      mwall(-13,-28,9,0.5); mwall(13,-28,9,0.5);
+      [[-6,-10],[6,-10],[-6,-22],[6,-22]].forEach(([cx,cz])=>{
+        pushBox(missionFieldQuads,cx,3.5,cz,0.7,3.5,0.7,0xd8d4cc); addWall(cx,cz,0.9,0.9);
+        pushBox(missionFieldQuads,cx,7.0,cz,1.0,0.4,1.0,0xc8c4bc);
+      });
+      pushBox(missionFieldQuads,0,1.0,-8,4.0,1.0,1.2,0xb89870); addWall(0,-8,4.2,1.4);
+      missionFieldQuads.push({verts:[v3(-8,0.02,-6),v3(8,0.02,-6),v3(8,0.02,-26),v3(-8,0.02,-26)],color:0x8a1820,normal:v3(0,1,0),isGround:true});
+      [[0,-14],[0,-20]].forEach(([lx,lz])=>pushBox(missionFieldQuads,lx,5.8,lz,1.4,0.3,1.4,0xfff0c0));
+      [-8,8].forEach(sx=>{pushBox(missionFieldQuads,sx,2.5,2.5,0.5,2.5,0.5,0xb0a898);addWall(sx,2.5,0.7,0.7);pushBox(missionFieldQuads,sx,5.5,2.5,0.7,0.7,0.7,0xa09888);});
+
+      // Zone 2: Ballroom (z=-28 to z=-72)
+      [[-14,-40],[14,-40],[-14,-52],[14,-52],[-14,-64],[14,-64]].forEach(([cx,cz])=>{
+        pushBox(missionFieldQuads,cx,3.5,cz,0.8,3.5,0.8,0xd0ccc4); addWall(cx,cz,1.0,1.0);
+        pushBox(missionFieldQuads,cx,7.2,cz,1.1,0.4,1.1,0xc0bcb4);
+      });
+      [[0,-42],[0,-58]].forEach(([lx,lz])=>{
+        pushBox(missionFieldQuads,lx,5.6,lz,2.0,0.25,2.0,0xd0c070);
+        for(let ci=0;ci<8;ci++){const a=(ci/8)*Math.PI*2;pushBox(missionFieldQuads,lx+Math.cos(a)*1.6,5.45,lz+Math.sin(a)*1.6,0.12,0.28,0.12,0xfff8e0);}
+      });
+      [[-8,-44],[8,-44],[-8,-62],[8,-62]].forEach(([tx,tz])=>{
+        pushBox(missionFieldQuads,tx,0.9,tz,3.5,0.9,1.2,0xb89060); addWall(tx,tz,3.7,1.4);
+      });
+      [[-20,-30],[20,-30],[-20,-70],[20,-70]].forEach(([vx,vz])=>{pushBox(missionFieldQuads,vx,1.8,vz,1.0,1.8,1.0,0x4860a0); addWall(vx,vz,1.2,1.2);});
+      mwall(-13,-72,9,0.5); mwall(13,-72,9,0.5);
+
+      // Zone 3: Private Wing (z=-72 to z=-120)
+      mwall(-4.5,-96,0.5,24); mwall(4.5,-96,0.5,24);
+      mwall(-13,-118,9,0.5); mwall(13,-118,9,0.5);
+      // Study (west)
+      pushBox(missionFieldQuads,-14,1.8,-86,3,1.8,6,0x6a4820); addWall(-14,-86,3.2,6.2);
+      pushBox(missionFieldQuads,-18,0.9,-92,3,0.9,1.5,0x8a6030); addWall(-18,-92,3.2,1.7);
+      // Trophy room (centre)
+      pushBox(missionFieldQuads,0,1.2,-100,2.5,1.2,1.5,0x8a8278); addWall(0,-100,2.7,1.7);
+      pushBox(missionFieldQuads,0,3.2,-100,0.6,1.8,0.6,0xd0a820);
+      // Master suite (east) — objective
+      pushBox(missionFieldQuads,16,1.0,-82,4,1.0,6,0x9080b8); addWall(16,-82,4.2,6.2);
+      pushBox(missionFieldQuads,14,0.9,-104,2.5,0.9,1.5,0x9a7040); addWall(14,-104,2.7,1.7);
+      pushBox(missionFieldQuads,14,2.2,-103,1.6,1.0,0.14,0x101018);
+      pushBox(missionFieldQuads,14,2.2,-103,1.4,0.8,0.08,0xd0a020);
+      [[0,-80],[0,-94],[0,-108]].forEach(([lx,lz])=>pushBox(missionFieldQuads,lx,5.6,lz,0.8,0.2,0.8,0xfff0d8));
+      // Objective
+      pushBox(missionFieldQuads,14,2.1,-105,0.5,0.3,0.4,0xffe060);
+      missionFieldItems.push({id:0,x:14,z:-105,type:'objective',label:m.objective,icon:'📄',collected:false});
+      // Hint NPC — nervous servant in the foyer
+      missionFieldNpcs.push({x:-10,z:-15,label:'Servant 🐕',color:'#b8c8e8',fur:0x9090a8,ears:'floppy',hint:"The captain's butler is in the trophy room. He hates riddles — try mentioning dust!"});
+      // Patrols
+      missionFieldPatrols.push({x:0,z:-14,startX:0,startZ:-14,dx:1,dz:0,t:rng()*Math.PI*2,range:10,tSpeed:0.011,fur:0x6080a0,ears:'floppy',patrolType:'human',isHuman:true,spotted:false});
+      missionFieldPatrols.push({x:0,z:-48,startX:0,startZ:-48,dx:1,dz:0,t:rng()*Math.PI*2,range:16,tSpeed:0.012,fur:0x6080a0,ears:'floppy',patrolType:'human',isHuman:true,spotted:false});
+      if (profIdx>=1) missionFieldPatrols.push({x:0,z:-88,startX:0,startZ:-88,dx:0,dz:1,t:rng()*Math.PI*2,range:12,tSpeed:0.011,fur:0x6080a0,ears:'floppy',patrolType:'human',isHuman:true,spotted:false});
+      missionFieldPatrols.push({x:0,z:-100,startX:0,startZ:-100,dx:1,dz:0,t:rng()*Math.PI*2,range:10,tSpeed:0.022,fur:0x202020,ears:'triangle',patrolType:'cat',isHuman:false,spotted:false});
+      if (profIdx>=3) missionFieldPatrols.push({x:-8,z:-58,startX:-8,startZ:-58,dx:0,dz:1,t:rng()*Math.PI*2,range:12,tSpeed:0.013,fur:0x6080a0,ears:'floppy',patrolType:'human',isHuman:true,spotted:false});
+
+    } else if (mapType === 'dog_neighborhood') {
+      // ── Dog Neighborhood: suburban streets, lawns, hedges ─────────────
+
+      // Grass lawns
+      for (let fx=-FIELD_W;fx<FIELD_W;fx+=3) for (let fz=-FIELD_D;fz<8;fz+=3) {
+        const e=((Math.floor(fx/3)+Math.floor(fz/3))&1);
+        missionFieldQuads.push({verts:[v3(fx,0.01,fz),v3(fx+3,0.01,fz),v3(fx+3,0.01,fz+3),v3(fx,0.01,fz+3)],color:e?0x2a4818:0x223a12,normal:v3(0,1,0),isGround:true});
+      }
+      // Main paved street (centre)
+      for (let gz=-FIELD_D;gz<8;gz+=2)
+        missionFieldQuads.push({verts:[v3(-4.5,0.02,gz),v3(4.5,0.02,gz),v3(4.5,0.02,gz+2),v3(-4.5,0.02,gz+2)],color:(gz/2&1)?0x707068:0x606058,normal:v3(0,1,0),isGround:true});
+      // Cross-streets
+      [-24,-52,-80].forEach(sz=>{
+        for (let ex=-FIELD_W;ex<FIELD_W;ex+=2)
+          missionFieldQuads.push({verts:[v3(ex,0.02,sz-1.5),v3(ex+2,0.02,sz-1.5),v3(ex+2,0.02,sz+1.5),v3(ex,0.02,sz+1.5)],color:(ex/2&1)?0x707068:0x606058,normal:v3(0,1,0),isGround:true});
+      });
+      // Houses
+      const dnHouses=[[-20,-14,7,5],[12,-14,7,5],[-20,-34,7,5],[12,-34,7,5],[-22,-55,8,5],[10,-55,8,5],[-20,-74,7,5],[12,-74,7,5],[-22,-94,8,5],[10,-94,8,5]];
+      const dnHouseCol=[0xd0b890,0xb8c0a8,0xc8a880,0xa8b8b0,0xd0c098];
+      dnHouses.forEach(([hx,hz,hw,hd],i)=>{
+        pushBox(missionFieldQuads,hx,2.2,hz,hw,2.2,hd,dnHouseCol[i%5]);
+        pushBox(missionFieldQuads,hx,4.5,hz,hw+0.8,0.7,hd+0.8,0x7a3820);
+        pushBox(missionFieldQuads,hx,1.2,hz+hd,0.8,1.2,0.15,0x2a1808);
+        addWall(hx,hz,hw+0.2,hd+0.2);
+        // Front garden dog house
+        pushBox(missionFieldQuads,hx+(rng()-0.5)*3,0.8,hz+hd+2.5,1.2,0.8,1.2,0x9a7040);
+        pushBox(missionFieldQuads,hx+(rng()-0.5)*3,1.7,hz+hd+2.5,1.4,0.5,1.4,0x7a4820);
+        // Shrub cover
+        const shrx=hx+(rng()-0.5)*(hw-1),shrz=hz-hd*0.3;
+        pushBox(missionFieldQuads,shrx,0.7,shrz,0.9,0.7,0.9,0x2a5018); addWall(shrx,shrz,1.1,1.1);
+      });
+      // Hedgerows (cover)
+      [[-8,-22,7],[-8,-42,7],[8,-22,7],[8,-42,7],[-8,-60,8],[8,-60,8],[-8,-80,7],[8,-80,7]].forEach(([hgx,hgz,hgl])=>{
+        pushBox(missionFieldQuads,hgx,0.8,hgz,0.7,0.8,hgl,0x1e4010); addWall(hgx,hgz,0.9,hgl);
+      });
+      // Parked cars (large cover)
+      [[-16,-28],[14,-28],[-16,-68],[14,-68],[-18,-90],[14,-90]].forEach(([cx,cz])=>{
+        pushBox(missionFieldQuads,cx,0.8,cz,3.0,0.8,6.5,0x304860+Math.floor(rng()*4)*0x100008); addWall(cx,cz,3.2,6.7);
+        pushBox(missionFieldQuads,cx,1.8,cz-1,2.6,1.0,4,0x283848);
+      });
+      // Street lamps
+      [-18,-36,-55,-74,-94].forEach(lpz=>{
+        [6.5,-6.5].forEach(lpx=>{
+          pushBox(missionFieldQuads,lpx,4.0,lpz,0.15,4.0,0.15,0x606060);
+          pushBox(missionFieldQuads,lpx,8.5,lpz,0.4,0.2,0.4,0xfff8c0);
+        });
+      });
+      // Objective: community hall at north end
+      pushBox(missionFieldQuads,0,3.5,-108,10,3.5,5,0xc8b890); addWall(0,-108,10.2,5.2);
+      pushBox(missionFieldQuads,0,7.3,-108,11,1.1,6,0x7a3820);
+      pushBox(missionFieldQuads,0,2.0,-103,1.5,2.0,0.2,0x2a1808);
+      // Flagpole
+      pushBox(missionFieldQuads,5,7.0,-103,0.18,7.0,0.18,0x606060);
+      pushBox(missionFieldQuads,5.1,12.5,-103,3.0,0.8,0.08,0xc03020);
+      missionFieldItems.push({id:0,x:0,z:-108,type:'objective',label:m.objective,icon:'🐾',collected:false});
+      // Hint NPCs
+      const dnFurs=[0xd4a060,0x8a6040,0xb09070,0x706050,0xc0a880];
+      const dnHints=["I heard the watch captain does rounds near the middle cross-street.","The community hall is way up north — the captain guards the block past the hedge.","Someone left the side gate to the hall unlocked… or so I heard.","Watch out for the patrol around the parked cars — they're alert at night.","The watch captain loves a good stumper. Answer carefully!"];
+      for (let ni=0;ni<5;ni++) {
+        const nx=(rng()-0.5)*54,nz=-18-rng()*60;
+        missionFieldNpcs.push({x:nx,z:nz,label:'Neighbor 🐶',color:'#e8d090',fur:dnFurs[ni%5],ears:rng()<0.5?'floppy':'round',hint:dnHints[ni]});
+      }
+      // Patrols
+      [[0,-22,10,true],[-14,-42,12,false],[14,-42,12,false],[0,-62,13,true],[-16,-82,11,false],[14,-82,11,false]].forEach(([px,pz,range,horiz],pi)=>{
+        if (pi>profIdx+2) return;
+        missionFieldPatrols.push({x:px,z:pz,startX:px,startZ:pz,dx:horiz?1:0,dz:horiz?0:1,t:rng()*Math.PI*2,range,tSpeed:0.013,fur:dnFurs[pi%5],ears:rng()<0.5?'floppy':'triangle',isHuman:false,spotted:false});
+      });
+
+    } else if (mapType === 'dog_pound') {
+      // ── Dog Pound: concrete facility, kennels, guard room ─────────────
+
+      const pGray=0x707878,pDark=0x505858;
+      // Concrete floor tiles
+      for (let fx=-FIELD_W;fx<FIELD_W;fx+=3) for (let fz=-FIELD_D;fz<8;fz+=3) {
+        const e=((Math.floor(fx/3)+Math.floor(fz/3))&1);
+        missionFieldQuads.push({verts:[v3(fx,0.01,fz),v3(fx+3,0.01,fz),v3(fx+3,0.01,fz+3),v3(fx,0.01,fz+3)],color:e?0x606868:0x505858,normal:v3(0,1,0),isGround:true});
+      }
+      // Low ceiling
+      missionFieldQuads.push({verts:[v3(-38,5,8),v3(38,5,8),v3(38,5,-120),v3(-38,5,-120)],color:0x404848,normal:v3(0,-1,0),isGround:false});
+      const pwall=(cx,cz,hw,hd)=>{pushBox(missionFieldQuads,cx,3.0,cz,hw,3.0,hd,pGray);addWall(cx,cz,hw+0.1,hd+0.1);};
+      pwall(0,-120,38,0.6); pwall(-38,-56,0.6,64); pwall(38,-56,0.6,64);
+
+      // Entry / Reception (z=4 to z=-24)
+      pwall(-24,-12,14,0.5); pwall(24,-12,14,0.5);
+      pwall(-11,-24,3,0.5); pwall(11,-24,3,0.5);
+      pushBox(missionFieldQuads,8,1.1,-12,4,1.1,1.0,pDark); addWall(8,-12,4.2,1.2);
+      [-8,8].forEach(nx2=>pushBox(missionFieldQuads,nx2,2.5,-1,0.06,1.5,2.0,0xd0c060));
+      [[-12,-10],[0,-10],[12,-10]].forEach(([lx,lz])=>pushBox(missionFieldQuads,lx,4.8,lz,0.8,0.12,2.0,0xd0e8e8));
+
+      // Kennel corridors (z=-24 to z=-72)
+      [-36,0].forEach(kx=>{pwall(kx,-48,0.3,24);});
+      for (let ki=0;ki<12;ki++) {
+        const kcol=ki%2===0?-28:-8, kz=-28-Math.floor(ki/2)*9;
+        pushBox(missionFieldQuads,kcol,1.5,kz,4,1.5,3.5,pDark); addWall(kcol,kz,4.2,3.7);
+        pushBox(missionFieldQuads,kcol,1.5,kz+3.6,4,1.5,0.2,0x3a6858);
+        pushBox(missionFieldQuads,kcol,0.5,kz,0.6,0.5,0.6,0xa06030+Math.floor(rng()*3)*0x100010);
+      }
+      for (let li=0;li<6;li++) pushBox(missionFieldQuads,(li%2===0?-28:-8),4.8,-30-Math.floor(li/2)*12,0.8,0.12,2.0,0xd0e8e8);
+      pwall(-18,-55,18,0.5); pwall(18,-55,18,0.5);
+
+      // Guard Control Room (z=-72 to z=-90)
+      pwall(-20,-81,18,0.5); pwall(20,-81,18,0.5);
+      pwall(-27,-81,0.5,9);  pwall(27,-81,0.5,9);
+      pushBox(missionFieldQuads,0,1.0,-78,6,1.0,1.0,pDark); addWall(0,-78,6.2,1.2);
+      [[-6,2.2,-77.5],[0,2.2,-77.5],[6,2.2,-77.5]].forEach(([lx,ly,lz])=>pushBox(missionFieldQuads,lx,ly,lz,1.5,1.0,0.12,0x101018));
+      pushBox(missionFieldQuads,-36,2.0,-80,0.1,2.0,2.5,0x6a8070); addWall(-36,-80,0.3,2.7);
+      pushBox(missionFieldQuads,-35.8,4.2,-80,0.5,0.3,0.5,0xffe060);
+
+      // Back kennel block (z=-90 to z=-120) — objective
+      [[-24,-100],[-24,-112],[0,-100],[0,-112],[24,-100],[24,-112]].forEach(([cx,cz])=>{
+        pushBox(missionFieldQuads,cx,2.0,cz,8,2.0,4,pDark); addWall(cx,cz,8.2,4.2);
+        pushBox(missionFieldQuads,cx,2.0,cz+4,8,2.0,0.2,0x3a7858);
+      });
+      pushBox(missionFieldQuads,0,2.5,-117,12,2.5,0.5,0x3a7858); addWall(0,-117,12,0.7);
+      pushBox(missionFieldQuads,8,2.5,-117,0.5,0.5,0.3,0xffe060);
+      [[-8,-108],[8,-108],[0,-114]].forEach(([lx,lz])=>pushBox(missionFieldQuads,lx,4.8,lz,0.8,0.12,2.0,0xd0e8e8));
+      missionFieldItems.push({id:0,x:0,z:-116,type:'objective',label:m.objective,icon:'🔓',collected:false});
+
+      // Hint NPC — scared captive dog at a kennel
+      missionFieldNpcs.push({x:-18,z:-34,label:'Captive 🐕',color:'#d0c090',fur:0xb09060,ears:'floppy',hint:"The control room holds the master key. Get past the keeper guarding it and you can open everything."});
+      // Patrols
+      missionFieldPatrols.push({x:0,z:-12,startX:0,startZ:-12,dx:1,dz:0,t:rng()*Math.PI*2,range:12,tSpeed:0.012,fur:0x6080a0,ears:'floppy',patrolType:'human',isHuman:true,spotted:false});
+      missionFieldPatrols.push({x:0,z:-48,startX:0,startZ:-48,dx:0,dz:1,t:rng()*Math.PI*2,range:16,tSpeed:0.011,fur:0x6080a0,ears:'floppy',patrolType:'human',isHuman:true,spotted:false});
+      missionFieldPatrols.push({x:-18,z:-40,startX:-18,startZ:-40,dx:0,dz:1,t:rng()*Math.PI*2,range:14,tSpeed:0.016,fur:0x4a3020,ears:'triangle',isHuman:false,spotted:false});
+      if (profIdx>=1) missionFieldPatrols.push({x:0,z:-82,startX:0,startZ:-82,dx:1,dz:0,t:rng()*Math.PI*2,range:10,tSpeed:0.016,fur:0x5a4030,ears:'triangle',isHuman:false,spotted:false});
+      if (profIdx>=2) missionFieldPatrols.push({x:0,z:-104,startX:0,startZ:-104,dx:1,dz:0,t:rng()*Math.PI*2,range:18,tSpeed:0.012,fur:0x6080a0,ears:'floppy',patrolType:'human',isHuman:true,spotted:false});
+      for (let pi2=0;pi2<profIdx-1;pi2++) {
+        const px=(rng()-0.5)*50,pz=-25-rng()*80;
+        missionFieldPatrols.push({x:px,z:pz,startX:px,startZ:pz,dx:rng()<0.5?1:0,dz:rng()<0.5?0:1,t:rng()*Math.PI*2,range:8+rng()*6,tSpeed:0.015,fur:0x4a3020,ears:'triangle',isHuman:false,spotted:false});
+      }
+
     } else if (mapType === 'maze') {
 
       // ── Dungeon Maze ───────────────────────────────────────────────────
@@ -15996,6 +16239,18 @@
       }
     }
 
+    // NPC hint dialogue (E to talk when close)
+    for (const n of missionFieldNpcs) {
+      if (!n.hint) continue;
+      const nd = Math.hypot(ds.x - n.x, ds.z - n.z);
+      if (nd < 3.0 && keysJustPressed.has('KeyE')) {
+        keysJustPressed.delete('KeyE');
+        toastMsg = `${n.label}: "${n.hint}"`;
+        toastTimer = 300;
+        break;
+      }
+    }
+
     keysJustPressed.clear();
 
     // Camera
@@ -16230,7 +16485,16 @@
       const sp=project(v3(n.x,DOG_FLOOR+2.2,n.z),cam); if(!sp) return;
       ctx.globalAlpha=0.88; ctx.textAlign='center'; ctx.textBaseline='bottom';
       ctx.font='bold 11px Arial'; ctx.fillStyle=n.color;
-      ctx.fillText(n.label, sp.x, sp.y-3); ctx.globalAlpha=1;
+      ctx.fillText(n.label, sp.x, sp.y-3);
+      // Show [E] badge if this NPC has a hint and player is nearby
+      if (n.hint) {
+        const nd = Math.hypot(dogState.x - n.x, dogState.z - n.z);
+        if (nd < 4.5) {
+          ctx.font='bold 10px Arial'; ctx.fillStyle='#ffe060';
+          ctx.fillText('[E] Talk', sp.x, sp.y-16);
+        }
+      }
+      ctx.globalAlpha=1;
     });
 
     // Item / objective marker
@@ -16793,6 +17057,11 @@
       });
     }
   }
+
+  // ── Jewelry Box helpers (operate on the current dog's local variables) ──
+  function getCurrentJewelryBox()          { return jewelryBox; }
+  function getCurrentEquippedNecklace()    { return equippedNecklace; }
+  function setCurrentEquippedNecklace(idx) { equippedNecklace = idx; }
 
   // ── Jewelry Box UI ───────────────────────────────────────────────────────
   function openJewelryBox() {
@@ -18010,6 +18279,1000 @@
       }, 0);
     }, 0);
   }, 0));
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  ONLINE VILLAGE SYSTEM
+  // ══════════════════════════════════════════════════════════════════════════
+
+  // ── Customisation data ──────────────────────────────────────────────────
+  const OV_FUR_COLORS = [
+    { name:'Golden',     hex:0xd4a848 }, { name:'Cream',      hex:0xe8d8b0 },
+    { name:'White',      hex:0xf0ece0 }, { name:'Tan',        hex:0xc09060 },
+    { name:'Caramel',    hex:0xb87830 }, { name:'Orange',     hex:0xe07820 },
+    { name:'Red-Brown',  hex:0x8c3820 }, { name:'Chocolate',  hex:0x6b3820 },
+    { name:'Dark Brown', hex:0x4a2810 }, { name:'Black',      hex:0x181818 },
+    { name:'Gray',       hex:0x909090 }, { name:'Silver',     hex:0xc0c8d0 },
+    { name:'Blue-Gray',  hex:0x7090a8 }, { name:'Lavender',   hex:0xb8a8d0 },
+    { name:'Brindle',    hex:0x786040 }, { name:'Apricot',    hex:0xe8b880 },
+    { name:'Dusty Rose', hex:0xd09098 }, { name:'Lilac',      hex:0xb090c0 },
+    { name:'Mint',       hex:0x80c8a8 }, { name:'Cobalt',     hex:0x6080c0 },
+    { name:'Copper',     hex:0xb86030 }, { name:'Toffee',     hex:0xc08048 },
+  ];
+  const OV_SPOT_COLORS = [
+    { name:'None',   hex:null       }, { name:'Black',  hex:0x181818 },
+    { name:'White',  hex:0xf0ece0   }, { name:'Brown',  hex:0x8c4820 },
+    { name:'Tan',    hex:0xc09060   }, { name:'Gray',   hex:0x909090 },
+    { name:'Rust',   hex:0xb04818   }, { name:'Cream',  hex:0xe8d8b0 },
+    { name:'Blue',   hex:0x5070b0   }, { name:'Gold',   hex:0xd4a020 },
+  ];
+  const OV_COLLAR_COLORS = [
+    { name:'None',   hex:null       }, { name:'Red',    hex:0xcc2020 },
+    { name:'Blue',   hex:0x2060c0   }, { name:'Green',  hex:0x208040 },
+    { name:'Gold',   hex:0xd4a020   }, { name:'Pink',   hex:0xe060a0 },
+    { name:'Purple', hex:0x8040b0   }, { name:'Black',  hex:0x202020 },
+    { name:'Teal',   hex:0x20a0a0   }, { name:'Orange', hex:0xe06020 },
+  ];
+  const OV_EAR_TYPES  = ['triangle','floppy','rounded','bat','tufted','perky'];
+  const OV_EAR_LABELS = ['▲ Triangle','🐰 Floppy','⭕ Rounded','🦇 Bat','✨ Tufted','⬆ Perky'];
+  const OV_BODY_TYPES  = ['normal','chubby','slim','tall','tiny','fluffy','athletic'];
+  const OV_BODY_LABELS = ['Normal','Chubby','Slim','Tall','Tiny','Fluffy','Athletic'];
+  const OV_SPOT_PATS   = ['none','spots','patches','stripe','socks'];
+  const OV_SPOT_LABELS = ['None','● Spots','🎨 Patches','〰 Stripe','🧦 Socks'];
+  const OV_SIZES       = [0.72, 1.0, 1.3];
+  const OV_SIZE_LABELS = ['🐾 Tiny','🐕 Medium','🐘 Large'];
+
+  // ── State ───────────────────────────────────────────────────────────────
+  let onlineDogProfile = null;  // loaded from localStorage on startup
+  let inOnlineVillage  = false;
+  let ovConnecting     = false;
+  let ovUID            = null;
+  let ovRoomId         = null;
+  let ovRoomRef        = null;
+  let ovPlayerRef      = null;
+  let ovPlayers        = {};   // uid → { name, x, z, yaw, fur, body, ears, spotPat, spotCol, collar, size, lastSeen }
+  let ovPlayerQuads    = [];
+  let ovVillageQuads   = [];
+  let ovBroadcastTimer = 0;
+  const OV_BROADCAST   = 6;    // frames between position pushes
+  let ovChatOpen       = false;
+  let ovChatMsgs       = [];
+  let ovChatUnread     = 0;
+  let ovTradeTarget    = null;
+  let ovTradeOffer     = null;
+  let ovIncomingTrade  = null;
+  let ovCustomOpen     = false;
+  // Online dog movement state (separate from per-character dogState)
+  let ovDog  = { x:0, y:0.21, z:-6, yaw:0, velY:0, grounded:true, walkT:0 };
+  // Creator UI state
+  let ovcFurIdx = 0, ovcSpotPatIdx = 0, ovcSpotColIdx = 1;
+  let ovcEarIdx = 0, ovcBodyIdx = 0, ovcSizeIdx = 1, ovcCollarIdx = 0;
+
+  // ── Persistence ─────────────────────────────────────────────────────────
+  function ovLoadProfile() {
+    try {
+      const raw = localStorage.getItem('onlineDogProfile');
+      if (raw) onlineDogProfile = JSON.parse(raw);
+    } catch(e) {}
+  }
+  function ovSaveProfile() {
+    try { localStorage.setItem('onlineDogProfile', JSON.stringify(onlineDogProfile)); } catch(e) {}
+  }
+  ovLoadProfile();
+
+  // ── Dog Creator UI ───────────────────────────────────────────────────────
+  function ovOpenCreator() {
+    // Pre-fill from existing profile if any
+    if (onlineDogProfile) {
+      ovcFurIdx    = onlineDogProfile.furIdx    || 0;
+      ovcEarIdx    = onlineDogProfile.earIdx    || 0;
+      ovcBodyIdx   = onlineDogProfile.bodyIdx   || 0;
+      ovcSizeIdx   = onlineDogProfile.sizeIdx   || 1;
+      ovcSpotPatIdx= onlineDogProfile.spotPatIdx|| 0;
+      ovcSpotColIdx= onlineDogProfile.spotColIdx|| 1;
+      ovcCollarIdx = onlineDogProfile.collarIdx || 0;
+      document.getElementById('ov-dc-name').value = onlineDogProfile.name || '';
+    }
+    document.getElementById('ov-dog-creator').classList.remove('hidden');
+    ovCreatorBuildUI();
+    ovCreatorDrawPreview();
+  }
+  function ovCloseCreator() {
+    document.getElementById('ov-dog-creator').classList.add('hidden');
+  }
+
+  function ovCreatorBuildUI() {
+    // Body type buttons
+    const bodyEl = document.getElementById('ov-dc-body-type');
+    bodyEl.innerHTML = '';
+    OV_BODY_LABELS.forEach((lbl, i) => {
+      const b = document.createElement('button');
+      b.className = 'ov-opt-btn' + (i === ovcBodyIdx ? ' ov-selected' : '');
+      b.textContent = lbl;
+      b.onclick = () => { ovcBodyIdx = i; ovCreatorRefresh('body'); };
+      bodyEl.appendChild(b);
+    });
+    // Ear type buttons
+    const earEl = document.getElementById('ov-dc-ear-type');
+    earEl.innerHTML = '';
+    OV_EAR_LABELS.forEach((lbl, i) => {
+      const b = document.createElement('button');
+      b.className = 'ov-opt-btn' + (i === ovcEarIdx ? ' ov-selected' : '');
+      b.textContent = lbl;
+      b.onclick = () => { ovcEarIdx = i; ovCreatorRefresh('ear'); };
+      earEl.appendChild(b);
+    });
+    // Size buttons
+    document.querySelectorAll('[data-size]').forEach(b => {
+      const si = parseInt(b.dataset.size);
+      b.className = 'ov-opt-btn' + (si === ovcSizeIdx ? ' ov-selected' : '');
+      b.onclick = () => { ovcSizeIdx = si; ovCreatorRefresh('size'); };
+    });
+    // Fur colors
+    ovBuildSwatchRow('ov-dc-fur-colors', OV_FUR_COLORS, ovcFurIdx, (i) => { ovcFurIdx = i; ovCreatorRefresh('fur'); });
+    // Spot patterns
+    const spEl = document.getElementById('ov-dc-spot-pattern');
+    spEl.innerHTML = '';
+    OV_SPOT_LABELS.forEach((lbl, i) => {
+      const b = document.createElement('button');
+      b.className = 'ov-opt-btn' + (i === ovcSpotPatIdx ? ' ov-selected' : '');
+      b.textContent = lbl;
+      b.onclick = () => { ovcSpotPatIdx = i; ovCreatorRefresh('spotPat'); };
+      spEl.appendChild(b);
+    });
+    // Spot colors
+    ovBuildSwatchRow('ov-dc-spot-colors', OV_SPOT_COLORS, ovcSpotColIdx, (i) => { ovcSpotColIdx = i; ovCreatorRefresh('spotCol'); });
+    // Collar colors
+    ovBuildSwatchRow('ov-dc-collar-colors', OV_COLLAR_COLORS, ovcCollarIdx, (i) => { ovcCollarIdx = i; ovCreatorRefresh('collar'); });
+    // Spot section visibility
+    ovUpdateSpotSectionVisibility();
+  }
+
+  function ovBuildSwatchRow(elId, colorArr, selectedIdx, onPick) {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    el.innerHTML = '';
+    colorArr.forEach((c, i) => {
+      const wrap = document.createElement('div'); wrap.className = 'ov-swatch-wrap';
+      const sw = document.createElement('div');
+      sw.className = 'ov-swatch' + (i === selectedIdx ? ' ov-selected' : '');
+      sw.title = c.name;
+      if (c.hex !== null) {
+        sw.style.background = '#' + c.hex.toString(16).padStart(6,'0');
+      } else {
+        // "None" — checkerboard/transparent indicator
+        sw.style.background = 'linear-gradient(135deg,#222 50%,#555 50%)';
+        sw.style.border = '2px solid #404040';
+      }
+      sw.onclick = () => onPick(i);
+      const lbl = document.createElement('div'); lbl.className = 'ov-swatch-label'; lbl.textContent = c.name;
+      wrap.appendChild(sw); wrap.appendChild(lbl);
+      el.appendChild(wrap);
+    });
+  }
+
+  function ovCreatorRefresh(what) {
+    // Re-select highlighted buttons based on updated indices
+    if (what === 'body') {
+      document.querySelectorAll('#ov-dc-body-type .ov-opt-btn').forEach((b,i)=>b.classList.toggle('ov-selected',i===ovcBodyIdx));
+    } else if (what === 'ear') {
+      document.querySelectorAll('#ov-dc-ear-type .ov-opt-btn').forEach((b,i)=>b.classList.toggle('ov-selected',i===ovcEarIdx));
+    } else if (what === 'size') {
+      document.querySelectorAll('[data-size]').forEach(b=>b.classList.toggle('ov-selected',parseInt(b.dataset.size)===ovcSizeIdx));
+    } else if (what === 'spotPat') {
+      document.querySelectorAll('#ov-dc-spot-pattern .ov-opt-btn').forEach((b,i)=>b.classList.toggle('ov-selected',i===ovcSpotPatIdx));
+      ovUpdateSpotSectionVisibility();
+    }
+    // Re-highlight swatches
+    const swatchMap = { fur:['ov-dc-fur-colors',ovcFurIdx], spotCol:['ov-dc-spot-colors',ovcSpotColIdx], collar:['ov-dc-collar-colors',ovcCollarIdx] };
+    if (swatchMap[what]) {
+      const [elId, idx] = swatchMap[what];
+      document.querySelectorAll('#'+elId+' .ov-swatch').forEach((s,i)=>s.classList.toggle('ov-selected',i===idx));
+    }
+    ovCreatorDrawPreview();
+  }
+  function ovUpdateSpotSectionVisibility() {
+    const sec = document.getElementById('ov-dc-spot-color-section');
+    if (sec) sec.classList.toggle('ov-hidden-section', ovcSpotPatIdx === 0);
+  }
+
+  // ── Dog Creator Canvas Preview (simple 2D cartoon) ──────────────────────
+  function ovCreatorDrawPreview() {
+    const cv = document.getElementById('ov-dc-canvas');
+    if (!cv) return;
+    const ctx2 = cv.getContext('2d');
+    const W = cv.width, H = cv.height;
+    ctx2.clearRect(0,0,W,H);
+    // Background
+    ctx2.fillStyle = 'rgba(8,22,40,0.90)';
+    ctx2.fillRect(0,0,W,H);
+    // Draw a simple flat cartoon dog
+    const fur = OV_FUR_COLORS[ovcFurIdx].hex;
+    const furCss = '#'+fur.toString(16).padStart(6,'0');
+    const sc = OV_SIZES[ovcSizeIdx];
+    const body = OV_BODY_TYPES[ovcBodyIdx];
+    ovDrawCartoonDog(ctx2, W/2, H*0.64, sc, fur, body, OV_EAR_TYPES[ovcEarIdx],
+      OV_SPOT_PATS[ovcSpotPatIdx], ovcSpotPatIdx > 0 ? OV_SPOT_COLORS[ovcSpotColIdx].hex : null,
+      OV_COLLAR_COLORS[ovcCollarIdx].hex);
+  }
+
+  function ovDrawCartoonDog(ctx2, cx, cy, sc, furHex, bodyType, earType, spotPat, spotHex, collarHex) {
+    const furCss = '#'+furHex.toString(16).padStart(6,'0');
+    const dark   = ovDarken(furHex, 0.55);
+    // Body proportions by type
+    let bw=38, bh=24, bl=50, legH=22, headR=17;
+    if (bodyType==='chubby')   { bw=46; bh=30; bl=52; legH=18; headR=19; }
+    if (bodyType==='slim')     { bw=30; bh=18; bl=48; legH=24; headR=15; }
+    if (bodyType==='tall')     { bw=34; bh=20; bl=50; legH=30; headR=16; }
+    if (bodyType==='tiny')     { bw=28; bh=16; bl=36; legH=16; headR=13; }
+    if (bodyType==='fluffy')   { bw=42; bh=28; bl=52; legH=20; headR=20; }
+    if (bodyType==='athletic') { bw=32; bh=22; bl=54; legH=26; headR=15; }
+    bw*=sc; bh*=sc; bl*=sc; legH*=sc; headR*=sc;
+    const bodyX = cx - bl*0.1, bodyY = cy - bh;
+    // Legs
+    ctx2.fillStyle = dark;
+    const legW = bw*0.22, legOffs = bw*0.65;
+    [[bodyX-legOffs,-legH],[bodyX-legOffs*0.28,-legH],[bodyX+legOffs*0.28,-legH],[bodyX+legOffs,-legH]].forEach(([lx,ly])=>{
+      ctx2.beginPath(); ctx2.roundRect(cx+lx-legW/2, bodyY+bh*2-2, legW, Math.abs(ly)+2, 4*sc); ctx2.fill();
+    });
+    // Spot socks
+    if (spotPat==='socks' && spotHex) {
+      const sockCss = '#'+spotHex.toString(16).padStart(6,'0');
+      ctx2.fillStyle = sockCss;
+      [[bodyX-legOffs],[bodyX-legOffs*0.28],[bodyX+legOffs*0.28],[bodyX+legOffs]].forEach(([lx])=>{
+        ctx2.beginPath(); ctx2.roundRect(cx+lx-legW/2, bodyY+bh*2+legH*0.45, legW, legH*0.55+2, 4*sc); ctx2.fill();
+      });
+    }
+    // Body
+    ctx2.fillStyle = furCss;
+    ctx2.beginPath(); ctx2.ellipse(cx+bodyX, bodyY+bh, bw, bh, 0, 0, Math.PI*2); ctx2.fill();
+    // Spot patches/stripe on body
+    if (spotHex && spotPat !== 'none' && spotPat !== 'socks') {
+      const sCss = '#'+spotHex.toString(16).padStart(6,'0');
+      ctx2.fillStyle = sCss; ctx2.globalAlpha = 0.65;
+      if (spotPat==='spots') {
+        [[0,0,8*sc],[bw*0.6,bh*0.4,6*sc],[-bw*0.55,bh*0.2,7*sc]].forEach(([ox,oy,r])=>{
+          ctx2.beginPath(); ctx2.arc(cx+bodyX+ox, bodyY+bh+oy, r, 0, Math.PI*2); ctx2.fill();
+        });
+      } else if (spotPat==='patches') {
+        ctx2.beginPath(); ctx2.ellipse(cx+bodyX+bw*0.4, bodyY+bh*0.6, bw*0.35, bh*0.55, 0.3, 0, Math.PI*2); ctx2.fill();
+        ctx2.beginPath(); ctx2.ellipse(cx+bodyX-bw*0.4, bodyY+bh*1.4, bw*0.3, bh*0.5, -0.2, 0, Math.PI*2); ctx2.fill();
+      } else if (spotPat==='stripe') {
+        ctx2.beginPath(); ctx2.roundRect(cx+bodyX-bw*0.12, bodyY, bw*0.24, bh*2, 4*sc); ctx2.fill();
+      }
+      ctx2.globalAlpha = 1;
+    }
+    // Tail
+    ctx2.fillStyle = furCss;
+    ctx2.beginPath(); ctx2.ellipse(cx+bodyX-bw*0.9, bodyY+bh*0.4, bw*0.18, bh*0.38, -0.8, 0, Math.PI*2); ctx2.fill();
+    // Head
+    const headX = cx+bodyX+bw*0.85, headY = bodyY-headR*0.6;
+    ctx2.fillStyle = furCss;
+    ctx2.beginPath(); ctx2.arc(headX, headY, headR, 0, Math.PI*2); ctx2.fill();
+    // Spots on head
+    if (spotHex && spotPat==='patches') {
+      ctx2.fillStyle = '#'+spotHex.toString(16).padStart(6,'0'); ctx2.globalAlpha=0.6;
+      ctx2.beginPath(); ctx2.arc(headX+headR*0.3, headY-headR*0.2, headR*0.45, 0, Math.PI*2); ctx2.fill();
+      ctx2.globalAlpha=1;
+    }
+    // Ears
+    ctx2.fillStyle = dark;
+    if (earType==='triangle') {
+      [[-0.52],[0.52]].forEach(([ex])=>{
+        ctx2.beginPath(); ctx2.moveTo(headX+ex*headR, headY-headR*0.3); ctx2.lineTo(headX+ex*headR*0.4, headY-headR*1.7); ctx2.lineTo(headX+ex*headR*1.2, headY-headR*0.6); ctx2.closePath(); ctx2.fill();
+      });
+    } else if (earType==='floppy') {
+      [[-0.7],[0.7]].forEach(([ex])=>{
+        ctx2.beginPath(); ctx2.ellipse(headX+ex*headR, headY+headR*0.5, headR*0.4, headR*0.7, ex*0.5, 0, Math.PI*2); ctx2.fill();
+      });
+    } else if (earType==='rounded') {
+      [[-0.55],[0.55]].forEach(([ex])=>{
+        ctx2.beginPath(); ctx2.arc(headX+ex*headR, headY-headR*0.8, headR*0.5, 0, Math.PI*2); ctx2.fill();
+      });
+    } else if (earType==='bat') {
+      [[-0.3],[0.3]].forEach(([ex])=>{
+        ctx2.beginPath(); ctx2.moveTo(headX+ex*headR*0.4, headY-headR*0.2); ctx2.lineTo(headX+ex*headR*1.4, headY-headR*1.8); ctx2.lineTo(headX+ex*headR*0.9, headY-headR*0.6); ctx2.lineTo(headX, headY-headR*0.8); ctx2.closePath(); ctx2.fill();
+      });
+    } else if (earType==='tufted') {
+      [[-0.52],[0.52]].forEach(([ex])=>{
+        ctx2.beginPath(); ctx2.moveTo(headX+ex*headR, headY-headR*0.3); ctx2.lineTo(headX+ex*headR*0.4, headY-headR*1.6); ctx2.lineTo(headX+ex*headR*1.2, headY-headR*0.6); ctx2.closePath(); ctx2.fill();
+        ctx2.fillStyle=furCss; ctx2.beginPath(); ctx2.arc(headX+ex*headR*0.4, headY-headR*1.7, headR*0.22, 0, Math.PI*2); ctx2.fill();
+        ctx2.fillStyle=dark;
+      });
+    } else if (earType==='perky') {
+      [[-0.45],[0.45]].forEach(([ex])=>{
+        ctx2.beginPath(); ctx2.moveTo(headX+ex*headR, headY-headR*0.4); ctx2.lineTo(headX+ex*headR*0.5, headY-headR*1.3); ctx2.lineTo(headX+ex*headR*1.0, headY-headR*0.6); ctx2.closePath(); ctx2.fill();
+      });
+    }
+    // Muzzle
+    ctx2.fillStyle = ovLighten(furHex, 0.25);
+    ctx2.beginPath(); ctx2.ellipse(headX+headR*0.55, headY+headR*0.22, headR*0.38, headR*0.28, 0, 0, Math.PI*2); ctx2.fill();
+    // Nose
+    ctx2.fillStyle = '#1a0a08';
+    ctx2.beginPath(); ctx2.ellipse(headX+headR*0.9, headY+headR*0.1, headR*0.14, headR*0.10, 0, 0, Math.PI*2); ctx2.fill();
+    // Eyes
+    ctx2.fillStyle = '#101018';
+    ctx2.beginPath(); ctx2.arc(headX+headR*0.5, headY-headR*0.2, headR*0.13, 0, Math.PI*2); ctx2.fill();
+    ctx2.fillStyle = '#fff';
+    ctx2.beginPath(); ctx2.arc(headX+headR*0.52, headY-headR*0.22, headR*0.05, 0, Math.PI*2); ctx2.fill();
+    // Collar
+    if (collarHex !== null) {
+      ctx2.fillStyle = '#'+collarHex.toString(16).padStart(6,'0');
+      ctx2.beginPath(); ctx2.ellipse(headX, headY+headR*0.75, headR*0.9, headR*0.18, 0, 0, Math.PI*2); ctx2.fill();
+      ctx2.fillStyle = ovLighten(collarHex, 0.35);
+      ctx2.beginPath(); ctx2.arc(headX, headY+headR*0.92, headR*0.12, 0, Math.PI*2); ctx2.fill();
+    }
+  }
+  function ovDarken(hex, f) {
+    const r=((hex>>16)&0xff)*f, g=((hex>>8)&0xff)*f, b=(hex&0xff)*f;
+    return ((r|0)<<16)|((g|0)<<8)|(b|0);
+  }
+  function ovLighten(hex, f) {
+    const r=Math.min(255,((hex>>16)&0xff)+(255*(1-((hex>>16)&0xff)/255)*f));
+    const g=Math.min(255,((hex>>8 )&0xff)+(255*(1-((hex>>8 )&0xff)/255)*f));
+    const b=Math.min(255,((hex    )&0xff)+(255*(1-((hex    )&0xff)/255)*f));
+    return ((r|0)<<16)|((g|0)<<8)|(b|0);
+  }
+
+  // ── Enter / Exit Online Village ──────────────────────────────────────────
+  function tryEnterOnlineVillage() {
+    if (!isInVillage()) { toastMsg='You need to reach the village first!'; toastTimer=200; return; }
+    ovLoadProfile();
+    if (!onlineDogProfile) {
+      ovOpenCreator();
+    } else {
+      ovConnectAndEnter();
+    }
+  }
+
+  function ovFinishCreator() {
+    const nameVal = document.getElementById('ov-dc-name').value.trim();
+    if (!nameVal) { document.getElementById('ov-dc-name').focus(); return; }
+    onlineDogProfile = {
+      name: nameVal,
+      furIdx: ovcFurIdx, earIdx: ovcEarIdx, bodyIdx: ovcBodyIdx,
+      sizeIdx: ovcSizeIdx, spotPatIdx: ovcSpotPatIdx, spotColIdx: ovcSpotColIdx, collarIdx: ovcCollarIdx,
+    };
+    ovSaveProfile();
+    ovCloseCreator();
+    ovConnectAndEnter();
+  }
+
+  function ovConnectAndEnter() {
+    const ok = initFirebase();
+    if (!ok) {
+      // Demo mode — enter village without Firebase
+      ovUID = 'local_' + Math.random().toString(36).slice(2,8);
+      ovRoomId = 'demo';
+      _enterOnlineVillageMode();
+      toastMsg = '🌐 Online Village (offline demo — configure Firebase for multiplayer)';
+      toastTimer = 360;
+      return;
+    }
+    ovConnecting = true;
+    toastMsg = '🌐 Connecting…'; toastTimer = 180;
+    _fbAuth.signInAnonymously().then(cred => {
+      ovUID = cred.user.uid;
+      return ovFindOrCreateRoom();
+    }).then(() => {
+      _enterOnlineVillageMode();
+    }).catch(err => {
+      ovConnecting = false;
+      toastMsg = '⚠ Could not connect: ' + err.message; toastTimer = 300;
+    });
+  }
+
+  function ovFindOrCreateRoom() {
+    const roomsRef = _fbDB.ref('ov_rooms');
+    return roomsRef.once('value').then(snap => {
+      const rooms = snap.val() || {};
+      // Find a room with space
+      for (const [rid, room] of Object.entries(rooms)) {
+        const count = room.players ? Object.keys(room.players).length : 0;
+        if (count < 20) { ovRoomId = rid; return Promise.resolve(); }
+      }
+      // Create new room
+      const newRef = roomsRef.push();
+      ovRoomId = newRef.key;
+      return newRef.set({ created: Date.now(), players: {} });
+    });
+  }
+
+  function _enterOnlineVillageMode() {
+    ovConnecting = false;
+    inOnlineVillage = true;
+    // Position player at village entrance
+    ovDog.x = 0; ovDog.z = -4; ovDog.yaw = 0; ovDog.y = 0.21; ovDog.velY = 0; ovDog.grounded = true;
+    // Build online village geometry (2× scale)
+    buildOnlineVillage();
+    // Show HUD elements
+    document.getElementById('ov-badge').classList.remove('hidden');
+    document.getElementById('ov-player-count').classList.remove('hidden');
+    document.getElementById('ov-chat-toggle').classList.remove('hidden');
+    // Wire up chat input enter key
+    const ci = document.getElementById('ov-chat-input');
+    ci.onkeydown = e => { if (e.key === 'Enter') { ovSendChat(); e.preventDefault(); } };
+    // Start Firebase listeners (if connected)
+    if (_fbDB && ovRoomId !== 'demo') {
+      ovRoomRef = _fbDB.ref('ov_rooms/' + ovRoomId);
+      ovPlayerRef = ovRoomRef.child('players/' + ovUID);
+      // Broadcast initial position
+      ovBroadcastNow();
+      // On disconnect remove ourselves
+      ovPlayerRef.onDisconnect().remove();
+      // Listen for other players
+      ovRoomRef.child('players').on('value', snap => {
+        const data = snap.val() || {};
+        ovPlayers = {};
+        Object.entries(data).forEach(([uid, p]) => {
+          if (uid !== ovUID) ovPlayers[uid] = p;
+        });
+        ovUpdatePlayerCount();
+      });
+      // Chat listener
+      const chatRef = _fbDB.ref('ov_chat/' + ovRoomId);
+      chatRef.limitToLast(60).on('child_added', snap => {
+        ovReceiveChatMsg(snap.val());
+      });
+      // Trade listener
+      _fbDB.ref('ov_trades/' + ovUID + '/incoming').on('value', snap => {
+        const t = snap.val();
+        if (t && t.status === 'pending') ovShowIncomingTrade(t);
+        else document.getElementById('ov-trade-incoming').classList.add('hidden');
+      });
+    }
+    toastMsg = '🌐 Welcome to the Online Village! Press E near dogs to trade. [C] chat.';
+    toastTimer = 420;
+  }
+
+  function exitOnlineVillage() {
+    if (!inOnlineVillage) return;
+    inOnlineVillage = false;
+    ovChatOpen = false;
+    ovCustomOpen = false;
+    document.getElementById('ov-badge').classList.add('hidden');
+    document.getElementById('ov-player-count').classList.add('hidden');
+    document.getElementById('ov-chat-toggle').classList.add('hidden');
+    document.getElementById('ov-chat').classList.add('hidden');
+    document.getElementById('ov-custom-panel').classList.add('hidden');
+    document.getElementById('ov-trade-panel').classList.add('hidden');
+    document.getElementById('ov-trade-incoming').classList.add('hidden');
+    if (ovPlayerRef) { ovPlayerRef.remove(); ovPlayerRef = null; }
+    if (ovRoomRef)   { ovRoomRef.off(); ovRoomRef = null; }
+    if (_fbDB)       {
+      const chatRef = _fbDB.ref('ov_chat/' + ovRoomId);
+      if (chatRef) chatRef.off();
+      _fbDB.ref('ov_trades/' + ovUID + '/incoming').off();
+    }
+    ovPlayers = {}; ovPlayerQuads = [];
+    toastMsg = 'Left Online Village'; toastTimer = 180;
+  }
+
+  // ── Online village geometry (2× scale) ──────────────────────────────────
+  function buildOnlineVillage() {
+    ovVillageQuads.length = 0;
+    const Q = ovVillageQuads;
+    _pbXZ = 2;  // all pushBox calls below are 2× wider/deeper
+    // Ground
+    for (let gx=-108; gx<108; gx+=12) {
+      for (let gz=-108; gz<108; gz+=12) {
+        Q.push({ verts:[v3(gx,0,gz),v3(gx+12,0,gz),v3(gx+12,0,gz+12),v3(gx,0,gz+12)],
+          color:((Math.floor(gx/12)+Math.floor(gz/12))&1)?0x2c2820:0x28241c, normal:v3(0,1,0), isGround:true });
+      }
+    }
+    // Grass centre
+    for (let gx=-64; gx<64; gx+=6) {
+      for (let gz=-84; gz<92; gz+=6) {
+        Q.push({ verts:[v3(gx,0.010,gz),v3(gx+6,0.010,gz),v3(gx+6,0.010,gz+6),v3(gx,0.010,gz+6)],
+          color:((Math.floor(gx/6)+Math.floor(gz/6))&1)?0x3d6e1e:0x2e5814, normal:v3(0,1,0), isGround:true });
+      }
+    }
+    // N-S dirt path
+    for (let gz=-108; gz<108; gz+=5) {
+      Q.push({ verts:[v3(-6.4,0.015,gz),v3(6.4,0.015,gz),v3(6.4,0.015,gz+5),v3(-6.4,0.015,gz+5)],
+        color:(Math.floor(gz/5)&1)?0x7a5c38:0x6a4e2c, normal:v3(0,1,0), isGround:true });
+    }
+    // E-W dirt path
+    for (let gx=-104; gx<104; gx+=5) {
+      if (Math.abs(gx+2.5)<=6.4) continue;
+      Q.push({ verts:[v3(gx,0.015,-6.4),v3(gx+5,0.015,-6.4),v3(gx+5,0.015,6.4),v3(gx,0.015,6.4)],
+        color:(Math.floor(gx/5)&1)?0x7a5c38:0x6a4e2c, normal:v3(0,1,0), isGround:true });
+    }
+
+    // Helper for scaled buildings
+    function ovBuilding(cx,cz,ww,wh,wd,wallCol,roofCol) {
+      const wcy=wh+0.02, rcy=wh*2+0.02+0.72, dcy=wh*0.55+0.02;
+      pushBox(Q, cx, wcy,  cz, ww,        wh,    wd,        wallCol);
+      pushBox(Q, cx, rcy,  cz, ww+0.55,   0.72,  wd+0.55,   roofCol);
+      pushBox(Q, cx+ww*0.6, dcy, cz+(cz<0?wd:-wd), 0.68, wh*0.55, 0.06, 0x14100a);
+    }
+
+    // Well (centrepiece) — scaled 2×
+    pushBox(Q,  0, 0.42, -16, 4.0, 0.42, 4.0, 0x7a7268);
+    pushBox(Q,  0, 1.12, -16, 3.0, 0.34, 3.0, 0x6c6460);
+    Q.push({ verts:[v3(-2,1.06,-18),v3(2,1.06,-18),v3(2,1.06,-14),v3(-2,1.06,-14)], color:0x0c2860, normal:v3(0,1,0), isGround:true });
+    Q.push({ verts:[v3(-1.6,1.28,-17.6),v3(1.6,1.28,-17.6),v3(1.6,1.28,-14.4),v3(-1.6,1.28,-14.4)], color:0x1848a8, normal:v3(0,1,0), isGround:true });
+    pushBox(Q, -2.8, 2.82, -16, 0.18, 1.72, 0.18, 0x6a4820);
+    pushBox(Q,  2.8, 2.82, -16, 0.18, 1.72, 0.18, 0x6a4820);
+    pushBox(Q,  0,   4.56, -16, 3.10, 0.09, 0.09, 0x5a3c18);
+    pushBox(Q,  0,   3.22, -16, 0.07, 1.20, 0.07, 0x483828);
+
+    // Town hall (north, large)
+    pushBox(Q, 0, 5.0, -50, 12, 5.0, 10, 0x9a8c7c);
+    pushBox(Q, 0, 11.5,-50, 12.8, 1.4,10.8, 0x7a3828);
+    pushBox(Q, 0, 3.2, -60, 2.0, 3.2, 0.2, 0x14100a);  // big door
+    // Town hall columns
+    for (let cx=-8; cx<=8; cx+=4) pushBox(Q, cx, 4.0, -60, 0.4, 4.0, 0.4, 0xb8a898);
+
+    // Market stalls row (west side)
+    for (let i=0; i<5; i++) {
+      const mx=-20, mz=-30+i*18;
+      pushBox(Q, mx, 2.2, mz, 2.5, 2.2, 2.5, 0x8a7060);
+      pushBox(Q, mx, 5.4, mz, 3.2, 1.0, 3.2, (i%2===0)?0xcc3030:0x2060b0);
+      pushBox(Q, mx, 0.65,mz, 2.0, 0.65, 1.8, 0x6a5040);  // counter top
+    }
+
+    // Houses row (east side)
+    const houseColors = [0x9a7860, 0x6a8070, 0x7068a0, 0x90a068, 0xa07858];
+    const roofColors  = [0x8a3020, 0x306848, 0x5030a0, 0x608030, 0xa04828];
+    for (let i=0; i<5; i++) {
+      ovBuilding(28, -38+i*20, 7, 4.5, 5.5, houseColors[i], roofColors[i]);
+    }
+
+    // Pet shop (south-east)
+    pushBox(Q, 40, 4.0, 30, 9, 4.0, 8, 0xc0a870);
+    pushBox(Q, 40, 9.0, 30, 9.6,1.2, 8.6, 0x4a7030);
+    pushBox(Q, 40, 1.8, 22, 1.8, 1.8, 0.2, 0x14100a);
+
+    // Bakery (south-west)
+    pushBox(Q,-38, 3.5, 28, 8, 3.5, 6, 0xe0c088);
+    pushBox(Q,-38, 8.2, 28, 8.6,1.0, 6.6, 0xb84830);
+    pushBox(Q,-38, 1.5, 22, 1.6, 1.5, 0.2, 0x14100a);
+
+    // Library (north-west)
+    pushBox(Q,-32, 4.5,-44, 9, 4.5, 7, 0x808090);
+    pushBox(Q,-32, 10.2,-44, 9.5,0.9, 7.5, 0x203868);
+
+    // Pouch Factory (south, same as offline)
+    pushBox(Q, 0, 4.5, 54, 10, 4.5, 8, 0x7888a0);
+    pushBox(Q, 0, 10.0,54, 10.6,0.9, 8.6, 0x506080);
+    pushBox(Q, 0, 2.0, 46, 1.8, 2.0, 0.2, 0x14100a);
+
+    // Fountain plaza (east square)
+    Q.push({ verts:[v3(48,0.02,-12),v3(72,0.02,-12),v3(72,0.02,12),v3(48,0.02,12)], color:0x706858, normal:v3(0,1,0), isGround:true });
+    pushBox(Q, 60, 0.6,  0,  4.0, 0.6, 4.0, 0x8880a0);
+    pushBox(Q, 60, 1.5,  0,  3.0, 0.18,3.0, 0x7878a0);
+    Q.push({ verts:[v3(57,1.1,-3),v3(63,1.1,-3),v3(63,1.1,3),v3(57,1.1,3)], color:0x2858b8, normal:v3(0,1,0), isGround:true });
+    pushBox(Q, 60, 3.5,  0,  0.3, 2.1, 0.3, 0x9090b0);  // pillar
+    Q.push({ verts:[v3(59,5.3,-1),v3(61,5.3,-1),v3(61,5.3,1),v3(59,5.3,1)], color:0x4090e0, normal:v3(0,1,0), isGround:true });
+
+    // Park / garden (north-east)
+    for (let gx=48; gx<80; gx+=8) {
+      for (let gz=-80; gz<-48; gz+=8) {
+        Q.push({ verts:[v3(gx,0.01,gz),v3(gx+8,0.01,gz),v3(gx+8,0.01,gz+8),v3(gx,0.01,gz+8)], color:((Math.floor(gx/8)+Math.floor(gz/8))&1)?0x3a6c1c:0x2e5a12, normal:v3(0,1,0), isGround:true });
+      }
+    }
+    // Park trees
+    [[52,-74],[60,-66],[68,-74],[56,-58],[64,-58],[52,-66],[68,-66]].forEach(([tx,tz])=>{
+      addTree(tx, tz, 1.8, Q);
+    });
+    // Benches in park
+    [[50,-70],[66,-70],[58,-62]].forEach(([bx,bz])=>{
+      pushBox(Q, bx, 0.6, bz, 2.2, 0.1, 0.6, 0x7a5830);
+      pushBox(Q, bx, 0.9, bz, 2.2, 0.1, 0.08,0x7a5830);
+      [[-1.8],[1.8]].forEach(([ox])=>{
+        pushBox(Q, bx+ox, 0.3, bz, 0.1, 0.3, 0.55, 0x604820);
+      });
+    });
+
+    // Trees lining the paths
+    [[-18,-90],[-18,-72],[-18,-54],[18,-90],[18,-72],[18,-54],
+     [-18,54], [-18,72], [18,54],  [18,72],
+     [-80,-20],[-80,0],  [-80,20], [80,-20],[80,0],  [80,20]].forEach(([tx,tz])=>{
+      addTree(tx, tz, 1.4, Q);
+    });
+
+    // Lampposts along main road
+    [[-10,-40],[10,-40],[-10,-20],[10,-20],[-10,20],[10,20],[-10,40],[10,40]].forEach(([lx,lz])=>{
+      pushBox(Q, lx, 2.5, lz, 0.12, 2.5, 0.12, 0x404850);
+      pushBox(Q, lx, 5.3, lz, 0.5,  0.12, 0.12, 0x404850);
+      Q.push({ verts:[v3(lx-0.3,5.2,lz-0.3),v3(lx+0.3,5.2,lz-0.3),v3(lx+0.3,5.2,lz+0.3),v3(lx-0.3,5.2,lz+0.3)], color:0xffee88, normal:v3(0,1,0), isGround:true });
+    });
+
+    // Satellite dish / Unit-7 — same position as offline but 2× scaled
+    pushBox(Q, 10.5, 0.4, 10, 0.6, 0.4, 0.6, 0x505868);
+    pushBox(Q, 10.5, 1.5, 10, 0.1, 1.1, 0.1, 0x606878);
+    pushBox(Q, 11.3, 2.6, 10, 1.2, 0.1, 1.2, 0x5890c0, 0.4);
+
+    _pbXZ = 1;  // restore normal scale
+    toastMsg = ''; // clear any pending
+  }
+
+  // ── Online player rendering ──────────────────────────────────────────────
+  function buildOnlinePlayerQuads() {
+    ovPlayerQuads = [];
+    Object.entries(ovPlayers).forEach(([uid, p]) => {
+      if (!p || !isFinite(p.x) || !isFinite(p.z)) return;
+      const age = Date.now() - (p.lastSeen || 0);
+      if (age > 12000) return; // stale — skip
+      const profile = p;
+      const fur     = OV_FUR_COLORS[Math.min(profile.furIdx||0, OV_FUR_COLORS.length-1)].hex;
+      const size    = OV_SIZES[Math.min(profile.sizeIdx||1, 2)];
+      const earType = OV_EAR_TYPES[Math.min(profile.earIdx||0, OV_EAR_TYPES.length-1)];
+      const spotPat = OV_SPOT_PATS[Math.min(profile.spotPatIdx||0, OV_SPOT_PATS.length-1)];
+      const spotHex = (profile.spotColIdx>0) ? (OV_SPOT_COLORS[Math.min(profile.spotColIdx||1,OV_SPOT_COLORS.length-1)].hex) : null;
+      const collar  = OV_COLLAR_COLORS[Math.min(profile.collarIdx||0, OV_COLLAR_COLORS.length-1)].hex;
+      const bodyIdx = Math.min(profile.bodyIdx||0, OV_BODY_TYPES.length-1);
+      addOnlineCustomDog(ovPlayerQuads, p.x, p.z, size, fur, p.yaw||0, earType, spotPat, spotHex, collar, bodyIdx);
+    });
+  }
+
+  function addOnlineCustomDog(list, wx, wz, s, fur, facingYaw, earType, spotPat, spotHex, collarHex, bodyIdx) {
+    const fl = 0.21;
+    // Body proportions by type
+    let bw=0.46, bh=0.28, bd=0.72, legLat=0.28, legLon=0.40;
+    if (bodyIdx===1) { bw=0.58; bh=0.34; bd=0.72; }  // chubby
+    if (bodyIdx===2) { bw=0.36; bh=0.22; bd=0.70; }  // slim
+    if (bodyIdx===3) { bw=0.42; bh=0.22; bd=0.72; legLon=0.50; } // tall
+    if (bodyIdx===4) { bw=0.36; bh=0.20; bd=0.55; }  // tiny
+    if (bodyIdx===5) { bw=0.52; bh=0.32; bd=0.76; }  // fluffy
+    if (bodyIdx===6) { bw=0.38; bh=0.24; bd=0.78; legLat=0.30; } // athletic
+    // Body
+    pushBox(list, wx, fl+0.54*s, wz, bw*s, bh*s, bd*s, fur, facingYaw);
+    // Head
+    const hx=wx+Math.sin(facingYaw)*0.78*s, hz=wz+Math.cos(facingYaw)*0.78*s;
+    const hW = (bodyIdx===1||bodyIdx===5) ? 0.38 : 0.34;
+    pushBox(list, hx, fl+0.96*s, hz, hW*s, 0.32*s, 0.32*s, fur, facingYaw);
+    // Muzzle
+    const snx=wx+Math.sin(facingYaw)*1.22*s, snz=wz+Math.cos(facingYaw)*1.22*s;
+    pushBox(list, snx, fl+0.85*s, snz, 0.15*s, 0.09*s, 0.14*s, ovLighten(fur,0.2), facingYaw);
+    // Nose
+    pushBox(list, wx+Math.sin(facingYaw)*1.35*s, fl+0.90*s, wz+Math.cos(facingYaw)*1.35*s, 0.05*s,0.04*s,0.04*s, 0x1a0a08, facingYaw);
+    // Tail
+    const tlx=wx-Math.sin(facingYaw)*0.72*s, tlz=wz-Math.cos(facingYaw)*0.72*s;
+    pushBox(list, tlx, fl+0.84*s, tlz, 0.08*s,0.08*s,0.20*s, fur, facingYaw+0.4);
+    // Legs
+    const rvx=Math.cos(facingYaw), rvz=-Math.sin(facingYaw);
+    const legH = (bodyIdx===3)?0.28:((bodyIdx===6)?0.26:0.20);
+    [[legLat*s,legLon*s],[-legLat*s,legLon*s],[legLat*s,-legLon*s],[-legLat*s,-legLon*s]].forEach(([lat,lon])=>{
+      const lx=wx+rvx*lat+Math.sin(facingYaw)*lon, lz=wz+rvz*lat+Math.cos(facingYaw)*lon;
+      pushBox(list, lx, fl+legH*s,  lz, 0.10*s, legH*s,   0.10*s, fur, facingYaw);
+      pushBox(list, lx, fl+0.04*s,  lz, 0.13*s, 0.05*s,   0.13*s, 0x2a1808, facingYaw);
+    });
+    // Spot socks (different color on paws)
+    if (spotPat==='socks' && spotHex) {
+      [[legLat*s,legLon*s],[-legLat*s,legLon*s],[legLat*s,-legLon*s],[-legLat*s,-legLon*s]].forEach(([lat,lon])=>{
+        const lx=wx+rvx*lat+Math.sin(facingYaw)*lon, lz=wz+rvz*lat+Math.cos(facingYaw)*lon;
+        pushBox(list, lx, fl+0.06*s, lz, 0.12*s, 0.07*s, 0.12*s, spotHex, facingYaw);
+      });
+    }
+    // Spot back patches
+    if (spotHex && spotPat==='patches') {
+      pushBox(list, wx+Math.sin(facingYaw)*0.2*s, fl+0.78*s, wz+Math.cos(facingYaw)*0.2*s, bw*0.5*s, bh*0.55*s, bd*0.3*s, spotHex, facingYaw);
+    }
+    if (spotHex && spotPat==='spots') {
+      [[0.3*s,0],[-(0.3*s),0],[0,0.3*s],[0,(-(0.3*s))]].forEach(([ox,oz])=>{
+        pushBox(list, wx+ox, fl+0.8*s, wz+oz, 0.08*s, 0.08*s, 0.08*s, spotHex, facingYaw);
+      });
+    }
+    if (spotHex && spotPat==='stripe') {
+      pushBox(list, wx, fl+0.60*s, wz, 0.08*s, bh*0.6*s, bd*0.85*s, spotHex, facingYaw);
+    }
+    // Collar
+    if (collarHex) {
+      pushBox(list, hx, fl+0.78*s, hz, 0.36*s, 0.06*s, 0.36*s, collarHex, facingYaw);
+    }
+    // Ears
+    const ex=Math.cos(facingYaw)*0.30*s, ez=-Math.sin(facingYaw)*0.30*s;
+    if (earType==='floppy') {
+      pushBox(list, hx+ex, fl+0.88*s, hz+ez, 0.06*s,0.20*s,0.10*s, fur, facingYaw);
+      pushBox(list, hx-ex, fl+0.88*s, hz-ez, 0.06*s,0.20*s,0.10*s, fur, facingYaw);
+    } else if (earType==='rounded') {
+      pushBox(list, hx+ex, fl+1.12*s, hz+ez, 0.12*s,0.14*s,0.10*s, fur, facingYaw);
+      pushBox(list, hx-ex, fl+1.12*s, hz-ez, 0.12*s,0.14*s,0.10*s, fur, facingYaw);
+    } else if (earType==='bat') {
+      pushBox(list, hx+ex*1.4, fl+1.16*s, hz+ez*1.4, 0.16*s,0.20*s,0.06*s, fur, facingYaw);
+      pushBox(list, hx-ex*1.4, fl+1.16*s, hz-ez*1.4, 0.16*s,0.20*s,0.06*s, fur, facingYaw);
+    } else if (earType==='tufted') {
+      pushBox(list, hx+ex, fl+1.14*s, hz+ez, 0.09*s,0.22*s,0.07*s, fur, facingYaw);
+      pushBox(list, hx+ex, fl+1.38*s, hz+ez, 0.07*s,0.06*s,0.07*s, ovLighten(fur,0.3), facingYaw);
+      pushBox(list, hx-ex, fl+1.14*s, hz-ez, 0.09*s,0.22*s,0.07*s, fur, facingYaw);
+      pushBox(list, hx-ex, fl+1.38*s, hz-ez, 0.07*s,0.06*s,0.07*s, ovLighten(fur,0.3), facingYaw);
+    } else if (earType==='perky') {
+      pushBox(list, hx+ex*0.8, fl+1.10*s, hz+ez*0.8, 0.07*s,0.16*s,0.06*s, fur, facingYaw);
+      pushBox(list, hx-ex*0.8, fl+1.10*s, hz-ez*0.8, 0.07*s,0.16*s,0.06*s, fur, facingYaw);
+    } else { // triangle (default)
+      pushBox(list, hx+ex, fl+1.14*s, hz+ez, 0.09*s,0.22*s,0.07*s, fur, facingYaw);
+      pushBox(list, hx-ex, fl+1.14*s, hz-ez, 0.09*s,0.22*s,0.07*s, fur, facingYaw);
+    }
+  }
+
+  // ── Name tags above online players ──────────────────────────────────────
+  function renderOnlineNameTags() {
+    if (!inOnlineVillage) return;
+    Object.entries(ovPlayers).forEach(([uid, p]) => {
+      if (!p || !isFinite(p.x) || !isFinite(p.z)) return;
+      const age = Date.now() - (p.lastSeen||0);
+      if (age > 12000) return;
+      const wp = project(v3(p.x, 0.21+1.8*(OV_SIZES[Math.min(p.sizeIdx||1,2)]), p.z), cam);
+      if (!wp || wp.z < 0) return;
+      const name = (p.name||'???').slice(0,18);
+      ctx.save();
+      ctx.font = 'bold 11px Arial';
+      const tw = ctx.measureText(name).width;
+      ctx.fillStyle = 'rgba(0,10,24,0.70)';
+      ctx.beginPath(); ctx.roundRect(wp.x-tw/2-5, wp.y-18, tw+10, 18, 5); ctx.fill();
+      ctx.fillStyle = '#a0e0ff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(name, wp.x, wp.y-9);
+      ctx.restore();
+    });
+    // Own dog name tag
+    const own = onlineDogProfile;
+    if (own) {
+      const wp = project(v3(ovDog.x, 0.21+1.8*(OV_SIZES[Math.min(own.sizeIdx||1,2)]), ovDog.z), cam);
+      if (wp && wp.z >= 0) {
+        ctx.save();
+        ctx.font = 'bold 11px Arial';
+        const tw = ctx.measureText(own.name||'You').width;
+        ctx.fillStyle = 'rgba(0,24,10,0.70)';
+        ctx.beginPath(); ctx.roundRect(wp.x-tw/2-5, wp.y-18, tw+10, 18, 5); ctx.fill();
+        ctx.fillStyle = '#a0ffb8'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(own.name||'You', wp.x, wp.y-9);
+        ctx.restore();
+      }
+    }
+  }
+
+  // ── Online village update (called from main update loop) ─────────────────
+  function updateOnlineVillage() {
+    if (!inOnlineVillage) return;
+    const ods = ovDog;
+    const sx = Math.sin(ods.yaw), sz = Math.cos(ods.yaw);
+    if (keys['ArrowLeft'])  ods.yaw += TURN_SPEED;
+    if (keys['ArrowRight']) ods.yaw -= TURN_SPEED;
+    const moving = keys['ArrowUp'] || keys['ArrowDown'];
+    if (keys['ArrowUp'])   { ods.x += sx*MOVE_SPEED*1.3; ods.z += sz*MOVE_SPEED*1.3; }
+    if (keys['ArrowDown']) { ods.x -= sx*BACK_SPEED*1.3; ods.z -= sz*BACK_SPEED*1.3; }
+    // Bounds (online village is ~100 units radius)
+    ods.x = Math.max(-96, Math.min(96, ods.x));
+    ods.z = Math.max(-96, Math.min(96, ods.z));
+    // Jump
+    if (keys['Space'] && ods.grounded) { ods.velY = JUMP_VEL; ods.grounded = false; }
+    ods.velY += GRAVITY;
+    ods.y += ods.velY;
+    if (ods.y <= 0.21) { ods.y = 0.21; ods.velY = 0; ods.grounded = true; }
+    // Walk animation
+    if (moving && ods.grounded) ods.walkT += 0.22;
+
+    // C = toggle chat
+    if (keysJustPressed.has('KeyC') && inOnlineVillage) {
+      keysJustPressed.delete('KeyC');
+      ovToggleChat();
+    }
+    // U = open customization
+    if (keysJustPressed.has('KeyU') && inOnlineVillage) {
+      keysJustPressed.delete('KeyU');
+      if (!ovCustomOpen) ovOpenCustom();
+    }
+    // Escape = exit online village
+    if (keysJustPressed.has('Escape') && inOnlineVillage && !ovChatOpen && !ovCustomOpen) {
+      keysJustPressed.delete('Escape');
+      exitOnlineVillage();
+      return;
+    }
+    // E = trade interaction near other players
+    if (keysJustPressed.has('KeyE') && inOnlineVillage) {
+      for (const [uid, p] of Object.entries(ovPlayers)) {
+        if (!p || !isFinite(p.x)) continue;
+        const dist = Math.hypot(ods.x-p.x, ods.z-p.z);
+        if (dist < 4.0) { keysJustPressed.delete('KeyE'); ovOpenTrade(uid); break; }
+      }
+    }
+
+    // Broadcast position
+    ovBroadcastTimer--;
+    if (ovBroadcastTimer <= 0) { ovBroadcastTimer = OV_BROADCAST; ovBroadcastNow(); }
+    // Proximity [E] hints for nearby players
+    const canvas = document.getElementById('c');
+    let nearPlayer = null, nearDist = Infinity;
+    Object.entries(ovPlayers).forEach(([uid, p]) => {
+      if (!p || !isFinite(p.x)) return;
+      const d = Math.hypot(ods.x-p.x, ods.z-p.z);
+      if (d < 4.0 && d < nearDist) { nearDist = d; nearPlayer = { uid, ...p }; }
+    });
+    if (nearPlayer) {
+      const W=canvas.width, H=canvas.height;
+      ctx.save(); ctx.font='bold 13px Arial'; ctx.fillStyle='rgba(180,255,180,0.9)';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('[E] Trade with ' + (nearPlayer.name||'???'), W/2, H-150);
+      ctx.restore();
+    }
+  }
+
+  // ── Online village camera ─────────────────────────────────────────────────
+  function ovUpdateCamera() {
+    if (!inOnlineVillage) return;
+    const ods = ovDog;
+    const camDist = 8 * (onlineDogProfile ? OV_SIZES[Math.min(onlineDogProfile.sizeIdx||1,2)] : 1);
+    const camH    = 5;
+    cam.pos = v3(ods.x - Math.sin(ods.yaw)*camDist, ods.y+camH, ods.z - Math.cos(ods.yaw)*camDist);
+    cam.dir = normalise(sub(v3(ods.x, ods.y+1.0, ods.z), cam.pos));
+    cam.pitch = 0.28;
+  }
+
+  // ── Position broadcast ───────────────────────────────────────────────────
+  function ovBroadcastNow() {
+    if (!onlineDogProfile) return;
+    const data = {
+      x: Math.round(ovDog.x*100)/100,
+      z: Math.round(ovDog.z*100)/100,
+      yaw: Math.round(ovDog.yaw*100)/100,
+      name: onlineDogProfile.name,
+      furIdx:     onlineDogProfile.furIdx     || 0,
+      earIdx:     onlineDogProfile.earIdx     || 0,
+      bodyIdx:    onlineDogProfile.bodyIdx    || 0,
+      sizeIdx:    onlineDogProfile.sizeIdx    || 1,
+      spotPatIdx: onlineDogProfile.spotPatIdx || 0,
+      spotColIdx: onlineDogProfile.spotColIdx || 1,
+      collarIdx:  onlineDogProfile.collarIdx  || 0,
+      lastSeen:   Date.now(),
+    };
+    if (ovPlayerRef) { ovPlayerRef.update(data).catch(()=>{}); }
+  }
+
+  function ovUpdatePlayerCount() {
+    const count = Object.keys(ovPlayers).length;
+    const el = document.getElementById('ov-player-count');
+    if (el) el.textContent = count > 0 ? ('👥 ' + count + ' other dog' + (count===1?'':'s') + ' online') : '👤 Just you right now';
+  }
+
+  // ── Chat ─────────────────────────────────────────────────────────────────
+  function ovToggleChat() {
+    ovChatOpen = !ovChatOpen;
+    const chatEl = document.getElementById('ov-chat');
+    const toggleEl = document.getElementById('ov-chat-toggle');
+    if (ovChatOpen) {
+      chatEl.classList.remove('hidden');
+      document.getElementById('ov-chat-toggle').style.display='none';
+      ovChatUnread = 0;
+      setTimeout(()=>document.getElementById('ov-chat-input').focus(),50);
+    } else {
+      chatEl.classList.add('hidden');
+      toggleEl.style.display='';
+    }
+  }
+
+  function ovReceiveChatMsg(msg) {
+    if (!msg) return;
+    ovChatMsgs.push(msg);
+    if (ovChatMsgs.length > 80) ovChatMsgs.shift();
+    const log = document.getElementById('ov-chat-log');
+    if (!log) return;
+    const div = document.createElement('div');
+    div.className = 'ov-chat-msg' + (msg.uid==='__system'?' ov-chat-system':'');
+    if (msg.uid !== '__system') {
+      div.innerHTML = '<span class="ov-chat-name">' + ovEsc(msg.name) + ':</span>' + ovEsc(msg.text);
+    } else {
+      div.textContent = msg.text;
+    }
+    log.appendChild(div);
+    log.scrollTop = log.scrollHeight;
+    if (!ovChatOpen) { ovChatUnread++; const tEl=document.getElementById('ov-chat-toggle'); if(tEl) tEl.textContent='💬 Chat ('+ovChatUnread+')'; }
+  }
+
+  function ovSendChat() {
+    const input = document.getElementById('ov-chat-input');
+    if (!input) return;
+    const text = input.value.trim().slice(0,120);
+    if (!text) return;
+    input.value = '';
+    const msg = { uid: ovUID, name: (onlineDogProfile?.name||'???'), text, ts: Date.now() };
+    if (_fbDB && ovRoomId !== 'demo') {
+      _fbDB.ref('ov_chat/'+ovRoomId).push(msg).catch(()=>{});
+    } else {
+      ovReceiveChatMsg(msg); // local echo in demo mode
+    }
+  }
+
+  function ovEsc(str) {
+    return (str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  // ── Customisation (edit dog while in village) ────────────────────────────
+  function ovOpenCustom() {
+    ovCustomOpen = true;
+    const p = document.getElementById('ov-custom-panel');
+    p.classList.remove('hidden');
+    ovBuildSwatchRow('ov-cp-fur-colors',    OV_FUR_COLORS,    onlineDogProfile?.furIdx||0,    (i)=>{if(onlineDogProfile)onlineDogProfile.furIdx=i; ovSaveProfile(); document.querySelectorAll('#ov-cp-fur-colors .ov-swatch').forEach((s,j)=>s.classList.toggle('ov-selected',j===i)); ovBroadcastNow(); });
+    ovBuildSwatchRow('ov-cp-collar-colors', OV_COLLAR_COLORS, onlineDogProfile?.collarIdx||0, (i)=>{if(onlineDogProfile)onlineDogProfile.collarIdx=i; ovSaveProfile(); document.querySelectorAll('#ov-cp-collar-colors .ov-swatch').forEach((s,j)=>s.classList.toggle('ov-selected',j===i)); ovBroadcastNow(); });
+    ovBuildSwatchRow('ov-cp-spot-colors',   OV_SPOT_COLORS,   onlineDogProfile?.spotColIdx||1, (i)=>{if(onlineDogProfile)onlineDogProfile.spotColIdx=i; ovSaveProfile(); document.querySelectorAll('#ov-cp-spot-colors .ov-swatch').forEach((s,j)=>s.classList.toggle('ov-selected',j===i)); ovBroadcastNow(); });
+    const spEl = document.getElementById('ov-cp-spot-pattern');
+    if (spEl) {
+      spEl.innerHTML = '';
+      OV_SPOT_LABELS.forEach((lbl,i)=>{
+        const b=document.createElement('button'); b.className='ov-opt-btn'+(i===(onlineDogProfile?.spotPatIdx||0)?' ov-selected':''); b.textContent=lbl;
+        b.onclick=()=>{ if(onlineDogProfile)onlineDogProfile.spotPatIdx=i; ovSaveProfile(); spEl.querySelectorAll('.ov-opt-btn').forEach((x,j)=>x.classList.toggle('ov-selected',j===i)); ovBroadcastNow(); };
+        spEl.appendChild(b);
+      });
+    }
+  }
+  function ovCloseCustom() { ovCustomOpen=false; document.getElementById('ov-custom-panel').classList.add('hidden'); }
+
+  // ── Trading ──────────────────────────────────────────────────────────────
+  function ovOpenTrade(uid) {
+    ovTradeTarget = uid;
+    const p = ovPlayers[uid];
+    document.getElementById('ov-trade-to-name').textContent = 'Trading with: ' + (p?.name||'???');
+    const itemsEl = document.getElementById('ov-trade-items');
+    itemsEl.innerHTML = '';
+    // List pouch items available to trade
+    const tradeable = (typeof pouchItems !== 'undefined' ? pouchItems : []);
+    if (tradeable.length === 0) {
+      itemsEl.innerHTML = '<span style="color:#80b090;font:12px Arial">No items in your pouch to trade.</span>';
+    }
+    tradeable.forEach((item, i) => {
+      const div = document.createElement('div');
+      div.className = 'ov-trade-item';
+      div.textContent = (item.emoji||'📦') + ' ' + (item.name||'Item');
+      div.onclick = () => {
+        document.querySelectorAll('.ov-trade-item').forEach(el=>el.classList.remove('selected'));
+        div.classList.add('selected');
+        ovTradeOffer = i;
+      };
+      itemsEl.appendChild(div);
+    });
+    document.getElementById('ov-trade-panel').classList.remove('hidden');
+  }
+  function ovCancelTrade() { ovTradeTarget=null; ovTradeOffer=null; document.getElementById('ov-trade-panel').classList.add('hidden'); }
+  function ovSendTrade() {
+    if (ovTradeOffer === null) { toastMsg='Select an item to offer!'; toastTimer=180; return; }
+    const tradeable = (typeof pouchItems !== 'undefined' ? pouchItems : []);
+    const item = tradeable[ovTradeOffer];
+    if (!item) return;
+    const tradeData = {
+      fromUid:   ovUID,
+      fromName:  onlineDogProfile?.name||'???',
+      itemName:  item.name||'Item',
+      itemEmoji: item.emoji||'📦',
+      status:    'pending',
+      ts:        Date.now(),
+    };
+    if (_fbDB && ovRoomId !== 'demo') {
+      _fbDB.ref('ov_trades/'+ovTradeTarget+'/incoming').set(tradeData).catch(()=>{});
+    }
+    toastMsg = '📬 Trade offer sent to ' + (ovPlayers[ovTradeTarget]?.name||'???') + '!';
+    toastTimer = 240;
+    ovCancelTrade();
+  }
+  function ovShowIncomingTrade(t) {
+    ovIncomingTrade = t;
+    document.getElementById('ov-trade-inc-desc').textContent = (t.fromName||'Someone') + ' offers you: ' + (t.itemEmoji||'📦') + ' ' + (t.itemName||'Item');
+    document.getElementById('ov-trade-incoming').classList.remove('hidden');
+  }
+  function ovAcceptTrade() {
+    if (!ovIncomingTrade) return;
+    const t = ovIncomingTrade;
+    // Add item to pouch (if pouchItems exists)
+    if (typeof pouchItems !== 'undefined') {
+      pouchItems.push({ name: t.itemName, emoji: t.itemEmoji, fromOnline: true });
+    }
+    toastMsg = '✅ Trade accepted! You received: ' + (t.itemEmoji||'📦') + ' ' + (t.itemName||'Item');
+    toastTimer = 300;
+    if (_fbDB) _fbDB.ref('ov_trades/'+ovUID+'/incoming').remove().catch(()=>{});
+    ovIncomingTrade = null;
+    document.getElementById('ov-trade-incoming').classList.add('hidden');
+    if (typeof saveProgress === 'function') saveProgress();
+  }
+  function ovDeclineTrade() {
+    if (_fbDB) _fbDB.ref('ov_trades/'+ovUID+'/incoming').remove().catch(()=>{});
+    ovIncomingTrade = null;
+    document.getElementById('ov-trade-incoming').classList.add('hidden');
+  }
+
+  // ── Wire up creator buttons ──────────────────────────────────────────────
+  document.getElementById('ov-dc-enter-btn').addEventListener('click', ovFinishCreator);
+  document.getElementById('ov-dc-back-btn').addEventListener('click', ovCloseCreator);
+  document.getElementById('ov-dc-name').addEventListener('input', ()=> ovCreatorDrawPreview());
+
   </script>
   <!-- ═══════════════ ONLINE VILLAGE PANELS ═══════════════ -->
 
