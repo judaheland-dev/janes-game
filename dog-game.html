@@ -9016,6 +9016,7 @@
   function cbArriveVillage() {
     showEnterScreen('Arriving at the Village…', () => {
       cbTreasureMapOpen = false;
+      cbMapViewed = true;  // switch to village render immediately
       document.getElementById('map-btn').classList.add('hidden');
       dogState.x = 0; dogState.z = 34; dogState.y = DOG_FLOOR;
       dogState.yaw = Math.PI; dogState.velY = 0; dogState.grounded = true;
@@ -14157,8 +14158,7 @@
   let missionFieldStage = 0;
   let missionFieldDoors = []; // [{x,z,unlocked,stageIdx,guardX,guardZ,guardFacing,guardFur,guardEars,guardName,riddle}]
   let missionFieldTraps = []; // [{x,z,triggered,hidden}] — pressure plates in maze missions
-  let missionFieldCrossroads = []; // [{x,z,hint}] — New Moon ability trigger points
-  let _nmCrossroadHint = null; // {text, timer} — active hint popup
+  let missionFieldCrossroads = []; // [{x,z,labels,revealed,failText,failTimer}] — New Moon ability
   let _mfTrapFlashTimer = 0; // frames for trap-triggered red flash
 
   // Seeded LCG RNG tied to mission key so each mission always generates the same map
@@ -14192,7 +14192,7 @@
     missionFieldWalls.length  = 0;
     missionFieldTraps.length  = 0;
     missionFieldCrossroads.length = 0;
-    _nmCrossroadHint = null;
+    _mfTrapFlashTimer = 0;
     missionFieldObjectiveReady = false;
     missionFieldDetected = false;
     if (!activeMission) return;
@@ -14997,30 +14997,46 @@
       });
 
       // ── Crossroads (3- or 4-way intersections) for New Moon ability ─────
+      // Each crossroad stores per-direction world-space labels placed mid-corridor.
+      // Labels are revealed (permanently) when New Moon steps in (50% chance per direction).
       for (let r=1;r<ROWS-1;r++) {
         for (let c=0;c<COLS;c++) {
           const cell = cells[ci(r,c)];
-          const openCount = ['N','S','E','W'].filter(d=>cell.open[d]).length;
-          if (openCount >= 3) {
-            const cx2 = MAZE_X0+c*CELL+CELL/2, cz2 = MAZE_Z0-r*CELL-CELL/2;
-            // Determine what lies ahead (N = deeper into maze)
-            const aheadR = r - 1;
-            let hint = 'Dead end ahead';
-            if (aheadR >= 0) {
-              const aheadCell = cells[ci(aheadR,c)];
-              const aheadOpen = ['N','S','E','W'].filter(d=>aheadCell.open[d]).length;
+          const openDirs = ['N','S','E','W'].filter(d=>cell.open[d]);
+          if (openDirs.length < 3) continue;
+          const cx2 = MAZE_X0+c*CELL+CELL/2, cz2 = MAZE_Z0-r*CELL-CELL/2;
+
+          // Build a label for each open direction
+          const HALF = CELL * 0.55; // how far down the corridor to place the label
+          const dirOffset = { N:{dx:0,dz:-HALF}, S:{dx:0,dz:HALF}, E:{dx:HALF,dz:0}, W:{dx:-HALF,dz:0} };
+          const labels = openDirs.map(dir => {
+            const {dx,dz} = dirOffset[dir];
+            const lx = cx2+dx, lz = cz2+dz;
+            const nr = r + (dir==='N'?-1:dir==='S'?1:0);
+            const nc = c + (dir==='E'?1:dir==='W'?-1:0);
+            // Classify what's in the next cell
+            let text = '…';
+            if (dir==='S' && r===0) { text='🚪 Entry'; }
+            else if (dir==='N' && r===ROWS-1) { text='✨ Exit!'; }
+            else if (nr>=0&&nr<ROWS&&nc>=0&&nc<COLS) {
+              const nc2 = cells[ci(nr,nc)];
+              const nextOpen = ['N','S','E','W'].filter(d=>nc2.open[d]).length;
               const hasTrap = missionFieldTraps.some(t => {
                 const tr = Math.round((MAZE_Z0 - t.z) / CELL);
                 const tc = Math.round((t.x - MAZE_X0) / CELL);
-                return tr === aheadR && tc === c;
+                return tr===nr && tc===nc;
               });
-              if (hasTrap)     hint = '⚠️ Trap ahead!';
-              else if (aheadR === ROWS-1 && c === 2) hint = '✨ Exit this way!';
-              else if (aheadOpen <= 1) hint = '🚫 Dead end ahead';
-              else hint = '✅ Passage continues';
+              const isExit = (nr===ROWS-1 && nc===2);
+              if (isExit)       text = '✨ Exit!';
+              else if (hasTrap) text = '⚠️ Danger!';
+              else if (nextOpen<=1) text = '🚫 Dead end';
+              else              text = '✅ Clear path';
             }
-            missionFieldCrossroads.push({ x:cx2, z:cz2, hint, revealed:false });
-          }
+            return { x:lx, z:lz, text, visible:false };
+          });
+
+          missionFieldCrossroads.push({ x:cx2, z:cz2, labels, revealed:false,
+            failText:null, failTimer:0 });
         }
       }
 
@@ -15436,18 +15452,20 @@
         if (Math.hypot(ds.x - cr.x, ds.z - cr.z) < 2.8) {
           cr.revealed = true;
           if (Math.random() < 0.5) {
-            // Ability triggers — show the hint
-            _nmCrossroadHint = { text: `🌙 ${cr.hint}`, timer: 180 };
+            // Success: make all direction labels permanently visible
+            cr.labels.forEach(l => l.visible = true);
           } else {
-            _nmCrossroadHint = { text: '🌙 Senses tingling… but nothing clear.', timer: 120 };
+            // Fail: show a brief fading "unclear" text at the crossroad centre
+            cr.failText = '🌙 Senses unclear…';
+            cr.failTimer = 120;
           }
           break;
         }
       }
     }
-    if (_nmCrossroadHint) {
-      _nmCrossroadHint.timer--;
-      if (_nmCrossroadHint.timer <= 0) _nmCrossroadHint = null;
+    // Tick fail timers
+    for (const cr of missionFieldCrossroads) {
+      if (cr.failTimer > 0) cr.failTimer--;
     }
 
     // Stage item interaction
@@ -15684,14 +15702,35 @@
       });
     }
 
-    // New Moon crossroad hint
-    if (_nmCrossroadHint) {
-      const alpha = Math.min(1, _nmCrossroadHint.timer / 30);
-      ctx.globalAlpha = alpha;
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.font = 'bold 20px Arial'; ctx.fillStyle = 'rgba(160,220,255,0.95)';
-      ctx.fillText(_nmCrossroadHint.text, W/2, H*0.22);
-      ctx.globalAlpha = 1;
+    // New Moon crossroad labels — world-space, stay fixed in 3D
+    if (activeCharacter === 'newmoon') {
+      ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+      for (const cr of missionFieldCrossroads) {
+        // Per-direction visible labels (permanent once revealed)
+        cr.labels.forEach(lbl => {
+          if (!lbl.visible) return;
+          const sp = project(v3(lbl.x, DOG_FLOOR + 1.6, lbl.z), cam);
+          if (!sp) return;
+          const col = lbl.text.startsWith('⚠️') ? '#ff7040'
+                    : lbl.text.startsWith('🚫') ? '#ff6060'
+                    : lbl.text.startsWith('✨') ? '#ffe060'
+                    : '#90e0ff';
+          ctx.globalAlpha = 0.95;
+          ctx.font = 'bold 13px Arial'; ctx.fillStyle = col;
+          ctx.fillText(lbl.text, sp.x, sp.y);
+          ctx.globalAlpha = 1;
+        });
+        // Fail flash — fades at crossroad centre
+        if (cr.failTimer > 0) {
+          const sp = project(v3(cr.x, DOG_FLOOR + 2.0, cr.z), cam);
+          if (sp) {
+            ctx.globalAlpha = Math.min(1, cr.failTimer / 25);
+            ctx.font = 'bold 13px Arial'; ctx.fillStyle = '#90b8d8';
+            ctx.fillText(cr.failText, sp.x, sp.y);
+            ctx.globalAlpha = 1;
+          }
+        }
+      }
     }
 
     // NPC labels
