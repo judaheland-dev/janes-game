@@ -4002,6 +4002,18 @@
         if (!moved) break;
       }
     }
+    // Spawn pass 2.5: pairs of closely-placed NPCs face each other — talking pose
+    for (let ti = 0; ti < clearingNPCs.length - 1; ti++) {
+      for (let tj = ti + 1; tj < clearingNPCs.length; tj++) {
+        const ni = clearingNPCs[ti], nj = clearingNPCs[tj];
+        const td = Math.hypot(ni.wx - nj.wx, ni.wz - nj.wz);
+        if (td < 3.5 && td > 0.4 && Math.random() < 0.45) {
+          const ta = Math.atan2(nj.wx - ni.wx, nj.wz - ni.wz);
+          ni.yaw = ta;
+          nj.yaw = ta + Math.PI;
+        }
+      }
+    }
     // Spawn pass 3: build quads now that positions are finalised
     clearingNPCs.forEach(n => addNpcDog(npcQuads, n.wx, n.wz, n.s, n.fur, n.yaw, n.ears || 'triangle'));
 
@@ -5635,58 +5647,28 @@
         keysJustPressed.delete('KeyE');
         enterFactory();
       }
-      // Show E hint when near factory door
-      if (facDoorDist < 3.5 && !inFactory && gameState === 'playing') {
-        const W = canvas.width, H = canvas.height;
-        ctx.globalAlpha = Math.max(0, Math.min(1, (3.5 - facDoorDist)));
-        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.font = 'bold 14px Arial'; ctx.fillStyle = 'rgba(255,210,110,0.92)';
-        ctx.fillText('🛍️  E  ·  Enter Pouch Factory', W/2, H - 120);
-        ctx.globalAlpha = 1;
-      }
+
       // Food Center door (Building 3: x=26, south face at z≈-11) — press E to enter
       const foodDoorDist = Math.hypot(ds.x - 26, ds.z - (-11));
       if (foodDoorDist < 2.8 && keysJustPressed.has('KeyE') && gameState === 'playing') {
         keysJustPressed.delete('KeyE');
         enterFoodCenter();
       }
-      // Show E hint when near Food Center door
-      if (foodDoorDist < 3.5 && !inFoodCenter && gameState === 'playing') {
-        const W = canvas.width, H = canvas.height;
-        ctx.globalAlpha = Math.max(0, Math.min(1, (3.5 - foodDoorDist)));
-        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.font = 'bold 14px Arial'; ctx.fillStyle = 'rgba(255,190,80,0.92)';
-        ctx.fillText('🍖  E  ·  Enter Food Center', W/2, H - 120);
-        ctx.globalAlpha = 1;
-      }
+
       // Cave entrance (arch at x=-12, z≈-30, left of the north path) — press E to enter
       const caveDoorDist = Math.hypot(ds.x - (-12), ds.z - (-29.5));
       if (caveDoorDist < 3.0 && keysJustPressed.has('KeyE') && gameState === 'playing') {
         keysJustPressed.delete('KeyE');
         enterCave();
       }
-      if (caveDoorDist < 4.0 && !inCave && gameState === 'playing') {
-        const W = canvas.width, H = canvas.height;
-        ctx.globalAlpha = Math.max(0, Math.min(1, (4.0 - caveDoorDist)));
-        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.font = 'bold 14px Arial'; ctx.fillStyle = 'rgba(200,180,255,0.92)';
-        ctx.fillText('🛏️  E  ·  Enter Cave', W/2, H - 120);
-        ctx.globalAlpha = 1;
-      }
+
       // W.O.B. Academy door (x=-24, south face z≈-15.5)
       const acadDoorDist = Math.hypot(ds.x - (-24), ds.z - (-15.5));
       if (acadDoorDist < 3.0 && keysJustPressed.has('KeyE') && gameState === 'playing') {
         keysJustPressed.delete('KeyE');
         enterAcademy();
       }
-      if (acadDoorDist < 4.2 && !inAcademy && gameState === 'playing') {
-        const W = canvas.width, H = canvas.height;
-        ctx.globalAlpha = Math.max(0, Math.min(1, (4.2 - acadDoorDist)));
-        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.font = 'bold 14px Arial'; ctx.fillStyle = 'rgba(168,184,240,0.92)';
-        ctx.fillText('🏛️  E  ·  Enter W.O.B. Academy', W/2, H - 120);
-        ctx.globalAlpha = 1;
-      }
+
       // Science Center door (Building 1: x=26, south face at z≈7) — press E to enter
       const sciDoorDist = Math.hypot(ds.x - 26, ds.z - 7);
       if (sciDoorDist < 2.8 && keysJustPressed.has('KeyE') && gameState === 'playing') {
@@ -5698,30 +5680,16 @@
           enterSciCenter();
         }
       }
-      // --- Generic door hint system ---
-      // List of all door locations and labels (add more as needed)
-      const doorHints = [
-        { x: 26, z: -11, r: 3.5, label: '🍖  E  ·  Enter Food Center', color: 'rgba(255,190,80,0.92)' },
-        { x: -12, z: -29.5, r: 4.0, label: '🛏️  E  ·  Enter Cave', color: 'rgba(200,180,255,0.92)' },
-        { x: -24, z: -15.5, r: 4.2, label: '🏛️  E  ·  Enter W.O.B. Academy', color: 'rgba(168,184,240,0.92)' },
-        { x: 26, z: 7, r: 3.8, label: '🔬  E  ·  Enter Science Center', color: 'rgba(80,200,216,0.92)' },
-        // Houses (neighborhood, right side):
-        { x: 25, z: 15, r: 3.2, label: '🏠  E  ·  Enter House', color: 'rgba(255,255,255,0.90)' },
-        { x: 38, z: 11, r: 3.2, label: '🏠  E  ·  Enter House', color: 'rgba(255,255,255,0.90)' },
-        { x: 28, z: 27, r: 3.2, label: '🏠  E  ·  Enter House', color: 'rgba(255,255,255,0.90)' },
-        { x: 44, z: 24, r: 3.2, label: '🏠  E  ·  Enter House', color: 'rgba(255,255,255,0.90)' },
-      ];
-      for (const door of doorHints) {
-        const dist = Math.hypot(ds.x - door.x, ds.z - door.z);
-        if (dist < door.r && gameState === 'playing') {
-          const W = canvas.width, H = canvas.height;
-          ctx.globalAlpha = Math.max(0, Math.min(1, (door.r - dist)));
-          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-          ctx.font = 'bold 14px Arial'; ctx.fillStyle = door.color;
-          ctx.fillText(door.label, W/2, H - 90);
-          ctx.globalAlpha = 1;
+      // Satellite dish / Unit-7 (x=10.5, z=5) — press E to interact
+      if (allDogsInVillage()) {
+        const satDist = Math.hypot(ds.x - 10.5, ds.z - 5);
+        if (satDist < 3.5 && keysJustPressed.has('KeyE') && gameState === 'playing') {
+          keysJustPressed.delete('KeyE');
+          toastMsg = '🌐 Unit-7: Online Village access — coming soon!';
+          toastTimer = 240;
         }
       }
+      // (World-space [E] door badges are drawn by drawVillageDoorHints())
       // West path Mission HQ approach hint (sign at x≈-34.5)
       if (ds.x < -30 && Math.abs(ds.z) < 4 && !inMissionHQ && gameState === 'playing' && !(activeCharacter === 'ruff' && !ruffInVillage)) {
         const W = canvas.width, H = canvas.height;
@@ -6325,6 +6293,7 @@
     }
     if (clearingNPCs.length) drawNpcBubbles();
     if (isInVillage() && villageKids.length) drawKidBubbles();
+    if (isInVillage()) drawVillageDoorHints();
     if (isInVillage()) drawVillageSigns();
     if (isInVillage()) drawQuestObjLabels();
     drawLostPupBubbles();
@@ -6582,6 +6551,53 @@
     }
     ctx.textAlign    = savedTA;
     ctx.textBaseline = savedTB;
+  }
+
+  // World-space [E] badge hints above every village door + satellite dish
+  function drawVillageDoorHints() {
+    const ds = dogState;
+    // Helper: draw a small floating [E] key badge at a world position, fading in with proximity
+    function eHint(wx, wy, wz, maxDist) {
+      const dist = Math.hypot(ds.x - wx, ds.z - wz);
+      if (dist >= maxDist) return;
+      const sp = project(v3(wx, wy, wz), cam);
+      if (!sp) return;
+      const prox = Math.max(0, Math.min(0.95, (maxDist - dist) / (maxDist * 0.55)));
+      const r = 5, bw = 24, bh = 20;
+      const bx = sp.x - bw / 2, by = sp.y - bh;
+      ctx.save();
+      ctx.globalAlpha = prox;
+      // Background pill
+      ctx.fillStyle = 'rgba(18,12,4,0.90)';
+      ctx.beginPath();
+      ctx.moveTo(bx + r, by);
+      ctx.lineTo(bx + bw - r, by);
+      ctx.arc(bx + bw - r, by + r, r, -Math.PI / 2, 0);
+      ctx.lineTo(bx + bw, by + bh - r);
+      ctx.arc(bx + bw - r, by + bh - r, r, 0, Math.PI / 2);
+      ctx.lineTo(bx + r, by + bh);
+      ctx.arc(bx + r, by + bh - r, r, Math.PI / 2, Math.PI);
+      ctx.lineTo(bx, by + r);
+      ctx.arc(bx + r, by + r, r, Math.PI, -Math.PI / 2);
+      ctx.closePath();
+      ctx.fill();
+      // Gold border
+      ctx.strokeStyle = 'rgba(255,210,70,0.88)'; ctx.lineWidth = 1.5; ctx.stroke();
+      // Key letter
+      ctx.font = 'bold 11px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#ffe060';
+      ctx.fillText('E', sp.x, by + bh / 2);
+      ctx.restore();
+    }
+    // Building doors
+    if (!inFactory)    eHint(-26,  2.4,   6.5,  3.8); // Pouch Factory
+    if (!inFoodCenter) eHint( 26,  2.4, -11.0,  3.8); // Food Center
+    if (!inCave)       eHint(-12,  3.5, -30.0,  4.2); // Cave arch
+    if (!inAcademy)    eHint(-24,  2.4, -15.5,  4.4); // Academy
+    if (!inSciCenter)  eHint( 26,  2.4,   7.0,  3.8); // Science Center
+                       eHint( 26,  2.4,  27.0,  3.8); // Bakery (decorative)
+    // Satellite dish — Unit-7 interaction
+    if (allDogsInVillage()) eHint(10.5, 2.6, 5.0, 4.2);
   }
 
   // 3D sign post labels — projected screen-space text shown near each direction sign
@@ -13769,17 +13785,17 @@
       }
     }
 
-    // Perimeter walls — thick stone sandstone
+    // Perimeter walls — thick stone sandstone (bases snapped to y=0)
     const WH = 3.5, WT = 0.5;
     // North wall
-    pushBox(Q, 0, WH/2, -40, 36, WH, WT, 0x5a4e3a);
+    pushBox(Q, 0, 0 + WH/2, -40, 36, WH, WT, 0x5a4e3a);
     // South wall — gap in centre for entrance (x=-3 to x=3 is open)
-    pushBox(Q, -10.5, WH/2, 22, 7.5, WH, WT, 0x5a4e3a);
-    pushBox(Q,  10.5, WH/2, 22, 7.5, WH, WT, 0x5a4e3a);
+    pushBox(Q, -10.5, 0 + WH/2, 22, 7.5, WH, WT, 0x5a4e3a);
+    pushBox(Q,  10.5, 0 + WH/2, 22, 7.5, WH, WT, 0x5a4e3a);
     // East wall (half-depth = 31 matches room length z=-40 to z=22)
-    pushBox(Q, 18, WH/2, -9, WT, WH, 31, 0x4e4430);
+    pushBox(Q, 18, 0 + WH/2, -9, WT, WH, 31, 0x4e4430);
     // West wall
-    pushBox(Q, -18, WH/2, -9, WT, WH, 31, 0x4e4430);
+    pushBox(Q, -18, 0 + WH/2, -9, WT, WH, 31, 0x4e4430);
 
     // ── Command table in the centre ──────────────────────────────────────
     pushBox(Q, 0, 0.9, -8, 7.0, 0.12, 3.5, 0x6a4218);  // tabletop
@@ -14106,14 +14122,22 @@
       const avgZv = pts.reduce((s,p)=>s+p.z,0)/pts.length;
       return { pts, avgZv, color:shade(q.color, q.normal, fogT, fogHex), isGround:q.isGround };
     }).filter(Boolean);
+    // Always draw ground polygons first, then sort/draw all others
     const groundL = toRender.filter(q =>  q.isGround);
     const worldL  = toRender.filter(q => !q.isGround);
-    worldL.sort((a,b) => b.avgZv - a.avgZv);
-    [...groundL, ...worldL].forEach(({ pts, color, isGround }) => {
+    // Draw all ground polygons (floor) first
+    groundL.forEach(({ pts, color }) => {
       ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
       for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
       ctx.closePath(); ctx.fillStyle = color; ctx.fill();
-      if (!isGround) { ctx.strokeStyle='rgba(0,0,0,0.15)'; ctx.lineWidth=0.5; ctx.stroke(); }
+    });
+    // Then draw all other polygons (walls, dogs, NPCs), sorted by avgZv
+    worldL.sort((a,b) => b.avgZv - a.avgZv);
+    worldL.forEach(({ pts, color }) => {
+      ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
+      for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+      ctx.closePath(); ctx.fillStyle = color; ctx.fill();
+      ctx.strokeStyle='rgba(0,0,0,0.15)'; ctx.lineWidth=0.5; ctx.stroke();
     });
     // Draw professor name labels above NPCs
     const profStations = [
@@ -14221,6 +14245,16 @@
         missionFieldQuads.push({ verts:[v3(fx,0,fz),v3(fx+4,0,fz),v3(fx+4,0,fz+4),v3(fx,0,fz+4)], color:e?fc:fa, normal:v3(0,1,0), isGround:true });
       }
     }
+    // Ground detail overlay — scattered variation patches
+    {
+      const pr = mfRng(mKey * 1337 + 11);
+      const patchCol = { wolf_camp:0x1e2410, human_lab:0x282828, nether:0x140202, forest:0x102008, village:0x504030, cave:0x161010, nether_ruins:0x180a0a, human_house:0x5a4030, maze:0x141018 }[mapType]||0x181810;
+      for (let pi=0;pi<80;pi++) {
+        const px=(pr()-0.5)*(FIELD_W*2-8), pz=-8-pr()*FIELD_D*0.95;
+        const pw=1.5+pr()*3.5, pd=1.0+pr()*2.5;
+        missionFieldQuads.push({ verts:[v3(px-pw,0.005,pz-pd),v3(px+pw,0.005,pz-pd),v3(px+pw,0.005,pz+pd),v3(px-pw,0.005,pz+pd)], color:patchCol, normal:v3(0,1,0), isGround:true });
+      }
+    }
     // Entry path
     for (let gz = -6; gz < 10; gz += 2) {
       missionFieldQuads.push({ verts:[v3(-3.5,0.01,gz),v3(3.5,0.01,gz),v3(3.5,0.01,gz+2),v3(-3.5,0.01,gz+2)], color:0x6a5a38, normal:v3(0,1,0), isGround:true });
@@ -14294,16 +14328,52 @@
         addTree(sx, sz, 0.45+rng()*0.3, missionFieldQuads);
       }
 
-      // Decorative: skulls, bones stacked at fence posts
+      // Decorative: skulls, bones, barrels, crates scattered in camp
       for (let bi=0; bi<8; bi++) {
         const bx = (rng()-0.5)*38, bz = pFZ-8 - rng()*26;
         pushBox(missionFieldQuads, bx, 0.15, bz, 0.5, 0.15, 0.3, 0xc8c0a8);
       }
+      // Wooden barrels and crates for cover
+      for (let ci2=0; ci2<14; ci2++) {
+        const cx2=(rng()-0.5)*38, cz2=pFZ-8-rng()*28;
+        if (rng()<0.5) { // barrel
+          pushBox(missionFieldQuads, cx2, 0.7, cz2, 0.55, 0.7, 0.55, 0x5a3818); addWall(cx2,cz2,0.8,0.8);
+          pushBox(missionFieldQuads, cx2, 1.4, cz2, 0.55, 0.08, 0.55, 0x3a2010);
+        } else { // crate
+          const cs=0.8+rng()*0.6;
+          pushBox(missionFieldQuads, cx2, cs*0.5, cz2, cs, cs*0.5, cs, 0x6a4820); addWall(cx2,cz2,cs+0.2,cs+0.2);
+          pushBox(missionFieldQuads, cx2, cs, cz2, cs*0.9, 0.06, cs*0.9, 0x3a2010);
+        }
+      }
+      // More campfires with glowing embers scattered across camp
+      for (let fi2=0; fi2<5; fi2++) {
+        const fx2=(rng()-0.5)*32, fz2=pFZ-10-rng()*24;
+        pushBox(missionFieldQuads, fx2, 0.18, fz2, 0.6, 0.18, 0.6, 0x281408);
+        pushBox(missionFieldQuads, fx2, 0.55, fz2, 0.22, 0.7, 0.22, 0xe05010+Math.floor(rng()*0x100000));
+        pushBox(missionFieldQuads, fx2-0.35, 0.15, fz2, 0.4, 0.15, 0.15, 0x5a3010);
+        pushBox(missionFieldQuads, fx2+0.35, 0.15, fz2, 0.4, 0.15, 0.15, 0x5a3010);
+      }
+      // Flag banners on fence posts
+      for (let fli=0; fli<4; fli++) {
+        const flx=[-pFW+1, pFW-1, -pFW+1, pFW-1][fli], flz=[pFZ-2, pFZ-2, pFZ-pFD+2, pFZ-pFD+2][fli];
+        pushBox(missionFieldQuads, flx, 5.2, flz, 0.12, 5.2, 0.12, 0x3a2010);
+        pushBox(missionFieldQuads, flx+0.8, 6.5, flz, 1.2, 0.5, 0.08, 0xb02018);
+      }
 
-      // Objective: enemy flag on tall pole at back of camp
-      pushBox(missionFieldQuads, 0, 6.5, -108, 0.18, 6.5, 0.18, 0x5a4020);
-      pushBox(missionFieldQuads, 0.1, 12.5, -108, 2.5, 0.8, 0.08, 0xc03020); // flag
-      addWall(0, -108, 0.4, 0.4);
+      // Objective: large enemy flag compound at back of camp
+      // Tall pole
+      pushBox(missionFieldQuads, 0, 8.5, -108, 0.22, 8.5, 0.22, 0x5a4020);
+      pushBox(missionFieldQuads, 0.12, 14.8, -108, 3.8, 1.0, 0.1, 0xc03020); // flag
+      pushBox(missionFieldQuads, 0.12, 16.2, -108, 3.8, 0.7, 0.1, 0xe04020); // flag stripe
+      // Base plinth
+      pushBox(missionFieldQuads, 0, 0.6, -108, 1.2, 0.6, 1.2, 0x3a2810); addWall(0, -108, 1.4, 1.4);
+      // Guard braziers either side
+      pushBox(missionFieldQuads, -4, 0.8, -108, 0.5, 0.8, 0.5, 0x2a1808);
+      pushBox(missionFieldQuads, -4, 1.8, -108, 0.6, 0.3, 0.6, 0x2a1808);
+      pushBox(missionFieldQuads, -4, 2.1, -108, 0.4, 0.5, 0.4, 0xe06010);
+      pushBox(missionFieldQuads,  4, 0.8, -108, 0.5, 0.8, 0.5, 0x2a1808);
+      pushBox(missionFieldQuads,  4, 1.8, -108, 0.6, 0.3, 0.6, 0x2a1808);
+      pushBox(missionFieldQuads,  4, 2.1, -108, 0.4, 0.5, 0.4, 0xe06010);
       missionFieldItems.push({ id:0, x:0, z:-108, type:'objective', label:m.objective, icon:'🏴', collected:false });
 
       // Patrols — wolf guards in two zones
@@ -14376,10 +14446,32 @@
         pushBox(missionFieldQuads, lx, 7.5, lz, 1.0, 0.15, 1.0, 0xe0f0e8);
       }
 
-      // Objective — data terminal in the deepest server room
-      pushBox(missionFieldQuads, -BW+14, 2.0, -108, 1.5, 2.0, 0.8, 0x3060c0);
-      pushBox(missionFieldQuads, -BW+14, 4.5, -108, 1.2, 0.4, 0.6, 0x20e0a0);
-      addWall(-BW+14, -108, 1.7, 1.0);
+      // Emergency lighting strips on floor near walls
+      for (let eli=0; eli<6; eli++) {
+        const elz = -15-eli*16;
+        missionFieldQuads.push({ verts:[v3(-BW+1,0.015,elz),v3(-BW+2.5,0.015,elz),v3(-BW+2.5,0.015,elz+0.5),v3(-BW+1,0.015,elz+0.5)], color:0x30a8ff, normal:v3(0,1,0), isGround:true });
+        missionFieldQuads.push({ verts:[v3(BW-2.5,0.015,elz),v3(BW-1,0.015,elz),v3(BW-1,0.015,elz+0.5),v3(BW-2.5,0.015,elz+0.5)], color:0x30a8ff, normal:v3(0,1,0), isGround:true });
+      }
+      // Equipment crates and lockers adding depth
+      [[-28,-25],[28,-25],[-32,-45],[30,-45],[-28,-70],[28,-70],[-32,-90],[30,-90]].forEach(([ex,ez]) => {
+        pushBox(missionFieldQuads, ex, 1.5, ez, 1.2, 1.5, 0.7, 0x303840); addWall(ex,ez,1.4,0.9);
+        pushBox(missionFieldQuads, ex, 3.1, ez, 1.1, 0.08, 0.6, 0x20d880);
+      });
+      // Warning signs on walls
+      [0,-14, 0,-36, 0,-57, 0,-80].forEach((_, i, a) => {
+        if (i%2) return;
+        const sz = a[i+1];
+        pushBox(missionFieldQuads, BW-0.3, 2.5, sz, 0.05, 0.7, 0.7, 0xd0c000);
+        pushBox(missionFieldQuads, -BW+0.3, 2.5, sz, 0.05, 0.7, 0.7, 0xd0c000);
+      });
+      // Objective — data terminal in the deepest server room — now bigger and more dramatic
+      pushBox(missionFieldQuads, -BW+14, 2.5, -108, 2.0, 2.5, 1.0, 0x2050b0);
+      pushBox(missionFieldQuads, -BW+14, 5.5, -108, 1.6, 0.5, 0.8, 0x20e0a0);
+      pushBox(missionFieldQuads, -BW+14, 3.2, -107.2, 1.5, 1.8, 0.12, 0x102040); // screen
+      pushBox(missionFieldQuads, -BW+14, 3.2, -107.2, 1.4, 1.6, 0.08, 0x20c880); // screen glow
+      // Floor glow ring
+      missionFieldQuads.push({ verts:[v3(-BW+10,0.02,-111),v3(-BW+18,0.02,-111),v3(-BW+18,0.02,-105),v3(-BW+10,0.02,-105)], color:0x0a2040, normal:v3(0,1,0), isGround:true });
+      addWall(-BW+14, -108, 2.2, 1.2);
       missionFieldItems.push({ id:0, x:-BW+14, z:-108, type:'objective', label:m.objective, icon:'💾', collected:false });
 
       // Patrols — human guards in corridors
@@ -14502,6 +14594,23 @@
         addWall(bx, bz, bs*1.6, bs*1.3);
       }
 
+      // Ground fog patches (dark pools between trees)
+      for (let gi=0;gi<25;gi++) {
+        const gx=(rng()-0.5)*72, gz2=-16-rng()*88, gw=2+rng()*4, gd=1.5+rng()*3;
+        missionFieldQuads.push({ verts:[v3(gx-gw,0.008,gz2-gd),v3(gx+gw,0.008,gz2-gd),v3(gx+gw,0.008,gz2+gd),v3(gx-gw,0.008,gz2+gd)], color:0x0a140c, normal:v3(0,1,0), isGround:true });
+      }
+      // Firefly glow dots
+      for (let ffi=0;ffi<20;ffi++) {
+        const ffx=(rng()-0.5)*72, ffz=-18-rng()*85, ffh=0.3+rng()*1.5;
+        pushBox(missionFieldQuads, ffx, ffh, ffz, 0.08, 0.08, 0.08, rng()<0.5?0xc0ff80:0x80ffc0);
+      }
+      // Ancient stone markers (weathered monoliths)
+      for (let smi=0;smi<6;smi++) {
+        const smx=(rng()-0.5)*68, smz=-20-rng()*82;
+        const smh=1.5+rng()*2.5, smw=0.4+rng()*0.5;
+        pushBox(missionFieldQuads, smx, smh, smz, smw, smh, smw*0.5, 0x484840);
+        addWall(smx, smz, smw+0.3, smw*0.5+0.3);
+      }
       // Mushroom circles (visual)
       for (let mi2=0; mi2<10; mi2++) {
         const mx=(rng()-0.5)*60, mz=-20-rng()*80;
@@ -14513,11 +14622,21 @@
         }
       }
 
-      // Objective: ancient notice board deep in the forest
+      // Objective: ancient forest shrine deep in the trees
       const [ox,oz] = [-4, -108];
-      pushBox(missionFieldQuads, ox, 2.0, oz, 0.18, 2.0, 0.18, 0x5a3810);
-      pushBox(missionFieldQuads, ox, 3.6, oz, 1.8, 1.2, 0.12, 0xe0d090);
-      addWall(ox, oz, 0.4, 0.4);
+      // Stone base
+      pushBox(missionFieldQuads, ox, 0.5, oz, 3.5, 0.5, 3.0, 0x484840);
+      // Back wall of shrine
+      pushBox(missionFieldQuads, ox, 3.2, oz-2.5, 3.5, 3.2, 0.4, 0x404038);
+      // Roof slab
+      pushBox(missionFieldQuads, ox, 6.5, oz-1.0, 4.0, 0.4, 3.5, 0x383830);
+      // Notice board / tablet
+      pushBox(missionFieldQuads, ox, 2.8, oz-1.8, 2.2, 1.8, 0.15, 0xd0c880);
+      // Candles on base
+      [-2,0,2].forEach(cx3 => { pushBox(missionFieldQuads, ox+cx3, 1.2, oz+1.0, 0.1, 0.4, 0.1, 0xe8e0b0); });
+      // Surrounding trees as ceremonial markers
+      [[-6,-106],[2,-106],[-6,-110],[2,-110]].forEach(([tx3,tz3]) => addTree(tx3, tz3, 1.1, missionFieldQuads));
+      addWall(ox, oz, 3.7, 3.2);
       missionFieldItems.push({ id:0, x:ox, z:oz, type:'objective', label:m.objective, icon:'📋', collected:false });
 
       // Patrols — forest rangers / poachers
@@ -14567,15 +14686,37 @@
         addWall(sx, sz, 3.7, 1.7);
       });
 
-      // Town well at centre-ish
-      pushBox(missionFieldQuads, 0, 0.5, -64, 2.0, 0.5, 2.0, 0x7a7268);
-      pushBox(missionFieldQuads, 0, 1.2, -64, 1.5, 0.3, 1.5, 0x6c6460);
-      addWall(0, -64, 2.2, 2.2);
-
-      // Objective: notice board / target house at back
-      pushBox(missionFieldQuads, 0, 1.6, -108, 0.18, 1.6, 0.18, 0x5a3810);
-      pushBox(missionFieldQuads, 0, 2.8, -108, 1.4, 1.0, 0.12, 0xe8d090);
-      addWall(0, -108, 0.4, 0.4);
+      // Town well at centre-ish — larger, more detailed
+      pushBox(missionFieldQuads, 0, 0.7, -64, 2.2, 0.7, 2.2, 0x8a8278);
+      pushBox(missionFieldQuads, 0, 1.5, -64, 1.8, 0.35, 1.8, 0x7a7268);
+      // Well posts and roof
+      pushBox(missionFieldQuads, -1.5, 3.0, -64, 0.2, 3.0, 0.2, 0x5a4020);
+      pushBox(missionFieldQuads,  1.5, 3.0, -64, 0.2, 3.0, 0.2, 0x5a4020);
+      pushBox(missionFieldQuads,  0,   6.2, -64, 2.0, 0.25, 0.8, 0x4a3018);
+      addWall(0, -64, 2.4, 2.4);
+      // Lamp posts along main street
+      [[-18,-22],[-18,-48],[-18,-74],[18,-22],[18,-48],[18,-74]].forEach(([lpx,lpz]) => {
+        pushBox(missionFieldQuads, lpx, 4.5, lpz, 0.18, 4.5, 0.18, 0x5a4820); addWall(lpx,lpz,0.4,0.4);
+        pushBox(missionFieldQuads, lpx, 9.2, lpz, 0.8, 0.3, 0.8, 0x4a3818);
+        pushBox(missionFieldQuads, lpx, 9.6, lpz, 0.5, 0.3, 0.5, 0xf0d850); // lamp
+      });
+      // Decorative barrels / carts near houses
+      houses.forEach(([hx2,hz2,hw2,hd2]) => {
+        pushBox(missionFieldQuads, hx2+hw2+1.5, 0.6, hz2, 0.5, 0.6, 0.5, 0x6a4820); addWall(hx2+hw2+1.5,hz2,0.7,0.7);
+        pushBox(missionFieldQuads, hx2+hw2+1.5, 1.25, hz2, 0.5, 0.08, 0.5, 0x3a2010);
+      });
+      // Objective: chieftain's hall — large building at the back
+      pushBox(missionFieldQuads, 0, 4.0, -108, 10, 4.0, 6, 0xa08060); addWall(0,-108,10.2,6.2);
+      pushBox(missionFieldQuads, 0, 8.5, -108, 11, 1.0, 7, 0x7a3820); // big roof
+      pushBox(missionFieldQuads, 0, 9.8, -108, 7,  0.6, 4, 0x6a2818); // roof ridge
+      pushBox(missionFieldQuads, 0, 2.2, -102, 1.5, 2.2, 0.2, 0x2a1808); // door
+      // Grand entrance torches
+      pushBox(missionFieldQuads, -2.5, 3.0, -102, 0.2, 3.0, 0.2, 0x3a2010);
+      pushBox(missionFieldQuads,  2.5, 3.0, -102, 0.2, 3.0, 0.2, 0x3a2010);
+      pushBox(missionFieldQuads, -2.5, 6.2, -102, 0.4, 0.5, 0.4, 0xe06010);
+      pushBox(missionFieldQuads,  2.5, 6.2, -102, 0.4, 0.5, 0.4, 0xe06010);
+      // Notice board beside door
+      pushBox(missionFieldQuads, 4, 2.2, -102.5, 0.12, 1.5, 1.2, 0xd8c878);
       missionFieldItems.push({ id:0, x:0, z:-108, type:'objective', label:m.objective, icon:'📋', collected:false });
 
       // Village residents (unfriendly lookouts)
@@ -15122,7 +15263,7 @@
       dogState.x = 0; dogState.z = 6; dogState.y = DOG_FLOOR;
       dogState.yaw = Math.PI; dogState.velY = 0; dogState.grounded = true;
       cam.yaw   = Math.PI;
-      cam.pos.x = 0; cam.pos.y = DOG_FLOOR+3.5; cam.pos.z = 6+6.5;
+      cam.pos.x = 0; cam.pos.y = DOG_FLOOR+5.5; cam.pos.z = 6+11;
       gameState = 'missionField';
     });
   }
@@ -15589,10 +15730,10 @@
     buildDog();
 
     const fogHex = {
-      wolf_camp:0x080e06,  human_lab:0x080c12,  nether:0x0e0204,
-      forest:0x060c08,     village:0x0c0a04,    cave:0x060406,
-      nether_ruins:0x0e0404, human_house:0x100c06, maze:0x0a0608,
-    }[mapType]||0x080804;
+      wolf_camp:0x060a04,  human_lab:0x060a10,  nether:0x0c0102,
+      forest:0x040a06,     village:0x0a0802,    cave:0x040304,
+      nether_ruins:0x0c0303, human_house:0x0e0a04, maze:0x080406,
+    }[mapType]||0x060604;
 
     // Door guards (locked doors only)
     const doorGuardQ = [];
@@ -15611,7 +15752,7 @@
       const pts = projectClipped(q.verts, cam); if (!pts) return null;
       const cx=q.verts.reduce((s,v)=>s+v.x,0)/4, cy=q.verts.reduce((s,v)=>s+v.y,0)/4, cz=q.verts.reduce((s,v)=>s+v.z,0)/4;
       const wd = len(sub(v3(cx,cy,cz),cam.pos));
-      const fogT = Math.min(1,Math.max(0,(wd-8)/45))*0.88*(q.isGround?0.2:1);
+      const fogT = Math.min(1,Math.max(0,(wd-12)/90))*0.88*(q.isGround?0.18:1);
       return { pts, avgZ:pts.reduce((s,p)=>s+p.z,0)/pts.length, color:q.color, normal:q.normal, fogT, fogHex, isGround:q.isGround };
     }).filter(Boolean);
     const groundL=toRender.filter(q=>q.isGround), worldL=toRender.filter(q=>!q.isGround);
