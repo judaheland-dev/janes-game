@@ -1076,50 +1076,43 @@
     /* ── Dog Creator ── */
     #ov-dog-creator {
       position: fixed; inset: 0; z-index: 400;
-      background: radial-gradient(ellipse at 50% 30%, #0a1828 0%, #04080f 100%);
+      background: #080c14;
       display: flex; flex-direction: column; align-items: center;
-      overflow-y: auto; padding: 24px 12px 40px;
+      overflow-y: auto; padding: 18px 12px 36px; gap: 12px;
     }
     #ov-dog-creator.hidden { display: none; }
-    #ov-dc-title { color: #a0e8ff; font: bold 26px Arial; letter-spacing: 3px; margin-bottom: 4px; text-shadow: 0 0 20px #40a8e0; }
-    #ov-dc-subtitle { color: #6090b0; font: 13px Arial; margin-bottom: 18px; }
-    #ov-dc-body { display: flex; gap: 22px; width: 100%; max-width: 820px; flex-wrap: wrap; justify-content: center; }
-    #ov-dc-preview-col { display: flex; flex-direction: column; align-items: center; gap: 10px; flex-shrink: 0; }
-    #ov-dc-canvas { border-radius: 14px; background: rgba(8,22,40,0.90); border: 1.5px solid #2060a0; display: block; width: 260px; height: 260px; }
-    #ov-dc-name-wrap { display: flex; flex-direction: column; gap: 5px; align-items: center; width: 200px; }
-    #ov-dc-name-label { color: #80a8c8; font: 12px Arial; align-self: flex-start; }
-    #ov-dc-name { width: 200px; padding: 8px 12px; border-radius: 9px; border: 1.5px solid #2c70a0; background: rgba(6,18,36,0.92); color: #d0eeff; font: 14px Arial; outline: none; text-align: center; }
-    #ov-dc-options-col { flex: 1; min-width: 280px; max-width: 540px; display: flex; flex-direction: column; gap: 14px; }
-    .ov-dc-section { background: rgba(6,18,36,0.70); border-radius: 12px; padding: 12px 14px; border: 1px solid rgba(40,100,160,0.40); }
-    .ov-dc-section-title { color: #70b8d8; font: bold 12px Arial; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 9px; }
-    .ov-btn-group { display: flex; flex-wrap: wrap; gap: 7px; }
-    .ov-opt-btn {
-      padding: 6px 13px; border-radius: 8px; border: 1.5px solid rgba(40,90,150,0.60);
-      background: rgba(10,24,46,0.80); color: #90c0e0; font: 12px Arial; cursor: pointer;
-      transition: all 0.15s;
+    #ov-dc-title { color: #a0e8ff; font: bold 24px Arial; letter-spacing: 3px; text-shadow: 0 0 18px #40a8e0; }
+    #ov-dc-body { display: flex; gap: 24px; width: 100%; max-width: 820px; flex-wrap: wrap; justify-content: center; align-items: flex-start; }
+    #ov-dc-left { display: flex; flex-direction: column; align-items: center; gap: 10px; flex-shrink: 0; }
+    #ov-dc-canvas {
+      image-rendering: pixelated; image-rendering: crisp-edges;
+      border: 2px solid #1e4060; border-radius: 6px; background: #08101a;
+      display: block; width: 280px; height: 280px;
     }
+    #ov-dc-name-row { display: flex; gap: 8px; align-items: center; width: 280px; }
+    #ov-dc-name { flex: 1; padding: 9px 12px; border-radius: 9px; border: 1.5px solid #2c70a0; background: rgba(6,18,36,0.92); color: #d0eeff; font: 14px Arial; outline: none; }
+    #ov-dc-enter-btn { padding: 9px 16px; background: #1a5080; border: 1.5px solid #3090d0; border-radius: 9px; color: #a0e0ff; font: bold 13px Arial; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+    #ov-dc-enter-btn:hover { background: #2068a0; color: #d0f0ff; }
+    #ov-dc-back-btn { background: transparent; border: none; color: #507090; font: 12px Arial; cursor: pointer; text-decoration: underline; }
+    #ov-dc-right { flex: 1; min-width: 260px; max-width: 500px; display: flex; flex-direction: column; gap: 10px; max-height: 500px; overflow-y: auto; padding-right: 4px; }
+    .ov-dc-section { background: rgba(6,18,36,0.70); border-radius: 10px; padding: 10px 12px; border: 1px solid rgba(40,100,160,0.35); }
+    .ov-dc-section-title { color: #70b8d8; font: bold 11px Arial; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
+    .ov-btn-group { display: flex; flex-wrap: wrap; gap: 6px; }
+    .ov-opt-btn { padding: 5px 11px; border-radius: 7px; border: 1.5px solid rgba(40,90,150,0.55); background: rgba(10,24,46,0.80); color: #90c0e0; font: 12px Arial; cursor: pointer; transition: all 0.12s; }
     .ov-opt-btn:hover { border-color: #4090d0; color: #c0e8ff; }
     .ov-opt-btn.ov-selected { border-color: #40b0f0; background: rgba(20,60,110,0.90); color: #d0f0ff; font-weight: bold; }
+    .ov-px-palette { display: flex; flex-wrap: wrap; gap: 5px; }
+    .ov-px-swatch { width: 22px; height: 22px; border-radius: 4px; cursor: pointer; border: 2px solid transparent; transition: border-color 0.12s, transform 0.1s; flex-shrink: 0; }
+    .ov-px-swatch:hover { transform: scale(1.22); border-color: rgba(255,255,255,0.4); }
+    .ov-px-swatch.ov-selected { border-color: #ffffff; transform: scale(1.25); }
     .ov-swatch-row { display: flex; flex-wrap: wrap; gap: 8px; }
-    .ov-swatch {
-      width: 26px; height: 26px; border-radius: 50%; cursor: pointer;
-      border: 2.5px solid transparent; transition: border-color 0.15s, transform 0.1s;
-      flex-shrink: 0;
-    }
+    .ov-swatch { width: 26px; height: 26px; border-radius: 50%; cursor: pointer; border: 2.5px solid transparent; transition: border-color 0.15s, transform 0.1s; flex-shrink: 0; }
     .ov-swatch:hover { transform: scale(1.15); }
     .ov-swatch.ov-selected { border-color: #fff; transform: scale(1.18); }
     .ov-swatch-label { font: 10px Arial; color: #6090b0; text-align: center; margin-top: 2px; max-width: 26px; overflow: hidden; white-space: nowrap; }
     .ov-swatch-wrap { display: flex; flex-direction: column; align-items: center; }
-    #ov-dc-enter-btn {
-      width: 100%; padding: 14px; background: linear-gradient(135deg, #1a5080, #0e3060);
-      border: 1.5px solid #3090d0; border-radius: 14px; color: #a0e0ff;
-      font: bold 16px Arial; cursor: pointer; letter-spacing: 2px;
-      text-shadow: 0 0 12px #2080c0; transition: all 0.2s; margin-top: 4px;
-    }
-    #ov-dc-enter-btn:hover { background: linear-gradient(135deg, #2068a0, #1a4a90); color: #d0f0ff; }
-    #ov-dc-back-btn { background: transparent; border: none; color: #507090; font: 13px Arial; cursor: pointer; text-decoration: underline; margin-top: 2px; }
     #ov-dc-spot-color-section { transition: opacity 0.2s; }
-    #ov-dc-spot-color-section.ov-hidden-section { opacity: 0.3; pointer-events: none; }
+    #ov-dc-spot-color-section.ov-hidden-section { opacity: 0.25; pointer-events: none; }
   </style>
 </head>
 <body>
@@ -15433,73 +15426,152 @@
       missionFieldItems.push({id:0,x:oSD*(HW-6),z:-107,type:'objective',label:m.objective,icon:'🔑',collected:false});
 
     } else if (mapType === 'human_mansion') {
-      // ── Human Mansion: three-zone grand estate ────────────────────────
-      // Foyer → Ballroom → Private Wing. Marble floors, columns, chandelier, guards + butler cat.
+      // ── Procedural Two-Story Human Mansion ───────────────────────────
+      // Ground floor: foyer → 2–3 grand rooms. Upper floor: 2–3 private rooms + staircase.
+      // Objective is always in the deepest upper-floor room.
 
-      const mwall = (cx,cz,hw,hd,col=0xd8d0c8) => { pushBox(missionFieldQuads,cx,3.5,cz,hw,3.5,hd,col); addWall(cx,cz,hw+0.1,hd+0.1); };
-      // Marble floor
-      for (let fx=-22;fx<22;fx+=3) for (let fz=-118;fz<5;fz+=3) {
+      const MW=21, F1H=4.5, F2Y=F1H, F2H=4.0; // half-width, floor1 ceiling y, floor2 base y, floor2 ceiling h
+      const mwall=(cx,cz,hw,hd,y=F1H,col=0xd8d0c8)=>{pushBox(missionFieldQuads,cx,y*.5,cz,hw,y*.5,hd,col);addWall(cx,cz,hw+.1,hd+.1);};
+      const mwall2=(cx,cz,hw,hd)=>{pushBox(missionFieldQuads,cx,F2Y+F2H*.5,cz,hw,F2H*.5,hd,0xc8c0b8);addWall(cx,cz,hw+.1,hd+.1);}; // upper floor wall
+      const col=(cx,cz,y,h,c)=>{pushBox(missionFieldQuads,cx,y*.5,cz,.7,y*.5,.7,c);addWall(cx,cz,.9,.9);};
+      const lamp=(lx,lz,ly,s)=>pushBox(missionFieldQuads,lx,ly,lz,s,.2,s,0xfff0c0);
+
+      // ── Ground floor shell ────────────────────────────────────────────
+      mwall(0,-118,MW,.5); mwall(-MW,-57,.5,63); mwall(MW,-57,.5,63); // outer N/W/E
+      // Ground floor marble tile
+      for(let fx=-MW;fx<MW;fx+=3)for(let fz=-118;fz<5;fz+=3){
         const e=((Math.floor(fx/3)+Math.floor(fz/3))&1);
-        missionFieldQuads.push({verts:[v3(fx,0.01,fz),v3(fx+3,0.01,fz),v3(fx+3,0.01,fz+3),v3(fx,0.01,fz+3)],color:e?0xe8e4dc:0xc0b8ac,normal:v3(0,1,0),isGround:true});
+        missionFieldQuads.push({verts:[v3(fx,.01,fz),v3(fx+3,.01,fz),v3(fx+3,.01,fz+3),v3(fx,.01,fz+3)],color:e?0xe8e4dc:0xc0b8ac,normal:v3(0,1,0),isGround:true});
       }
-      // Ceiling
-      missionFieldQuads.push({verts:[v3(-22,6,6),v3(22,6,6),v3(22,6,-120),v3(-22,6,-120)],color:0xf0ece4,normal:v3(0,-1,0),isGround:false});
-      // Outer walls
-      mwall(0,-120,22,0.5); mwall(-22,-57,0.5,63); mwall(22,-57,0.5,63);
+      // Ground floor ceiling (also upper floor ground)
+      missionFieldQuads.push({verts:[v3(-MW,F2Y,-118),v3(MW,F2Y,-118),v3(MW,F2Y,5),v3(-MW,F2Y,5)],color:0xd0c8bc,normal:v3(0,1,0),isGround:false});
+      // Upper floor ceiling
+      missionFieldQuads.push({verts:[v3(-MW,F2Y+F2H,-118),v3(MW,F2Y+F2H,-118),v3(MW,F2Y+F2H,5),v3(-MW,F2Y+F2H,5)],color:0xf0ece4,normal:v3(0,-1,0),isGround:false});
+      // Upper floor outer walls (above ground walls)
+      pushBox(missionFieldQuads,0,F2Y+F2H*.5,-118,MW,F2H*.5,.5,0xd0c8bc);
+      pushBox(missionFieldQuads,-MW,F2Y+F2H*.5,-57,.5,F2H*.5,63,0xc8c0b4);
+      pushBox(missionFieldQuads, MW,F2Y+F2H*.5,-57,.5,F2H*.5,63,0xc8c0b4);
+      // Upper floor marble
+      for(let fx=-MW;fx<MW;fx+=3)for(let fz=-118;fz<-2;fz+=3){
+        const e=((Math.floor(fx/3)+Math.floor(fz/3))&1);
+        missionFieldQuads.push({verts:[v3(fx,F2Y+.01,fz),v3(fx+3,F2Y+.01,fz),v3(fx+3,F2Y+.01,fz+3),v3(fx,F2Y+.01,fz+3)],color:e?0xd8d4cc:0xb0a898,normal:v3(0,1,0),isGround:true});
+      }
 
-      // Zone 1: Foyer (z=4 to z=-28)
-      mwall(-16,-12,6,16); mwall(16,-12,6,16);
-      mwall(-13,-28,9,0.5); mwall(13,-28,9,0.5);
-      [[-6,-10],[6,-10],[-6,-22],[6,-22]].forEach(([cx,cz])=>{
-        pushBox(missionFieldQuads,cx,3.5,cz,0.7,3.5,0.7,0xd8d4cc); addWall(cx,cz,0.9,0.9);
-        pushBox(missionFieldQuads,cx,7.0,cz,1.0,0.4,1.0,0xc8c4bc);
-      });
-      pushBox(missionFieldQuads,0,1.0,-8,4.0,1.0,1.2,0xb89870); addWall(0,-8,4.2,1.4);
-      missionFieldQuads.push({verts:[v3(-8,0.02,-6),v3(8,0.02,-6),v3(8,0.02,-26),v3(-8,0.02,-26)],color:0x8a1820,normal:v3(0,1,0),isGround:true});
-      [[0,-14],[0,-20]].forEach(([lx,lz])=>pushBox(missionFieldQuads,lx,5.8,lz,1.4,0.3,1.4,0xfff0c0));
-      [-8,8].forEach(sx=>{pushBox(missionFieldQuads,sx,2.5,2.5,0.5,2.5,0.5,0xb0a898);addWall(sx,2.5,0.7,0.7);pushBox(missionFieldQuads,sx,5.5,2.5,0.7,0.7,0.7,0xa09888);});
+      // ── Staircase (always fixed — connects floors at east side, z=-10 to -26) ──
+      const stX=MW-5;
+      for(let si=0;si<9;si++){
+        const sy=si*.5, sz=-10-si*1.8;
+        pushBox(missionFieldQuads,stX,sy*.5+.25,sz,2.5,.5,1,0xc8b89c);
+      }
+      // Staircase walls
+      pushBox(missionFieldQuads,stX-2.7,2.2,-18,0.2,2.2,9,0xd8d0c8);
+      pushBox(missionFieldQuads,stX+2.7,2.2,-18,0.2,2.2,9,0xd8d0c8);
+      // Upper floor landing railing
+      pushBox(missionFieldQuads,stX,F2Y+.5,-27.5,2.5,.5,.15,0xd8d0c8);
 
-      // Zone 2: Ballroom (z=-28 to z=-72)
-      [[-14,-40],[14,-40],[-14,-52],[14,-52],[-14,-64],[14,-64]].forEach(([cx,cz])=>{
-        pushBox(missionFieldQuads,cx,3.5,cz,0.8,3.5,0.8,0xd0ccc4); addWall(cx,cz,1.0,1.0);
-        pushBox(missionFieldQuads,cx,7.2,cz,1.1,0.4,1.1,0xc0bcb4);
-      });
-      [[0,-42],[0,-58]].forEach(([lx,lz])=>{
-        pushBox(missionFieldQuads,lx,5.6,lz,2.0,0.25,2.0,0xd0c070);
-        for(let ci=0;ci<8;ci++){const a=(ci/8)*Math.PI*2;pushBox(missionFieldQuads,lx+Math.cos(a)*1.6,5.45,lz+Math.sin(a)*1.6,0.12,0.28,0.12,0xfff8e0);}
-      });
-      [[-8,-44],[8,-44],[-8,-62],[8,-62]].forEach(([tx,tz])=>{
-        pushBox(missionFieldQuads,tx,0.9,tz,3.5,0.9,1.2,0xb89060); addWall(tx,tz,3.7,1.4);
-      });
-      [[-20,-30],[20,-30],[-20,-70],[20,-70]].forEach(([vx,vz])=>{pushBox(missionFieldQuads,vx,1.8,vz,1.0,1.8,1.0,0x4860a0); addWall(vx,vz,1.2,1.2);});
-      mwall(-13,-72,9,0.5); mwall(13,-72,9,0.5);
+      // ── Foyer (ground, always fixed, z=4 to -28) ──────────────────────
+      mwall(-14,-12,7,16); mwall(14,-12,7,16);  // hallway corridor walls
+      mwall(-13,-28,8,.5); mwall(13,-28,8,.5);   // foyer/ballroom divider
+      // Foyer columns
+      [[-6,-10],[6,-10],[-6,-22],[6,-22]].forEach(([cx,cz])=>col(cx,cz,F1H,F1H,0xd8d4cc));
+      // Entry rug
+      missionFieldQuads.push({verts:[v3(-8,.02,-6),v3(8,.02,-6),v3(8,.02,-26),v3(-8,.02,-26)],color:0x8a1820,normal:v3(0,1,0),isGround:true});
+      // Reception table
+      pushBox(missionFieldQuads,0,1,-8,4,1,1.2,0xb89870);addWall(0,-8,4.2,1.4);
+      // Foyer chandeliers
+      lamp(0,-14,F1H-.3,1.4);lamp(0,-22,F1H-.3,1.4);
+      // Servant NPC
+      missionFieldNpcs.push({x:-10,z:-15,label:'Servant 🐕',color:'#b8c8e8',fur:0x9090a8,ears:'floppy',hint:'The upper floor is locked at night — the butler has the key on his rounds.'});
+      // Foyer guard
+      missionFieldPatrols.push({x:0,z:-14,startX:0,startZ:-14,dx:1,dz:0,t:rng()*Math.PI*2,range:10,tSpeed:.011,fur:0x6080a0,ears:'floppy',isHuman:true,spotted:false});
 
-      // Zone 3: Private Wing (z=-72 to z=-120)
-      mwall(-4.5,-96,0.5,24); mwall(4.5,-96,0.5,24);
-      mwall(-13,-118,9,0.5); mwall(13,-118,9,0.5);
-      // Study (west)
-      pushBox(missionFieldQuads,-14,1.8,-86,3,1.8,6,0x6a4820); addWall(-14,-86,3.2,6.2);
-      pushBox(missionFieldQuads,-18,0.9,-92,3,0.9,1.5,0x8a6030); addWall(-18,-92,3.2,1.7);
-      // Trophy room (centre)
-      pushBox(missionFieldQuads,0,1.2,-100,2.5,1.2,1.5,0x8a8278); addWall(0,-100,2.7,1.7);
-      pushBox(missionFieldQuads,0,3.2,-100,0.6,1.8,0.6,0xd0a820);
-      // Master suite (east) — objective
-      pushBox(missionFieldQuads,16,1.0,-82,4,1.0,6,0x9080b8); addWall(16,-82,4.2,6.2);
-      pushBox(missionFieldQuads,14,0.9,-104,2.5,0.9,1.5,0x9a7040); addWall(14,-104,2.7,1.7);
-      pushBox(missionFieldQuads,14,2.2,-103,1.6,1.0,0.14,0x101018);
-      pushBox(missionFieldQuads,14,2.2,-103,1.4,0.8,0.08,0xd0a020);
-      [[0,-80],[0,-94],[0,-108]].forEach(([lx,lz])=>pushBox(missionFieldQuads,lx,5.6,lz,0.8,0.2,0.8,0xfff0d8));
-      // Objective
-      pushBox(missionFieldQuads,14,2.1,-105,0.5,0.3,0.4,0xffe060);
-      missionFieldItems.push({id:0,x:14,z:-105,type:'objective',label:m.objective,icon:'📄',collected:false});
-      // Hint NPC — nervous servant in the foyer
-      missionFieldNpcs.push({x:-10,z:-15,label:'Servant 🐕',color:'#b8c8e8',fur:0x9090a8,ears:'floppy',hint:"The captain's butler is in the trophy room. He hates riddles — try mentioning dust!"});
-      // Patrols
-      missionFieldPatrols.push({x:0,z:-14,startX:0,startZ:-14,dx:1,dz:0,t:rng()*Math.PI*2,range:10,tSpeed:0.011,fur:0x6080a0,ears:'floppy',patrolType:'human',isHuman:true,spotted:false});
-      missionFieldPatrols.push({x:0,z:-48,startX:0,startZ:-48,dx:1,dz:0,t:rng()*Math.PI*2,range:16,tSpeed:0.012,fur:0x6080a0,ears:'floppy',patrolType:'human',isHuman:true,spotted:false});
-      if (profIdx>=1) missionFieldPatrols.push({x:0,z:-88,startX:0,startZ:-88,dx:0,dz:1,t:rng()*Math.PI*2,range:12,tSpeed:0.011,fur:0x6080a0,ears:'floppy',patrolType:'human',isHuman:true,spotted:false});
-      missionFieldPatrols.push({x:0,z:-100,startX:0,startZ:-100,dx:1,dz:0,t:rng()*Math.PI*2,range:10,tSpeed:0.022,fur:0x202020,ears:'triangle',patrolType:'cat',isHuman:false,spotted:false});
-      if (profIdx>=3) missionFieldPatrols.push({x:-8,z:-58,startX:-8,startZ:-58,dx:0,dz:1,t:rng()*Math.PI*2,range:12,tSpeed:0.013,fur:0x6080a0,ears:'floppy',patrolType:'human',isHuman:true,spotted:false});
+      // ── Ground floor: 2–3 procedural grand rooms (z=-28 → z=-118) ────
+      const nGR=2+Math.floor(rng()*2), gStep=90/nGR;
+      const mnHints=['The ballroom patrol has a blind spot near the east columns — use it.','A guard switches post at the far corridor. Count to eight after they turn.','The butler cat has seen everything. Best avoided entirely.','The west study is unwatched after midnight. Slip through the door quietly.'];
+      for(let gi=0;gi<nGR;gi++){
+        const gZ=-28-gi*gStep, gM=gZ-gStep*.5, sd=rng()<.5?-1:1;
+        mwall(-13,gZ,8,.5);mwall(13,gZ,8,.5); // room divider with centre gap
+        const gv=Math.floor(rng()*4);
+        if(gv===0){
+          // Ballroom: columns, chandelier, side tables, dance floor rug
+          [[-14,gM+8],[14,gM+8],[-14,gM-8],[14,gM-8]].forEach(([cx,cz])=>col(cx,cz,F1H,F1H,0xd0ccc4));
+          lamp(0,gM,F1H-.25,2);
+          [sd*(MW-7),sd*(MW-7)].forEach((tx,i)=>{pushBox(missionFieldQuads,tx,.9,gM+(i-.5)*12,3,.9,1.2,0xb89060);addWall(tx,gM+(i-.5)*12,3.2,1.4);});
+          missionFieldQuads.push({verts:[v3(-9,.02,gZ-gStep*.8),v3(9,.02,gZ-gStep*.8),v3(9,.02,gZ-.3),v3(-9,.02,gZ-.3)],color:0x601828,normal:v3(0,1,0),isGround:true});
+          [[-MW+1,gM],[MW-1,gM]].forEach(([vx,vz])=>{pushBox(missionFieldQuads,vx,1.8,vz,1,1.8,1,0x4860a0);addWall(vx,vz,1.2,1.2);});
+          missionFieldPatrols.push({x:0,z:gM,startX:0,startZ:gM,dx:1,dz:0,t:rng()*Math.PI*2,range:MW*.65,tSpeed:.012,fur:0x6080a0,ears:'floppy',isHuman:true,spotted:false});
+          if(gi>0&&missionFieldNpcs.length<3)missionFieldNpcs.push({x:sd*(MW-4),z:gM,label:'Guest 🎩',color:'#c0b8a8',fur:0xa09888,ears:'floppy',hint:mnHints[0]});
+        }else if(gv===1){
+          // Dining hall: long table, chairs, candelabra, cabinet
+          pushBox(missionFieldQuads,0,.9,gM,2.5,.9,gStep*.35,0x9a7040);addWall(0,gM,2.7,gStep*.37);
+          for(let ci=0;ci<4;ci++){const cz=gM-gStep*.25+ci*(gStep*.16);[[-4,cz],[4,cz]].forEach(([cx,ccz])=>{pushBox(missionFieldQuads,cx,.6,ccz,1,.6,1,0x7a5830);addWall(cx,ccz,1.2,1.2);});}
+          lamp(0,gM,F1H-.3,.6);lamp(0,gM-gStep*.2,F1H-.3,.6);
+          pushBox(missionFieldQuads,-sd*(MW-.5),2,gM,.5,2,gStep*.3,0x6a4820);addWall(-sd*(MW-.5),gM,.7,gStep*.3);
+          missionFieldPatrols.push({x:sd*12,z:gM,startX:sd*12,startZ:gM,dx:0,dz:1,t:rng()*Math.PI*2,range:gStep*.4,tSpeed:.013,fur:0x6080a0,ears:'floppy',isHuman:true,spotted:false});
+          if(missionFieldNpcs.length<3)missionFieldNpcs.push({x:-sd*(MW-4),z:gM,label:'Chef 🍖',color:'#d0b890',fur:0xb09870,ears:'round',hint:mnHints[1]});
+        }else if(gv===2){
+          // Library/study: shelves, reading chairs, globe
+          [-sd*(MW-.5),sd*(MW-3)].forEach((sx,i)=>{pushBox(missionFieldQuads,sx,2,gM+(i-.5)*gStep*.28,.5,2,gStep*.22,0x6a4820);addWall(sx,gM+(i-.5)*gStep*.28,.7,gStep*.22);});
+          pushBox(missionFieldQuads,sd*9,.7,gM+gStep*.15,1.5,.7,2,0x9a7858);addWall(sd*9,gM+gStep*.15,1.7,2.2);
+          pushBox(missionFieldQuads,-sd*7,1,gM,.8,1,.8,0x6070a0);addWall(-sd*7,gM,1,1);
+          lamp(sd*5,gM+gStep*.1,F1H-.3,.7);
+          missionFieldPatrols.push({x:0,z:gM,startX:0,startZ:gM,dx:0,dz:1,t:rng()*Math.PI*2,range:gStep*.38,tSpeed:.011,fur:0x6080a0,ears:'floppy',isHuman:true,spotted:false});
+          if(missionFieldNpcs.length<3)missionFieldNpcs.push({x:sd*(MW-5),z:gM-gStep*.3,label:'Scholar 📚',color:'#9090c0',fur:0x8090b0,ears:'floppy',hint:mnHints[3]});
+        }else{
+          // Parlour: sofa cluster, fireplace, vase stands
+          pushBox(missionFieldQuads,sd*(MW-8),.8,gM,4,.8,1.6,0x9a6858);addWall(sd*(MW-8),gM,4.2,1.8);
+          pushBox(missionFieldQuads,sd*(MW-8),1.8,gM+sd*1.4,4,.9,.4,0x8a5848);
+          pushBox(missionFieldQuads,-sd*(MW-.5),1.5,gM,1,3,1.5,0x3a2010);addWall(-sd*(MW-.5),gM,1.2,1.7);
+          pushBox(missionFieldQuads,-sd*(MW-.5),.4,gM,.9,.4,.9,0xe06010);
+          [-1,1].forEach(s=>{pushBox(missionFieldQuads,s*9,1.8,gM-gStep*.3,.4,1.8,.4,0xd8d0c8);addWall(s*9,gM-gStep*.3,.6,.6);});
+          missionFieldPatrols.push({x:0,z:gM-gStep*.15,startX:0,startZ:gM-gStep*.15,dx:1,dz:0,t:rng()*Math.PI*2,range:MW*.55,tSpeed:.012,fur:0x6080a0,ears:'floppy',isHuman:true,spotted:false});
+          // Butler cat on the ground floor
+          missionFieldPatrols.push({x:sd*8,z:gM+gStep*.1,startX:sd*8,startZ:gM+gStep*.1,dx:0,dz:1,t:rng()*Math.PI*2,range:gStep*.35,tSpeed:.022,fur:0x202020,ears:'triangle',isHuman:false,spotted:false});
+        }
+      }
+
+      // ── Upper floor: 2–3 private rooms (z=-4 → z=-118, y offset F2Y) ─
+      const nUR=2+Math.floor(rng()*2), uStep=114/nUR;
+      for(let ui=0;ui<nUR;ui++){
+        const uZ=-4-ui*uStep, uM=uZ-uStep*.5, sd2=rng()<.5?-1:1;
+        // Upper floor divider (with centre gap)
+        pushBox(missionFieldQuads,-13,F2Y+F2H*.5,uZ,8,F2H*.5,.5,0xc8c0b8);addWall(-13,uZ,8,.6);
+        pushBox(missionFieldQuads,13,F2Y+F2H*.5,uZ,8,F2H*.5,.5,0xc8c0b8);addWall(13,uZ,8,.6);
+        const uv=Math.floor(rng()*3);
+        if(uv===0){
+          // Master bedroom: grand bed, wardrobe, dressing table
+          pushBox(missionFieldQuads,sd2*(MW-8),F2Y+.5,uM,3.5,.5,5,0xa090b0);addWall(sd2*(MW-8),uM,3.7,5.2);
+          pushBox(missionFieldQuads,sd2*(MW-8),F2Y+1.5,uM-2.3,3.5,1,.4,0x5a4860);
+          pushBox(missionFieldQuads,-sd2*(MW-.5),F2Y+2.5,uM,1.5,2.5,3.5,0x6a5040);addWall(-sd2*(MW-.5),uM,1.7,3.7);
+          pushBox(missionFieldQuads,sd2*(MW-13),F2Y+.8,uM+1,2,.8,1.3,0x9a7040);addWall(sd2*(MW-13),uM+1,2.2,1.5);
+          lamp(sd2*(MW-8),uM,F2Y+F2H-.3,.8);
+          missionFieldPatrols.push({x:0,z:uM,startX:0,startZ:uM,dx:1,dz:0,t:rng()*Math.PI*2,range:MW*.5,tSpeed:.013,fur:0x6080a0,ears:'floppy',isHuman:true,spotted:false});
+        }else if(uv===1){
+          // Private study: desk, bookshelves, filing cabinets
+          pushBox(missionFieldQuads,sd2*(MW-7),F2Y+.8,uM,2.5,.8,1.4,0x9a7040);addWall(sd2*(MW-7),uM,2.7,1.6);
+          pushBox(missionFieldQuads,sd2*(MW-7),F2Y+1.8,uM-.5,2,1,.15,0x181818);
+          [-sd2*(MW-.5),sd2*(MW-2)].forEach((sx,i)=>{pushBox(missionFieldQuads,sx,F2Y+2,uM+(i-.5)*uStep*.2,.5,2,uStep*.18,0x6a4820);addWall(sx,uM+(i-.5)*uStep*.2,.7,uStep*.18);});
+          lamp(0,uM,F2Y+F2H-.3,.6);
+          missionFieldPatrols.push({x:sd2*9,z:uM,startX:sd2*9,startZ:uM,dx:0,dz:1,t:rng()*Math.PI*2,range:uStep*.38,tSpeed:.012,fur:0x6080a0,ears:'floppy',isHuman:true,spotted:false});
+          // Butler cat on the upper floor
+          if(ui===0)missionFieldPatrols.push({x:-sd2*8,z:uM,startX:-sd2*8,startZ:uM,dx:1,dz:0,t:rng()*Math.PI*2,range:MW*.45,tSpeed:.022,fur:0x202020,ears:'triangle',isHuman:false,spotted:false});
+        }else{
+          // Trophy/gallery: display cases, paintings on walls, velvet ropes
+          for(let ti=0;ti<4;ti++){pushBox(missionFieldQuads,(ti-1.5)*8,F2Y+1.2,uM,1.5,1.2,1,0x8a8278);addWall((ti-1.5)*8,uM,1.7,1.2);pushBox(missionFieldQuads,(ti-1.5)*8,F2Y+3,uM,.6,1.8,.6,0xd0a820);}
+          [-sd2*(MW-1),sd2*(MW-1)].forEach((wx,wi)=>{pushBox(missionFieldQuads,wx,F2Y+2.5,uM,.08,1.5,uStep*.3,0x604898+wi*0x100000);});
+          lamp(0,uM,F2Y+F2H-.3,1);
+          missionFieldPatrols.push({x:0,z:uM,startX:0,startZ:uM,dx:1,dz:0,t:rng()*Math.PI*2,range:MW*.6,tSpeed:.014,fur:0x6080a0,ears:'floppy',isHuman:true,spotted:false});
+        }
+      }
+
+      // Extra patrols by professor rank
+      for(let pi=0;pi<profIdx-1;pi++){const px=(rng()-.5)*38,pz=-12-rng()*98,onUp=rng()<.4;missionFieldPatrols.push({x:px,z:pz,startX:px,startZ:pz,dx:rng()<.5?1:0,dz:rng()<.5?0:1,t:rng()*Math.PI*2,range:8+rng()*10,tSpeed:.012+rng()*.005,fur:rng()<.25?0x202020:0x6080a0,ears:rng()<.25?'triangle':'floppy',isHuman:rng()>.25,spotted:false});}
+
+      // ── Objective: deepest upper floor room ──────────────────────────
+      const oSD=rng()<.5?-1:1;
+      pushBox(missionFieldQuads,oSD*(MW-7),F2Y+.8,-110,2.5,.8,1.4,0x9a7040);addWall(oSD*(MW-7),-110,2.7,1.6);
+      pushBox(missionFieldQuads,oSD*(MW-7),F2Y+1.8,-110.6,.5,.3,.4,0xffe060);
+      missionFieldItems.push({id:0,x:oSD*(MW-7),z:-110,type:'objective',label:m.objective,icon:'📄',collected:false});
 
     } else if (mapType === 'dog_neighborhood') {
       // ── Dog Neighborhood: suburban streets, lawns, hedges ─────────────
@@ -18674,6 +18746,14 @@
   const OV_SPOT_LABELS = ['None','● Spots','🎨 Patches','〰 Stripe','🧦 Socks'];
   const OV_SIZES       = [0.72, 1.0, 1.3];
   const OV_SIZE_LABELS = ['🐾 Tiny','🐕 Medium','🐘 Large'];
+  const OV_EYE_LABELS  = ['● Round','◉ Big','〜 Almond'];
+  const OV_EYE_COLORS  = [
+    { name:'Brown',    hex:0x6b3a2a }, { name:'Amber',    hex:0xd4720a },
+    { name:'Green',    hex:0x2e8b57 }, { name:'Blue',     hex:0x3a7abf },
+    { name:'Ice Blue', hex:0x7ab8d4 }, { name:'Purple',   hex:0x7840a8 },
+    { name:'Gold',     hex:0xd4a820 }, { name:'Teal',     hex:0x2a8898 },
+    { name:'Ruby',     hex:0xb82030 }, { name:'Black',    hex:0x1a1a1a },
+  ];
 
   // ── State ───────────────────────────────────────────────────────────────
   let onlineDogProfile = null;  // loaded from localStorage on startup
@@ -18700,6 +18780,7 @@
   // Creator UI state
   let ovcFurIdx = 0, ovcSpotPatIdx = 0, ovcSpotColIdx = 1;
   let ovcEarIdx = 0, ovcBodyIdx = 0, ovcSizeIdx = 1, ovcCollarIdx = 0;
+  let ovcEyeIdx = 0, ovcEyeColIdx = 0;
 
   // ── Persistence ─────────────────────────────────────────────────────────
   function ovLoadProfile() {
@@ -18715,72 +18796,71 @@
 
   // ── Dog Creator UI ───────────────────────────────────────────────────────
   function ovOpenCreator() {
-    // Pre-fill from existing profile if any
     if (onlineDogProfile) {
-      ovcFurIdx    = onlineDogProfile.furIdx    || 0;
-      ovcEarIdx    = onlineDogProfile.earIdx    || 0;
-      ovcBodyIdx   = onlineDogProfile.bodyIdx   || 0;
-      ovcSizeIdx   = onlineDogProfile.sizeIdx   || 1;
-      ovcSpotPatIdx= onlineDogProfile.spotPatIdx|| 0;
-      ovcSpotColIdx= onlineDogProfile.spotColIdx|| 1;
-      ovcCollarIdx = onlineDogProfile.collarIdx || 0;
+      ovcFurIdx     = onlineDogProfile.furIdx     || 0;
+      ovcEarIdx     = onlineDogProfile.earIdx     || 0;
+      ovcBodyIdx    = onlineDogProfile.bodyIdx    || 0;
+      ovcSizeIdx    = onlineDogProfile.sizeIdx    || 1;
+      ovcSpotPatIdx = onlineDogProfile.spotPatIdx || 0;
+      ovcSpotColIdx = onlineDogProfile.spotColIdx || 1;
+      ovcCollarIdx  = onlineDogProfile.collarIdx  || 0;
+      ovcEyeIdx     = onlineDogProfile.eyeIdx     || 0;
+      ovcEyeColIdx  = onlineDogProfile.eyeColIdx  || 0;
       document.getElementById('ov-dc-name').value = onlineDogProfile.name || '';
     }
     document.getElementById('ov-dog-creator').classList.remove('hidden');
     ovCreatorBuildUI();
-    ovCreatorDrawPreview();
+    ovDrawPixelDog();
   }
   function ovCloseCreator() {
     document.getElementById('ov-dog-creator').classList.add('hidden');
   }
 
   function ovCreatorBuildUI() {
-    // Body type buttons
-    const bodyEl = document.getElementById('ov-dc-body-type');
-    bodyEl.innerHTML = '';
-    OV_BODY_LABELS.forEach((lbl, i) => {
-      const b = document.createElement('button');
-      b.className = 'ov-opt-btn' + (i === ovcBodyIdx ? ' ov-selected' : '');
-      b.textContent = lbl;
-      b.onclick = () => { ovcBodyIdx = i; ovCreatorRefresh('body'); };
-      bodyEl.appendChild(b);
-    });
-    // Ear type buttons
-    const earEl = document.getElementById('ov-dc-ear-type');
-    earEl.innerHTML = '';
-    OV_EAR_LABELS.forEach((lbl, i) => {
-      const b = document.createElement('button');
-      b.className = 'ov-opt-btn' + (i === ovcEarIdx ? ' ov-selected' : '');
-      b.textContent = lbl;
-      b.onclick = () => { ovcEarIdx = i; ovCreatorRefresh('ear'); };
-      earEl.appendChild(b);
-    });
-    // Size buttons
-    document.querySelectorAll('[data-size]').forEach(b => {
-      const si = parseInt(b.dataset.size);
-      b.className = 'ov-opt-btn' + (si === ovcSizeIdx ? ' ov-selected' : '');
-      b.onclick = () => { ovcSizeIdx = si; ovCreatorRefresh('size'); };
-    });
-    // Fur colors
-    ovBuildSwatchRow('ov-dc-fur-colors', OV_FUR_COLORS, ovcFurIdx, (i) => { ovcFurIdx = i; ovCreatorRefresh('fur'); });
-    // Spot patterns
-    const spEl = document.getElementById('ov-dc-spot-pattern');
-    spEl.innerHTML = '';
-    OV_SPOT_LABELS.forEach((lbl, i) => {
-      const b = document.createElement('button');
-      b.className = 'ov-opt-btn' + (i === ovcSpotPatIdx ? ' ov-selected' : '');
-      b.textContent = lbl;
-      b.onclick = () => { ovcSpotPatIdx = i; ovCreatorRefresh('spotPat'); };
-      spEl.appendChild(b);
-    });
-    // Spot colors
-    ovBuildSwatchRow('ov-dc-spot-colors', OV_SPOT_COLORS, ovcSpotColIdx, (i) => { ovcSpotColIdx = i; ovCreatorRefresh('spotCol'); });
-    // Collar colors
-    ovBuildSwatchRow('ov-dc-collar-colors', OV_COLLAR_COLORS, ovcCollarIdx, (i) => { ovcCollarIdx = i; ovCreatorRefresh('collar'); });
-    // Spot section visibility
+    const buildBtns = (elId, labels, curIdx, onPick) => {
+      const el = document.getElementById(elId);
+      if (!el) return;
+      el.innerHTML = '';
+      labels.forEach((lbl, i) => {
+        const b = document.createElement('button');
+        b.className = 'ov-opt-btn' + (i === curIdx ? ' ov-selected' : '');
+        b.textContent = lbl;
+        b.onclick = () => onPick(i);
+        el.appendChild(b);
+      });
+    };
+    buildBtns('ov-dc-body-btns',    OV_BODY_LABELS, ovcBodyIdx,    i => { ovcBodyIdx    = i; ovCreatorRefresh('body'); });
+    buildBtns('ov-dc-ear-btns',     OV_EAR_LABELS,  ovcEarIdx,     i => { ovcEarIdx     = i; ovCreatorRefresh('ear'); });
+    buildBtns('ov-dc-eye-btns',     OV_EYE_LABELS,  ovcEyeIdx,     i => { ovcEyeIdx     = i; ovCreatorRefresh('eye'); });
+    buildBtns('ov-dc-spot-pattern', OV_SPOT_LABELS, ovcSpotPatIdx, i => { ovcSpotPatIdx = i; ovCreatorRefresh('spotPat'); });
+    ovBuildPxPalette('ov-dc-fur-colors',    OV_FUR_COLORS,    ovcFurIdx,    i => { ovcFurIdx    = i; ovCreatorRefresh('fur'); });
+    ovBuildPxPalette('ov-dc-eye-colors',    OV_EYE_COLORS,    ovcEyeColIdx, i => { ovcEyeColIdx = i; ovCreatorRefresh('eyeCol'); });
+    ovBuildPxPalette('ov-dc-collar-colors', OV_COLLAR_COLORS, ovcCollarIdx, i => { ovcCollarIdx = i; ovCreatorRefresh('collar'); });
+    ovBuildPxPalette('ov-dc-spot-colors',   OV_SPOT_COLORS,   ovcSpotColIdx,i => { ovcSpotColIdx= i; ovCreatorRefresh('spotCol'); });
     ovUpdateSpotSectionVisibility();
   }
 
+  // Square pixel-art palette swatches (creator panel)
+  function ovBuildPxPalette(elId, colorArr, selectedIdx, onPick) {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    el.innerHTML = '';
+    colorArr.forEach((c, i) => {
+      const sw = document.createElement('div');
+      sw.className = 'ov-px-swatch' + (i === selectedIdx ? ' ov-selected' : '');
+      sw.title = c.name;
+      if (c.hex !== null) {
+        sw.style.background = '#' + c.hex.toString(16).padStart(6,'0');
+      } else {
+        sw.style.background = 'linear-gradient(135deg,#222 50%,#555 50%)';
+        sw.style.borderColor = '#404040';
+      }
+      sw.onclick = () => onPick(i);
+      el.appendChild(sw);
+    });
+  }
+
+  // Round swatch row (still used by in-village custom panel)
   function ovBuildSwatchRow(elId, colorArr, selectedIdx, onPick) {
     const el = document.getElementById(elId);
     if (!el) return;
@@ -18793,7 +18873,6 @@
       if (c.hex !== null) {
         sw.style.background = '#' + c.hex.toString(16).padStart(6,'0');
       } else {
-        // "None" — checkerboard/transparent indicator
         sw.style.background = 'linear-gradient(135deg,#222 50%,#555 50%)';
         sw.style.border = '2px solid #404040';
       }
@@ -18805,24 +18884,17 @@
   }
 
   function ovCreatorRefresh(what) {
-    // Re-select highlighted buttons based on updated indices
-    if (what === 'body') {
-      document.querySelectorAll('#ov-dc-body-type .ov-opt-btn').forEach((b,i)=>b.classList.toggle('ov-selected',i===ovcBodyIdx));
-    } else if (what === 'ear') {
-      document.querySelectorAll('#ov-dc-ear-type .ov-opt-btn').forEach((b,i)=>b.classList.toggle('ov-selected',i===ovcEarIdx));
-    } else if (what === 'size') {
-      document.querySelectorAll('[data-size]').forEach(b=>b.classList.toggle('ov-selected',parseInt(b.dataset.size)===ovcSizeIdx));
-    } else if (what === 'spotPat') {
-      document.querySelectorAll('#ov-dc-spot-pattern .ov-opt-btn').forEach((b,i)=>b.classList.toggle('ov-selected',i===ovcSpotPatIdx));
-      ovUpdateSpotSectionVisibility();
-    }
-    // Re-highlight swatches
-    const swatchMap = { fur:['ov-dc-fur-colors',ovcFurIdx], spotCol:['ov-dc-spot-colors',ovcSpotColIdx], collar:['ov-dc-collar-colors',ovcCollarIdx] };
-    if (swatchMap[what]) {
-      const [elId, idx] = swatchMap[what];
-      document.querySelectorAll('#'+elId+' .ov-swatch').forEach((s,i)=>s.classList.toggle('ov-selected',i===idx));
-    }
-    ovCreatorDrawPreview();
+    const reBtn = (elId, idx) => document.querySelectorAll('#'+elId+' .ov-opt-btn').forEach((b,i)=>b.classList.toggle('ov-selected',i===idx));
+    const rePx  = (elId, idx) => document.querySelectorAll('#'+elId+' .ov-px-swatch').forEach((s,i)=>s.classList.toggle('ov-selected',i===idx));
+    if (what==='body')    reBtn('ov-dc-body-btns',    ovcBodyIdx);
+    if (what==='ear')     reBtn('ov-dc-ear-btns',     ovcEarIdx);
+    if (what==='eye')     reBtn('ov-dc-eye-btns',     ovcEyeIdx);
+    if (what==='spotPat') { reBtn('ov-dc-spot-pattern', ovcSpotPatIdx); ovUpdateSpotSectionVisibility(); }
+    if (what==='fur')     rePx('ov-dc-fur-colors',    ovcFurIdx);
+    if (what==='eyeCol')  rePx('ov-dc-eye-colors',    ovcEyeColIdx);
+    if (what==='collar')  rePx('ov-dc-collar-colors', ovcCollarIdx);
+    if (what==='spotCol') rePx('ov-dc-spot-colors',   ovcSpotColIdx);
+    ovDrawPixelDog();
   }
   function ovUpdateSpotSectionVisibility() {
     const sec = document.getElementById('ov-dc-spot-color-section');
@@ -18836,84 +18908,149 @@
     return ((r|0)<<16)|((g|0)<<8)|(b|0);
   }
 
-  // ── Dog Creator Canvas Preview — real 3D render using the game engine ──
-  function ovCreatorDrawPreview() {
+  // ── Pixel Art Dog Preview ────────────────────────────────────────────────
+  const _PX = Object.freeze({ EMPTY:0, BDY:1, HED:2, EAR:3, MUZ:4, NOS:5, EYE:6, COL:7, LEG:8, TAL:9, SPT:10, PAW:11 });
+  // Layout params per body type: head, body, legs, tail, eye, muzzle, nose
+  const OV_PX_BODY = [
+    { hR1:4,hC1:9,hR2:9,hC2:18,  bR1:9,bC1:8,bR2:17,bC2:19,  lR1:17,lR2:22,lLL:9,lLR:11,lRL:17,lRR:19,  tR1:11,tC1:5,tR2:16,tC2:7,  eRow:6,eLC:11,eRC:16, mR1:7,mC1:12,mR2:8,mC2:15, nR:7,nC:13 }, // normal
+    { hR1:3,hC1:8,hR2:9,hC2:19,  bR1:9,bC1:6,bR2:18,bC2:21,  lR1:18,lR2:22,lLL:8,lLR:10,lRL:18,lRR:20,  tR1:11,tC1:3,tR2:17,tC2:6,  eRow:5,eLC:10,eRC:17, mR1:7,mC1:11,mR2:8,mC2:16, nR:7,nC:13 }, // chubby
+    { hR1:4,hC1:10,hR2:9,hC2:17, bR1:9,bC1:9,bR2:17,bC2:18,  lR1:17,lR2:21,lLL:10,lLR:11,lRL:16,lRR:17, tR1:11,tC1:6,tR2:15,tC2:8,  eRow:6,eLC:11,eRC:15, mR1:7,mC1:12,mR2:8,mC2:15, nR:7,nC:13 }, // slim
+    { hR1:3,hC1:9,hR2:8,hC2:18,  bR1:8,bC1:8,bR2:19,bC2:19,  lR1:19,lR2:25,lLL:9,lLR:11,lRL:17,lRR:19,  tR1:10,tC1:5,tR2:18,tC2:7,  eRow:5,eLC:11,eRC:16, mR1:6,mC1:12,mR2:7,mC2:15, nR:6,nC:13 }, // tall
+    { hR1:6,hC1:10,hR2:10,hC2:17,bR1:10,bC1:9,bR2:17,bC2:18, lR1:17,lR2:20,lLL:10,lLR:11,lRL:16,lRR:17, tR1:12,tC1:7,tR2:15,tC2:9,  eRow:7,eLC:11,eRC:15, mR1:8,mC1:12,mR2:9,mC2:15, nR:8,nC:13 }, // tiny
+    { hR1:3,hC1:8,hR2:9,hC2:19,  bR1:9,bC1:6,bR2:17,bC2:21,  lR1:17,lR2:22,lLL:8,lLR:11,lRL:17,lRR:20,  tR1:10,tC1:3,tR2:16,tC2:6,  eRow:5,eLC:10,eRC:17, mR1:7,mC1:11,mR2:8,mC2:16, nR:7,nC:13 }, // fluffy
+    { hR1:4,hC1:10,hR2:9,hC2:17, bR1:9,bC1:9,bR2:18,bC2:18,  lR1:18,lR2:24,lLL:9,lLR:11,lRL:17,lRR:19,  tR1:11,tC1:6,tR2:17,tC2:8,  eRow:6,eLC:11,eRC:16, mR1:7,mC1:12,mR2:8,mC2:15, nR:7,nC:13 }, // athletic
+  ];
+
+  function ovBuildPixelGrid() {
+    const GS = 28;
+    const g  = Array.from({length: GS}, () => new Uint8Array(GS));
+    const P  = _PX;
+    const bt = OV_PX_BODY[Math.min(ovcBodyIdx, OV_PX_BODY.length-1)];
+    const fill = (r1,c1,r2,c2,v) => {
+      for (let r=Math.max(0,r1); r<=Math.min(GS-1,r2); r++)
+        for (let c=Math.max(0,c1); c<=Math.min(GS-1,c2); c++) g[r][c]=v;
+    };
+    const set = (r,c,v) => { if(r>=0&&r<GS&&c>=0&&c<GS) g[r][c]=v; };
+    // Core body parts
+    fill(bt.bR1,bt.bC1,bt.bR2,bt.bC2, P.BDY);
+    fill(bt.hR1,bt.hC1,bt.hR2,bt.hC2, P.HED);
+    fill(bt.tR1,bt.tC1,bt.tR2,bt.tC2, P.TAL);
+    fill(bt.lR1,bt.lLL,bt.lR2,bt.lLR, P.LEG);
+    fill(bt.lR1,bt.lRL,bt.lR2,bt.lRR, P.LEG);
+    fill(bt.lR2,bt.lLL,bt.lR2,bt.lLR, P.PAW);
+    fill(bt.lR2,bt.lRL,bt.lR2,bt.lRR, P.PAW);
+    fill(bt.hR2,bt.hC1-1,bt.hR2+1,bt.hC2+1, P.COL);
+    fill(bt.mR1,bt.mC1,bt.mR2,bt.mC2, P.MUZ);
+    set(bt.nR,bt.nC,P.NOS); set(bt.nR,bt.nC+1,P.NOS);
+    // Eyes
+    const eR=bt.eRow, eLC=bt.eLC, eRC=bt.eRC;
+    if (ovcEyeIdx===0) {                               // round (1 px)
+      set(eR,eLC,P.EYE); set(eR,eRC,P.EYE);
+    } else if (ovcEyeIdx===1) {                        // big (2×2)
+      fill(eR,eLC,eR+1,eLC+1,P.EYE); fill(eR,eRC,eR+1,eRC+1,P.EYE);
+    } else {                                           // almond (1×3)
+      set(eR,eLC-1,P.EYE); set(eR,eLC,P.EYE); set(eR,eLC+1,P.EYE);
+      set(eR,eRC-1,P.EYE); set(eR,eRC,P.EYE); set(eR,eRC+1,P.EYE);
+    }
+    // Ears
+    const hR1=bt.hR1, hC1=bt.hC1, hC2=bt.hC2;
+    switch (ovcEarIdx) {
+      case 0: // triangle
+        fill(hR1-2,hC1,hR1-1,hC1+1,P.EAR); fill(hR1-2,hC2-1,hR1-1,hC2,P.EAR);
+        set(hR1-3,hC1,P.EAR); set(hR1-3,hC2,P.EAR); break;
+      case 1: // floppy
+        fill(hR1,hC1-2,hR1+4,hC1-1,P.EAR); fill(hR1,hC2+1,hR1+4,hC2+2,P.EAR); break;
+      case 2: // rounded
+        fill(hR1-2,hC1,hR1-1,hC1+2,P.EAR); fill(hR1-2,hC2-2,hR1-1,hC2,P.EAR); break;
+      case 3: // bat
+        fill(hR1-1,hC1-1,hR1-1,hC1+2,P.EAR); set(hR1-2,hC1-2,P.EAR); set(hR1-2,hC1+3,P.EAR);
+        fill(hR1-1,hC2-2,hR1-1,hC2+1,P.EAR); set(hR1-2,hC2-3,P.EAR); set(hR1-2,hC2+2,P.EAR); break;
+      case 4: // tufted
+        fill(hR1-2,hC1,hR1-1,hC1+1,P.EAR); set(hR1-3,hC1,P.EAR); set(hR1-4,hC1,P.EAR);
+        fill(hR1-2,hC2-1,hR1-1,hC2,P.EAR); set(hR1-3,hC2,P.EAR); set(hR1-4,hC2,P.EAR); break;
+      case 5: // perky
+        fill(hR1-1,hC1,hR1-1,hC1+1,P.EAR); set(hR1-2,hC1+1,P.EAR);
+        fill(hR1-1,hC2-1,hR1-1,hC2,P.EAR); set(hR1-2,hC2-1,P.EAR); break;
+    }
+    // Markings
+    if (ovcSpotPatIdx > 0) {
+      const sPat=OV_SPOT_PATS[ovcSpotPatIdx]||'none';
+      const bMidR=Math.floor((bt.bR1+bt.bR2)/2), bMidC=Math.floor((bt.bC1+bt.bC2)/2);
+      if (sPat==='spots') {
+        [[bMidR-1,bMidC-2],[bMidR-1,bMidC-1],[bMidR,bMidC+2],[bMidR+1,bMidC+2],[bMidR+2,bMidC-1],[bMidR-2,bMidC]]
+          .forEach(([r,c]) => { if(g[r]?.[c]===P.BDY) set(r,c,P.SPT); });
+      } else if (sPat==='patches') {
+        fill(bt.bR1+1,bt.bC1+1,bMidR-1,bMidC-1,P.SPT);
+        fill(bMidR+1,bMidC+1,bt.bR2-1,bt.bC2-1,P.SPT);
+      } else if (sPat==='stripe') {
+        for(let r=bt.bR1;r<=bt.bR2;r++) {
+          if(g[r]?.[bMidC]===P.BDY) set(r,bMidC,P.SPT);
+          if(g[r]?.[bMidC+1]===P.BDY) set(r,bMidC+1,P.SPT);
+        }
+      } else if (sPat==='socks') {
+        for(let r=bt.lR2-1;r<=bt.lR2;r++) {
+          for(let c=bt.lLL;c<=bt.lLR;c++) if(g[r]?.[c]===P.LEG||g[r]?.[c]===P.PAW) set(r,c,P.SPT);
+          for(let c=bt.lRL;c<=bt.lRR;c++) if(g[r]?.[c]===P.LEG||g[r]?.[c]===P.PAW) set(r,c,P.SPT);
+        }
+      }
+    }
+    return g;
+  }
+
+  function ovDrawPixelDog() {
     const cv = document.getElementById('ov-dc-canvas');
     if (!cv) return;
     const ctx2 = cv.getContext('2d');
-    const PW = cv.width, PH = cv.height;
-    ctx2.clearRect(0,0,PW,PH);
-
-    // Background gradient
-    const bg = ctx2.createLinearGradient(0,0,0,PH);
-    bg.addColorStop(0,'#080e18'); bg.addColorStop(1,'#121c10');
-    ctx2.fillStyle = bg; ctx2.fillRect(0,0,PW,PH);
-    // Ground plane hint
-    ctx2.fillStyle = 'rgba(40,60,30,0.55)';
-    ctx2.fillRect(0, PH*0.72, PW, PH*0.28);
-
-    // Build dog quads at origin
-    const previewQuads = [];
-    const sc    = OV_SIZES[Math.min(ovcSizeIdx, 2)];
-    const fur   = OV_FUR_COLORS[Math.min(ovcFurIdx, OV_FUR_COLORS.length-1)].hex;
-    const ear   = OV_EAR_TYPES[Math.min(ovcEarIdx, OV_EAR_TYPES.length-1)];
-    const body  = Math.min(ovcBodyIdx, OV_BODY_TYPES.length-1);
-    const sPat  = OV_SPOT_PATS[Math.min(ovcSpotPatIdx, OV_SPOT_PATS.length-1)];
-    const sCol  = ovcSpotPatIdx > 0 ? (OV_SPOT_COLORS[Math.min(ovcSpotColIdx, OV_SPOT_COLORS.length-1)].hex) : null;
-    const col   = OV_COLLAR_COLORS[Math.min(ovcCollarIdx, OV_COLLAR_COLORS.length-1)].hex;
-
-    // Dog faces mostly toward camera for a nice front-3/4 view
-    const dogFacingYaw = Math.PI * 0.88;
-    addOnlineCustomDog(previewQuads, 0, 0, sc, fur, dogFacingYaw, ear, sPat, sCol, col, body);
-
-    // Camera: placed directly behind the dog (no side offset), looking in +z direction.
-    // The dog's facingYaw provides the 3/4 angle — no camYaw rotation needed.
-    const camDist  = 2.4 * sc;
-    const camPitch = 0.28;
-    const camH     = 1.3 * sc;
-    const camPos   = v3(0, 0.21 + camH, -camDist);
-    const f = (PH / 2) / FOV;
-
-    function miniProjectClipped(verts) {
-      const NEAR = 0.05;
-      const cs = verts.map(pt => {
-        let v = sub(pt, camPos);
-        v = rotX(v, -camPitch);   // only pitch — no yaw rotation
-        return v;
-      });
-      const out = [];
-      for (let i = 0; i < cs.length; i++) {
-        const a = cs[(i + cs.length - 1) % cs.length], b = cs[i];
-        const aIn = a.z >= NEAR, bIn = b.z >= NEAR;
-        if (bIn) {
-          if (!aIn) { const t=(NEAR-a.z)/(b.z-a.z); out.push(v3(a.x+t*(b.x-a.x),a.y+t*(b.y-a.y),NEAR)); }
-          out.push(b);
-        } else if (aIn) {
-          const t = (NEAR-a.z)/(b.z-a.z); out.push(v3(a.x+t*(b.x-a.x),a.y+t*(b.y-a.y),NEAR));
-        }
-      }
-      if (out.length < 3) return null;
-      return out.map(v => ({ x: PW/2+(v.x/v.z)*f, y: PH/2-(v.y/v.z)*f+PH*0.08, z: v.z }));
+    const CW = cv.width, CH = cv.height;
+    ctx2.clearRect(0,0,CW,CH);
+    ctx2.fillStyle = '#08101a';
+    ctx2.fillRect(0,0,CW,CH);
+    ctx2.fillStyle = 'rgba(20,45,18,0.50)';
+    ctx2.fillRect(0, Math.round(CH*0.80), CW, CH);
+    const GS=28, PS=9;
+    const ox=Math.floor((CW-GS*PS)/2), oy=Math.floor((CH-GS*PS)/2);
+    const g   = ovBuildPixelGrid();
+    const P   = _PX;
+    const furHex = OV_FUR_COLORS[Math.min(ovcFurIdx,OV_FUR_COLORS.length-1)].hex;
+    const colHex = OV_COLLAR_COLORS[Math.min(ovcCollarIdx,OV_COLLAR_COLORS.length-1)].hex;
+    const sptHex = ovcSpotPatIdx>0 ? OV_SPOT_COLORS[Math.min(ovcSpotColIdx,OV_SPOT_COLORS.length-1)].hex : null;
+    const eyeHex = OV_EYE_COLORS[Math.min(ovcEyeColIdx,OV_EYE_COLORS.length-1)].hex;
+    const hx = h => h!==null ? '#'+h.toString(16).padStart(6,'0') : '#2a2a2a';
+    const dk = (h,f) => { const dr=((h>>16)&0xff)*f, dg=((h>>8)&0xff)*f, db=(h&0xff)*f; return ((dr|0)<<16)|((dg|0)<<8)|(db|0); };
+    const lt = (h,f) => { const lr=Math.min(255,((h>>16)&0xff)+(255-((h>>16)&0xff))*f), lg=Math.min(255,((h>>8)&0xff)+(255-((h>>8)&0xff))*f), lb=Math.min(255,(h&0xff)+(255-(h&0xff))*f); return ((lr|0)<<16)|((lg|0)<<8)|(lb|0); };
+    const COLS = {
+      [P.BDY]: hx(furHex),
+      [P.HED]: hx(furHex),
+      [P.EAR]: hx(dk(furHex,0.72)),
+      [P.MUZ]: hx(lt(furHex,0.30)),
+      [P.NOS]: '#111',
+      [P.EYE]: hx(eyeHex),
+      [P.COL]: colHex!==null ? hx(colHex) : '#3a3a3a',
+      [P.LEG]: hx(furHex),
+      [P.TAL]: hx(dk(furHex,0.82)),
+      [P.SPT]: sptHex!==null ? hx(sptHex) : hx(furHex),
+      [P.PAW]: hx(dk(furHex,0.65)),
+    };
+    for(let r=0;r<GS;r++) for(let c=0;c<GS;c++) {
+      const reg=g[r][c];
+      if(!reg) continue;
+      ctx2.fillStyle=COLS[reg]||'#888';
+      ctx2.fillRect(ox+c*PS, oy+r*PS, PS, PS);
     }
-
-    // Project, sort back-to-front, draw
-    const toRender = previewQuads.map(q => {
-      const pts = miniProjectClipped(q.verts);
-      if (!pts) return null;
-      const avgZ = pts.reduce((s,p2)=>s+p2.z,0)/pts.length;
-      return { pts, avgZ, color: q.color, normal: q.normal };
-    }).filter(Boolean);
-
-    toRender.sort((a,b) => b.avgZ - a.avgZ);
-    toRender.forEach(({ pts, color, normal }) => {
-      ctx2.beginPath();
-      ctx2.moveTo(pts[0].x, pts[0].y);
-      for (let i = 1; i < pts.length; i++) ctx2.lineTo(pts[i].x, pts[i].y);
-      ctx2.closePath();
-      ctx2.fillStyle = shade(color, normal, 0, undefined);
-      ctx2.fill();
-      ctx2.strokeStyle = 'rgba(0,0,0,0.18)'; ctx2.lineWidth = 0.5; ctx2.stroke();
-    });
+    // White outline: empty cells adjacent to a filled cell
+    for(let r=0;r<GS;r++) for(let c=0;c<GS;c++) {
+      if(g[r][c]) continue;
+      if((r>0&&g[r-1][c])||(r<GS-1&&g[r+1][c])||(c>0&&g[r][c-1])||(c<GS-1&&g[r][c+1])) {
+        ctx2.fillStyle='#ffffff';
+        ctx2.fillRect(ox+c*PS, oy+r*PS, PS, PS);
+      }
+    }
+    // Subtle pixel grid lines
+    ctx2.strokeStyle='rgba(0,0,0,0.22)'; ctx2.lineWidth=0.5;
+    for(let r=0;r<GS;r++) for(let c=0;c<GS;c++) {
+      if(!g[r][c]) continue;
+      ctx2.strokeRect(ox+c*PS+0.25, oy+r*PS+0.25, PS-0.5, PS-0.5);
+    }
   }
 
   // ── Enter / Exit Online Village ──────────────────────────────────────────
@@ -18933,7 +19070,8 @@
     onlineDogProfile = {
       name: nameVal,
       furIdx: ovcFurIdx, earIdx: ovcEarIdx, bodyIdx: ovcBodyIdx,
-      sizeIdx: ovcSizeIdx, spotPatIdx: ovcSpotPatIdx, spotColIdx: ovcSpotColIdx, collarIdx: ovcCollarIdx,
+      sizeIdx: ovcSizeIdx, spotPatIdx: ovcSpotPatIdx, spotColIdx: ovcSpotColIdx,
+      collarIdx: ovcCollarIdx, eyeIdx: ovcEyeIdx, eyeColIdx: ovcEyeColIdx,
     };
     ovSaveProfile();
     ovCloseCreator();
@@ -19581,61 +19719,49 @@
 
   <!-- Dog Creator (full-screen, first time entering) -->
   <div id="ov-dog-creator" class="hidden">
-    <div id="ov-dc-title">🌐 Create Your Online Dog</div>
-    <div id="ov-dc-subtitle">This dog only lives in the Online Village</div>
+    <div id="ov-dc-title">🌐 Create Your Dog</div>
     <div id="ov-dc-body">
-      <!-- Preview + name -->
-      <div id="ov-dc-preview-col">
-        <canvas id="ov-dc-canvas" width="260" height="260"></canvas>
-        <div id="ov-dc-name-wrap">
-          <div id="ov-dc-name-label">Dog name</div>
-          <input id="ov-dc-name" type="text" maxlength="18" placeholder="Enter a name…" autocomplete="off" spellcheck="false">
+      <div id="ov-dc-left">
+        <canvas id="ov-dc-canvas" width="280" height="280"></canvas>
+        <div id="ov-dc-name-row">
+          <input id="ov-dc-name" type="text" maxlength="18" placeholder="Name your dog…" autocomplete="off" spellcheck="false">
+          <button id="ov-dc-enter-btn" onclick="ovFinishCreator()">✔ Done</button>
         </div>
+        <button id="ov-dc-back-btn" onclick="ovCloseCreator()">← go back</button>
       </div>
-      <!-- Options -->
-      <div id="ov-dc-options-col">
-        <!-- Body type -->
+      <div id="ov-dc-right">
         <div class="ov-dc-section">
-          <div class="ov-dc-section-title">Body Type</div>
-          <div class="ov-btn-group" id="ov-dc-body-type"></div>
+          <div class="ov-dc-section-title">Body</div>
+          <div class="ov-btn-group" id="ov-dc-body-btns"></div>
         </div>
-        <!-- Ear type -->
         <div class="ov-dc-section">
           <div class="ov-dc-section-title">Ears</div>
-          <div class="ov-btn-group" id="ov-dc-ear-type"></div>
+          <div class="ov-btn-group" id="ov-dc-ear-btns"></div>
         </div>
-        <!-- Size -->
         <div class="ov-dc-section">
-          <div class="ov-dc-section-title">Size</div>
-          <div class="ov-btn-group" id="ov-dc-size-btns">
-            <button class="ov-opt-btn" data-size="0">🐾 Tiny</button>
-            <button class="ov-opt-btn ov-selected" data-size="1">🐕 Medium</button>
-            <button class="ov-opt-btn" data-size="2">🐘 Large</button>
-          </div>
+          <div class="ov-dc-section-title">Eyes</div>
+          <div class="ov-btn-group" id="ov-dc-eye-btns"></div>
         </div>
-        <!-- Fur color -->
         <div class="ov-dc-section">
-          <div class="ov-dc-section-title">Fur Colour</div>
-          <div class="ov-swatch-row" id="ov-dc-fur-colors"></div>
+          <div class="ov-dc-section-title">Fur Color</div>
+          <div class="ov-px-palette" id="ov-dc-fur-colors"></div>
         </div>
-        <!-- Spot pattern -->
         <div class="ov-dc-section">
-          <div class="ov-dc-section-title">Spot Pattern</div>
-          <div class="ov-btn-group" id="ov-dc-spot-pattern"></div>
+          <div class="ov-dc-section-title">Eye Color</div>
+          <div class="ov-px-palette" id="ov-dc-eye-colors"></div>
         </div>
-        <!-- Spot color -->
-        <div class="ov-dc-section" id="ov-dc-spot-color-section">
-          <div class="ov-dc-section-title">Spot / Marking Colour</div>
-          <div class="ov-swatch-row" id="ov-dc-spot-colors"></div>
-        </div>
-        <!-- Collar color -->
         <div class="ov-dc-section">
           <div class="ov-dc-section-title">Collar</div>
-          <div class="ov-swatch-row" id="ov-dc-collar-colors"></div>
+          <div class="ov-px-palette" id="ov-dc-collar-colors"></div>
         </div>
-        <!-- Enter button -->
-        <button id="ov-dc-enter-btn">🌐 ENTER ONLINE VILLAGE</button>
-        <button id="ov-dc-back-btn">← go back</button>
+        <div class="ov-dc-section">
+          <div class="ov-dc-section-title">Markings</div>
+          <div class="ov-btn-group" id="ov-dc-spot-pattern"></div>
+        </div>
+        <div class="ov-dc-section" id="ov-dc-spot-color-section">
+          <div class="ov-dc-section-title">Marking Color</div>
+          <div class="ov-px-palette" id="ov-dc-spot-colors"></div>
+        </div>
       </div>
     </div>
   </div>
