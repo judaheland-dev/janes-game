@@ -4310,8 +4310,8 @@
     // ── Generate (or restore) today's NPC quests
     initDailyQuests();
 
-    // ── Robot dog + retro satellite — only once all dogs are in the village ──
-    if (allDogsInVillage()) {
+    // ── Robot dog + retro satellite — visible once current character is in the village ──
+    if (isInVillage()) {
       const RX = 8, RZ = 5;   // position: east of the central green
       const RM = 0xb0bcc8;    // metal body colour
       const RD = 0x8090a0;    // darker metal
@@ -4360,7 +4360,7 @@
       clearingNPCs.push({
         wx: RX, wz: RZ, s: 1.0, fur: RM, yaw: 0,
         name: 'Unit-7',
-        text: 'Back to Warbark Village? 🌐',
+        text: 'Go to Online Village? 🌐',
         type: 'adult', ears: 'triangle',
       });
     }
@@ -5906,7 +5906,7 @@
         }
       }
       // Satellite dish / Unit-7 (x=10.5, z=5) — press E to interact
-      if (allDogsInVillage()) {
+      if (isInVillage()) {
         const satDist = Math.hypot(ds.x - 10.5, ds.z - 5);
         if (satDist < 3.5 && keysJustPressed.has('KeyE') && gameState === 'playing') {
           keysJustPressed.delete('KeyE');
@@ -15231,84 +15231,86 @@
       });
 
     } else if (mapType === 'cave') {
-      // Underground cave — stalactite columns, underground lake, crystal chambers, bat patrols
+      // ── Procedural Cave System ────────────────────────────────────────
+      // Dark underground: entry mouth → 2–3 varied chambers → treasure vault.
+      // Bats + wolves scale with profIdx. Crystal artifact objective at back.
 
-      // Overwrite floor with dark cave rock tiles
-      for (let fx=-FIELD_W; fx<FIELD_W; fx+=4) {
-        for (let fz=-FIELD_D; fz<10; fz+=4) {
-          const e=(((fx/4)+(fz/4))&1);
-          missionFieldQuads.push({ verts:[v3(fx,0.01,fz),v3(fx+4,0.01,fz),v3(fx+4,0.01,fz+4),v3(fx,0.01,fz+4)], color:e?0x221a18:0x1a1412, normal:v3(0,1,0), isGround:true });
+      // Dark rock floor tiles
+      for(let fx=-FIELD_W;fx<FIELD_W;fx+=4)for(let fz=-FIELD_D;fz<10;fz+=4){
+        const e=(((fx/4)+(fz/4))&1);
+        missionFieldQuads.push({verts:[v3(fx,.01,fz),v3(fx+4,.01,fz),v3(fx+4,.01,fz+4),v3(fx,.01,fz+4)],color:e?0x221a18:0x1a1412,normal:v3(0,1,0),isGround:true});
+      }
+      // Dark ceiling
+      missionFieldQuads.push({verts:[v3(-FIELD_W,7,8),v3(FIELD_W,7,8),v3(FIELD_W,7,-FIELD_D),v3(-FIELD_W,7,-FIELD_D)],color:0x0e0c0c,normal:v3(0,-1,0),isGround:false});
+      const rock=(cx,cz,hw,hh,hd)=>{pushBox(missionFieldQuads,cx,hh,cz,hw,hh,hd,0x282020);addWall(cx,cz,hw+.2,hd+.2);};
+      const stag=(sx,sz,sh,sw)=>{pushBox(missionFieldQuads,sx,sh,sz,sw,sh,sw,0x282020);pushBox(missionFieldQuads,sx,sh*2+5.5,sz,sw*.8,sh*.7,sw*.8,0x201818);addWall(sx,sz,sw+.4,sw+.4);};
+      const crystal=(cx,cz,col)=>{for(let ci=0;ci<5;ci++){const a=(ci/5)*Math.PI*2,r=1+rng()*.8,hh=.6+rng()*1.4,hw=.15+rng()*.18;pushBox(missionFieldQuads,cx+Math.cos(a)*r,hh,cz+Math.sin(a)*r,hw,hh,hw,(col+ci*0x001010)|0);}missionFieldQuads.push({verts:[v3(cx-1.5,.04,cz-1.5),v3(cx+1.5,.04,cz-1.5),v3(cx+1.5,.04,cz+1.5),v3(cx-1.5,.04,cz+1.5)],color:(col>>1)&0x3f3f3f,normal:v3(0,1,0),isGround:true});};
+
+      // Fixed entry mouth — rock formations either side
+      rock(-29,-12,12,4,16);rock(29,-12,12,4,16);
+      missionFieldNpcs.push({x:-14,z:-8,label:'Lost 🐕',color:'#b0a880',fur:0x9a8860,ears:'floppy',hint:'Deep in the cave the passage branches. Keep to the centre — outer tunnels are patrol territory.'});
+      missionFieldPatrols.push({x:0,z:-14,startX:0,startZ:-14,dx:1,dz:0,t:rng()*Math.PI*2,range:16,tSpeed:.038,fur:0x1a1018,ears:'triangle',isHuman:false,spotted:false});
+
+      // ── 2–3 procedural cave chambers (z=-24 to z=-96) ────────────────
+      const nC=2+Math.floor(rng()*2), cStep=72/nC;
+      const cHints=['The wolf alpha patrols the crystal room — go wide to avoid it.','There\'s a ford through the lake. Stay east of centre to miss the bats.','Bone pile in the west alcove — wolf den. Don\'t disturb the pack.','Crystal light draws patrols. Hug the dark wall on the far side.'];
+      for(let ci=0;ci<nC;ci++){
+        const cZ=-24-ci*cStep, cM=cZ-cStep*.5, sd=rng()<.5?-1:1;
+        // Chamber boundary choke — side rock formations, centre open
+        rock(-29,cZ,12,3.5,cStep*.18);rock(29,cZ,12,3.5,cStep*.18);
+        const cv=Math.floor(rng()*4);
+
+        if(cv===0){
+          // Layout A: Crystal chamber — clusters + stalactites, bat patrol
+          const cols=[0x2040c0,0x4020a0,0x1030d0,0x3050b0,0x5020c0];
+          for(let xi=0;xi<4;xi++){const cx=8+rng()*12,cz=cZ-4-rng()*(cStep-6);crystal(sd>0?cx:-cx,cz,cols[xi%5]);crystal(sd>0?-cx:cx,cz+3,cols[(xi+2)%5]);}
+          const nSt=3+Math.floor(rng()*3);
+          for(let si=0;si<nSt;si++){const sx=6+rng()*14,sz=cZ-4-rng()*(cStep-6);stag(sd>0?sx:-sx,sz,.8+rng()*2,.2+rng()*.5);stag(sd>0?-sx:sx,sz+3,.8+rng()*1.5,.2+rng()*.4);}
+          missionFieldPatrols.push({x:sd*18,z:cM,startX:sd*18,startZ:cM,dx:0,dz:1,t:rng()*Math.PI*2,range:cStep*.4,tSpeed:.038,fur:0x1a1018,ears:'triangle',isHuman:false,spotted:false});
+          if(missionFieldNpcs.length<3)missionFieldNpcs.push({x:sd*20,z:cM+4,label:'Lost 🐕',color:'#b0a880',fur:0x9a8860,ears:'floppy',hint:cHints[ci%4]});
+
+        }else if(cv===1){
+          // Layout B: Underground lake — water tiles + shore boulders, wolf patrol
+          const lZ1=cZ-3,lZ2=cZ-cStep+3;
+          for(let lx=-FIELD_W+3;lx<FIELD_W-3;lx+=2)for(let lz=lZ2;lz<lZ1;lz+=2)
+            missionFieldQuads.push({verts:[v3(lx,.06,lz),v3(lx+2,.06,lz),v3(lx+2,.06,lz+2),v3(lx,.06,lz+2)],color:(lx/2+lz/2&1)?0x0a1a30:0x0e2440,normal:v3(0,1,0),isGround:true});
+          for(let ri=0;ri<3;ri++)missionFieldQuads.push({verts:[v3(-26,.08,lZ2+ri*3),v3(26,.08,lZ2+ri*3),v3(26,.08,lZ2+ri*3+.3),v3(-26,.08,lZ2+ri*3+.3)],color:0x1a3860,normal:v3(0,1,0),isGround:true});
+          for(let bi=0;bi<12;bi++){const bx=(rng()-.5)*46,bz=lZ2+rng()*(lZ1-lZ2);if(Math.abs(bx)<6)continue;const bs=.6+rng()*1.2;pushBox(missionFieldQuads,bx,bs*.5,bz,bs*1.2,bs*.5,bs,0x2a2018);addWall(bx,bz,bs*1.4,bs*1.2);}
+          crystal(sd*14,cM,(0x0e2440+Math.floor(rng()*0x001020))|0);
+          missionFieldPatrols.push({x:0,z:lZ2+cStep*.25,startX:0,startZ:lZ2+cStep*.25,dx:1,dz:0,t:rng()*Math.PI*2,range:FIELD_W*.6,tSpeed:.024,fur:0x9a7050,ears:'triangle',isHuman:false,spotted:false});
+
+        }else if(cv===2){
+          // Layout C: Wolf den — bone piles, narrow side alcoves, wolf patrols
+          for(let bi=0;bi<8;bi++){const bx=(rng()-.5)*46,bz=cZ-4-rng()*(cStep-6);if(Math.abs(bx)<5)continue;pushBox(missionFieldQuads,bx,.25,bz,1.8+rng()*.8,.25,.4+rng()*.6,0xe8e0c8);addWall(bx,bz,2,.6);}
+          rock(sd*20,cM,1,3,cStep*.25);rock(-sd*20,cM,1,3,cStep*.25);
+          missionFieldNpcs.push({x:sd*18,z:cM,label:'Den Wolf 🐺',color:'#8a7050',fur:0x7a6040,ears:'triangle',hint:cHints[(ci+1)%4]});
+          missionFieldPatrols.push({x:-sd*16,z:cM,startX:-sd*16,startZ:cM,dx:0,dz:1,t:rng()*Math.PI*2,range:cStep*.38,tSpeed:.016,fur:0x8a7050,ears:'triangle',isHuman:false,spotted:false});
+          missionFieldPatrols.push({x:sd*12,z:cM-4,startX:sd*12,startZ:cM-4,dx:1,dz:0,t:rng()*Math.PI*2,range:12,tSpeed:.013,fur:0x9a8060,ears:'triangle',isHuman:false,spotted:false});
+
+        }else{
+          // Layout D: Collapsed tunnel — dense boulders + stalactites, sweeping bat
+          const nB=8+Math.floor(rng()*5);
+          for(let bi=0;bi<nB;bi++){const bx=(rng()-.5)*46,bz=cZ-4-rng()*(cStep-6);if(Math.abs(bx)<4.5)continue;const bs=.8+rng()*1.5;pushBox(missionFieldQuads,bx,bs*.5,bz,bs*1.2,bs*.5,bs,bi%3?0x2a2018:0x201810);addWall(bx,bz,bs*1.4,bs*1.2);}
+          const nSt=4+Math.floor(rng()*3);
+          for(let si=0;si<nSt;si++){const sx=5+rng()*15,sz=cZ-4-rng()*(cStep-6);stag(sd>0?sx:-sx,sz,.6+rng()*2,.2+rng()*.4);}
+          missionFieldPatrols.push({x:0,z:cM,startX:0,startZ:cM,dx:1,dz:0,t:rng()*Math.PI*2,range:FIELD_W*.55,tSpeed:.036,fur:0x1a1018,ears:'triangle',isHuman:false,spotted:false});
         }
       }
-      // Dark cave ceiling slab (visual — makes the sky invisible)
-      missionFieldQuads.push({ verts:[v3(-FIELD_W,7,8),v3(FIELD_W,7,8),v3(FIELD_W,7,-FIELD_D),v3(-FIELD_W,7,-FIELD_D)], color:0x0e0c0c, normal:v3(0,-1,0), isGround:false });
 
-      // Rocky side walls tighten the cave passage and force navigation
-      // Entry channel walls (z=4 to z=-28, width ±12)
-      pushBox(missionFieldQuads, -29, 4, -12, 12, 4, 16, 0x2a2020); addWall(-29, -12, 12, 16);
-      pushBox(missionFieldQuads,  29, 4, -12, 12, 4, 16, 0x2a2020); addWall( 29, -12, 12, 16);
-      // Choke canyon (z=-35 to z=-50, width ±10)
-      pushBox(missionFieldQuads, -30, 3.5, -42, 11, 3.5, 8, 0x242018); addWall(-30, -42, 11, 8.5);
-      pushBox(missionFieldQuads,  30, 3.5, -42, 11, 3.5, 8, 0x242018); addWall( 30, -42, 11, 8.5);
-      // Second choke (z=-78 to z=-92, width ±10)
-      pushBox(missionFieldQuads, -30, 3.5, -85, 11, 3.5, 8, 0x242018); addWall(-30, -85, 11, 8.5);
-      pushBox(missionFieldQuads,  30, 3.5, -85, 11, 3.5, 8, 0x242018); addWall( 30, -85, 11, 8.5);
+      // Extra patrols scaled by profIdx
+      for(let pi=0;pi<profIdx;pi++){const px=(rng()-.5)*48,pz=-26-rng()*66;const bat=rng()<.6;missionFieldPatrols.push({x:px,z:pz,startX:px,startZ:pz,dx:rng()<.5?1:0,dz:rng()<.5?0:1,t:rng()*Math.PI*2,range:12+rng()*12,tSpeed:bat?.036:.016,fur:bat?0x1a1018:0x8a7050,ears:'triangle',isHuman:false,spotted:false});}
 
-      // Stalagmite / stalactite column pairs — solid obstacles throughout caverns
-      [[-16,-20,2.8,0.7],[18,-26,3.2,0.6],[-10,-18,2.2,0.5],[20,-38,2.5,0.6],
-       [-22,-55,3.0,0.8],[12,-62,3.5,0.7],[-14,-68,2.2,0.6],[18,-75,2.8,0.5],
-       [-8,-82,2.5,0.7],[14,-90,3.0,0.6],[-20,-98,2.8,0.7],[6,-104,2.5,0.5]].forEach(([sx,sz,sh,sw]) => {
-        pushBox(missionFieldQuads, sx, sh, sz, sw, sh, sw, 0x282020);           // stalagmite (up)
-        pushBox(missionFieldQuads, sx, sh*2+5.5, sz, sw*0.8, sh*0.7, sw*0.8, 0x201818); // stalactite (hanging)
-        addWall(sx, sz, sw+0.4, sw+0.4);
-      });
-
-      // Scattered cave boulders — keep a 10-unit clear corridor at x=0
-      for (let ri=0; ri<16; ri++) {
-        let rx=(rng()-0.5)*70, rz=-12-rng()*95;
-        if (Math.abs(rx)<10) continue; // always clear the main passage
-        const rs=0.6+rng()*1.4;
-        pushBox(missionFieldQuads, rx, rs*0.55, rz, rs*1.3, rs*0.55, rs*1.1, ri%3?0x2a2018:0x201810);
-        addWall(rx, rz, rs*1.5, rs*1.3);
-      }
-
-      // Underground lake (z=-50 to z=-68 — visual water, walkable shallow pools)
-      for (let lx=-FIELD_W+4; lx<FIELD_W-4; lx+=2) {
-        for (let lz=-50; lz>-68; lz-=2) {
-          missionFieldQuads.push({ verts:[v3(lx,0.06,lz),v3(lx+2,0.06,lz),v3(lx+2,0.06,lz+2),v3(lx,0.06,lz+2)], color:(lx/2+lz/2&1)?0x0a1a30:0x0e2440, normal:v3(0,1,0), isGround:true });
-        }
-      }
-      // Lake accent ripple strips
-      [-52,-56,-60,-64].forEach(lz => {
-        missionFieldQuads.push({ verts:[v3(-28,0.08,lz),v3(28,0.08,lz),v3(28,0.08,lz+0.35),v3(-28,0.08,lz+0.35)], color:0x1a3860, normal:v3(0,1,0), isGround:true });
-      });
-
-      // Bioluminescent crystal clusters (blue-purple light sources)
-      [[-6,-38,0x2040c0],[14,-52,0x4020a0],[-22,-60,0x1030d0],[8,-75,0x3050b0],[-10,-88,0x5020c0],[4,-100,0x4040d0]].forEach(([cx,cz,col]) => {
-        for (let ci=0; ci<5; ci++) {
-          const a=(ci/5)*Math.PI*2, r=1.0+rng()*0.8;
-          const hh=0.6+rng()*1.4, hw=0.15+rng()*0.18;
-          pushBox(missionFieldQuads, cx+Math.cos(a)*r, hh, cz+Math.sin(a)*r, hw, hh, hw, (col + ci*0x001010)|0);
-        }
-        // Glow ring on floor
-        missionFieldQuads.push({ verts:[v3(cx-1.5,0.04,cz-1.5),v3(cx+1.5,0.04,cz-1.5),v3(cx+1.5,0.04,cz+1.5),v3(cx-1.5,0.04,cz+1.5)], color:(col>>1)&0x3f3f3f, normal:v3(0,1,0), isGround:true });
-      });
-
-      // Treasure chamber objective — ancient sarcophagus / artifact chest
-      pushBox(missionFieldQuads, 0, 0.65, -108, 2.2, 0.65, 3.5, 0x4a3a18);
-      pushBox(missionFieldQuads, 0, 1.38, -108, 2.0, 0.22, 3.2, 0xd0a820); // gold trim
-      pushBox(missionFieldQuads, 0, 2.0,  -108, 1.5, 0.8,  2.5, 0x3a2c10); // lid half-open
-      addWall(0, -108, 2.4, 3.7);
-      // Crystal glow around the chest
-      missionFieldQuads.push({ verts:[v3(-3,0.04,-111),v3(3,0.04,-111),v3(3,0.04,-105),v3(-3,0.04,-105)], color:0x201430, normal:v3(0,1,0), isGround:true });
-      missionFieldItems.push({ id:0, x:0, z:-108, type:'objective', label:m.objective, icon:'🔮', collected:false });
-
-      // Bat patrols — fast horizontal sweepers, small vision angle
-      for (let bi=0; bi<3+Math.ceil(profIdx/2); bi++) {
-        const bx=(rng()-0.5)*52, bz=-14-rng()*88;
-        const range=14+rng()*16;
-        missionFieldPatrols.push({ x:bx, z:bz, startX:bx, startZ:bz, dx:1, dz:0, t:rng()*Math.PI*2, range, tSpeed:0.038, fur:0x1a1018, ears:'triangle', patrolType:'bat', isHuman:false, spotted:false });
-      }
+      // ── Treasure vault (always z=-96 to -120) ────────────────────────
+      rock(-15,-96,9,3.5,.5);rock(15,-96,9,3.5,.5); // vault arch sides
+      // Guard wolf at vault entrance
+      missionFieldPatrols.push({x:0,z:-99,startX:0,startZ:-99,dx:1,dz:0,t:rng()*Math.PI*2,range:10,tSpeed:.014,fur:0x8a7050,ears:'triangle',isHuman:false,spotted:false});
+      crystal(-8,-104,0x2040c0);crystal(8,-104,0x5020c0);crystal(0,-112,0x4040d0);
+      pushBox(missionFieldQuads,0,.65,-108,2.2,.65,3.5,0x4a3a18);
+      pushBox(missionFieldQuads,0,1.38,-108,2,.22,3.2,0xd0a820);
+      pushBox(missionFieldQuads,0,2,-108,1.5,.8,2.5,0x3a2c10);
+      addWall(0,-108,2.4,3.7);
+      missionFieldQuads.push({verts:[v3(-3,.04,-111),v3(3,.04,-111),v3(3,.04,-105),v3(-3,.04,-105)],color:0x201430,normal:v3(0,1,0),isGround:true});
+      missionFieldItems.push({id:0,x:0,z:-108,type:'objective',label:m.objective,icon:'🔮',collected:false});
 
     } else if (mapType === 'nether_ruins') {
       // Ancient ruins in nether territory — crumbling labyrinth, lava cracks, wraith guardians
@@ -19763,6 +19765,14 @@
     }
     // E = trade interaction near other players
     if (keysJustPressed.has('KeyE') && inOnlineVillage) {
+      // Satellite dish (Unit-7) — exit to Warbark Village
+      const satDist = Math.hypot(ods.x - 12, ods.z - 12);
+      if (satDist < 4.5) {
+        keysJustPressed.delete('KeyE');
+        exitOnlineVillage();
+        return;
+      }
+      // Trade with nearby player
       for (const [uid, p] of Object.entries(ovPlayers)) {
         if (!p || !isFinite(p.x)) continue;
         const dist = Math.hypot(ods.x-p.x, ods.z-p.z);
@@ -19773,8 +19783,18 @@
     // Broadcast position
     ovBroadcastTimer--;
     if (ovBroadcastTimer <= 0) { ovBroadcastTimer = OV_BROADCAST; ovBroadcastNow(); }
-    // Proximity [E] hints for nearby players
+    // Proximity [E] hints
     const canvas = document.getElementById('c');
+    const W=canvas.width, H=canvas.height;
+    // Unit-7 satellite dish hint
+    const satDistHint = Math.hypot(ods.x - 12, ods.z - 12);
+    if (satDistHint < 4.5) {
+      ctx.save(); ctx.font='bold 13px Arial'; ctx.fillStyle='rgba(180,230,255,0.95)';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('[E] Back to Warbark Village? 🌐', W/2, H-150);
+      ctx.restore();
+    }
+    // Nearby player trade hint
     let nearPlayer = null, nearDist = Infinity;
     Object.entries(ovPlayers).forEach(([uid, p]) => {
       if (!p || !isFinite(p.x)) return;
@@ -19782,7 +19802,6 @@
       if (d < 4.0 && d < nearDist) { nearDist = d; nearPlayer = { uid, ...p }; }
     });
     if (nearPlayer) {
-      const W=canvas.width, H=canvas.height;
       ctx.save(); ctx.font='bold 13px Arial'; ctx.fillStyle='rgba(180,255,180,0.9)';
       ctx.textAlign='center'; ctx.textBaseline='middle';
       ctx.fillText('[E] Trade with ' + (nearPlayer.name||'???'), W/2, H-150);
