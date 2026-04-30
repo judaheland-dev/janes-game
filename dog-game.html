@@ -3425,6 +3425,59 @@
     });
   }
 
+  // ── Two-headed dog (shared body, two arguing heads) ───────────────────────
+  function buildTwoHeadDog(list, wx, wz, s, fur1, fur2, yaw, earType1, earType2, legAngle, wagAngle) {
+    const fl = 0.21, y = fl;
+    // Elongated shared body — front half uses fur1, back half fur2
+    pushBox(list, wx + sin(yaw)*s*0.22, y + s*0.54, wz + cos(yaw)*s*0.22, s*0.45, s*0.28, s*0.54, fur1, yaw);
+    pushBox(list, wx - sin(yaw)*s*0.22, y + s*0.54, wz - cos(yaw)*s*0.22, s*0.45, s*0.28, s*0.54, fur2, yaw);
+    // Head A (front, faces yaw)
+    const hxA = wx + sin(yaw)*s*0.88, hzA = wz + cos(yaw)*s*0.88;
+    pushBox(list, hxA, y + s*0.96, hzA, s*0.34, s*0.32, s*0.32, fur1, yaw);
+    pushBox(list, wx + sin(yaw)*s*1.30, y + s*0.85, wz + cos(yaw)*s*1.30, s*0.15, s*0.09, s*0.14, 0xd0c0a8, yaw);
+    const exA = cos(yaw)*s*0.30, ezA = -sin(yaw)*s*0.30;
+    if (earType1 === 'floppy') {
+      pushBox(list, hxA+exA, y+s*0.88, hzA+ezA, s*0.06, s*0.20, s*0.10, fur1, yaw);
+      pushBox(list, hxA-exA, y+s*0.88, hzA-ezA, s*0.06, s*0.20, s*0.10, fur1, yaw);
+    } else {
+      pushBox(list, hxA+exA, y+s*1.14, hzA+ezA, s*0.09, s*0.22, s*0.07, fur1, yaw);
+      pushBox(list, hxA-exA, y+s*1.14, hzA-ezA, s*0.09, s*0.22, s*0.07, fur1, yaw);
+    }
+    // Head B (back, faces opposite direction)
+    const yawB = yaw + Math.PI;
+    const hxB = wx - sin(yaw)*s*0.88, hzB = wz - cos(yaw)*s*0.88;
+    pushBox(list, hxB, y + s*0.96, hzB, s*0.34, s*0.32, s*0.32, fur2, yawB);
+    pushBox(list, wx - sin(yaw)*s*1.30, y + s*0.85, wz - cos(yaw)*s*1.30, s*0.15, s*0.09, s*0.14, 0xd0c0a8, yawB);
+    const exB = cos(yawB)*s*0.30, ezB = -sin(yawB)*s*0.30;
+    if (earType2 === 'floppy') {
+      pushBox(list, hxB+exB, y+s*0.88, hzB+ezB, s*0.06, s*0.20, s*0.10, fur2, yawB);
+      pushBox(list, hxB-exB, y+s*0.88, hzB-ezB, s*0.06, s*0.20, s*0.10, fur2, yawB);
+    } else {
+      pushBox(list, hxB+exB, y+s*1.14, hzB+ezB, s*0.09, s*0.22, s*0.07, fur2, yawB);
+      pushBox(list, hxB-exB, y+s*1.14, hzB-ezB, s*0.09, s*0.22, s*0.07, fur2, yawB);
+    }
+    // Shared tail stub off body centre (wags)
+    const tlx = wx - sin(yaw)*s*0.46, tlz = wz - cos(yaw)*s*0.46;
+    pushBox(list, tlx, y + s*0.84, tlz, s*0.08, s*0.08, s*0.20, fur2, yaw + wagAngle*0.5 + 0.4);
+    // 4 legs
+    const legData = [
+      [ s*0.28,  s*0.35,  legAngle],
+      [-s*0.28,  s*0.35, -legAngle],
+      [ s*0.28, -s*0.35, -legAngle],
+      [-s*0.28, -s*0.35,  legAngle],
+    ];
+    legData.forEach(([lat, lon, ang]) => {
+      const hipLocal = v3(lat, s*0.38, lon);
+      const hipWorld = add(rotY(hipLocal, yaw), v3(wx, y, wz));
+      const legOff   = rotY(rotX(v3(0, -s*0.21, 0), ang), yaw);
+      const legC     = add(hipWorld, legOff);
+      pushBox(list, legC.x, legC.y, legC.z, s*0.10, s*0.21, s*0.10, lon > 0 ? fur1 : fur2, yaw, ang);
+      const pawOff   = rotY(rotX(v3(0, -s*0.22, 0), ang), yaw);
+      const pawC     = add(hipWorld, pawOff);
+      pushBox(list, pawC.x, pawC.y - s*0.04, pawC.z, s*0.12, s*0.05, s*0.12, 0x2a1808, yaw, ang);
+    });
+  }
+
   // ── Ruff: NPC that matches his playable character (chocolate merle) ────────
   function buildRuffNpc(list, wx, wz, s, yaw, wagAngle, sleeping) {
     const darkChoc  = 0x2a1208;
@@ -3730,6 +3783,31 @@
         k.legAngle = sin(k.walkT) * 0.65;
         k.wagAngle = sin(k.walkT * 1.2) * (k.isIt ? 0.35 : 0.58);
       }
+      if (k.type === 'twohead') {
+        // Confused, slow wandering — changes direction every ~120 frames
+        k.wanderTimer = (k.wanderTimer || 0) - 1;
+        if (k.wanderTimer <= 0) {
+          k.wanderTimer = 100 + Math.floor(Math.abs(Math.sin(k.x * 7.3 + performance.now() * 0.00004)) * 80);
+          // pick a new yaw: quarter-turn + small noise, alternating left/right so it zigzags
+          k.wanderDir = (k.wanderDir || 1) * -1;
+          k.yaw += k.wanderDir * (Math.PI * 0.5 + Math.abs(Math.sin(performance.now() * 0.00003)) * Math.PI * 0.4);
+        }
+        const THSPEED = 0.022;
+        let nx = k.x + Math.sin(k.yaw) * THSPEED;
+        let nz = k.z + Math.cos(k.yaw) * THSPEED;
+        if (nx < TAG_X0 || nx > TAG_X1) { k.yaw += Math.PI; nx = k.x; }
+        if (nz < TAG_Z0 || nz > TAG_Z1) { k.yaw += Math.PI; nz = k.z; }
+        k.x = nx; k.z = nz;
+        k.walkT += 0.12;
+        k.legAngle = sin(k.walkT) * 0.45;
+        k.wagAngle = sin(k.walkT * 1.1) * 0.4;
+        k.argTimer = ((k.argTimer || 0) + 1);
+        if (k.argTimer >= 200) {
+          k.argTimer = 0;
+          k.argPhaseA = ((k.argPhaseA || 0) + 1) % 5;
+          k.argPhaseB = ((k.argPhaseB || 2) + 1) % 5;
+        }
+      }
     }
   }
 
@@ -3762,8 +3840,13 @@
   function buildVillageKidQuads() {
     villageKidQuads.length = 0;
     for (const k of villageKids) {
-      buildAnimKidDog(villageKidQuads, k.x, k.z, k.s, k.fur, k.yaw,
-        k.earType, k.legAngle || 0, k.wagAngle || 0, k.type === 'sleeper');
+      if (k.type === 'twohead') {
+        buildTwoHeadDog(villageKidQuads, k.x, k.z, k.s, k.fur1, k.fur2, k.yaw,
+          k.earType1, k.earType2, k.legAngle || 0, k.wagAngle || 0);
+      } else {
+        buildAnimKidDog(villageKidQuads, k.x, k.z, k.s, k.fur, k.yaw,
+          k.earType, k.legAngle || 0, k.wagAngle || 0, k.type === 'sleeper');
+      }
     }
   }
 
@@ -4232,9 +4315,10 @@
     villageKids.push({ type:'racer', lapT:0,    lapSpeed:0.022, x:11,  z:14,  yaw:0,  s:1.08, fur:0xd08050, earType:'floppy',   walkT:0, legAngle:0, wagAngle:0, text:"On your marks!"  });
     villageKids.push({ type:'racer', lapT:PI,   lapSpeed:0.025, x:-11, z:14,  yaw:PI, s:1.05, fur:0x607060, earType:'triangle', walkT:0, legAngle:0, wagAngle:0, text:"Beat you there!" });
     // Tag trio: chasing in the north green
-    villageKids.push({ type:'tag', isIt:true,  x:-8, z:30, yaw:0, s:1.12, fur:0xc87040, earType:'triangle', walkT:0, legAngle:0, wagAngle:0, tagCooldown:0 });
-    villageKids.push({ type:'tag', isIt:false, x: 5, z:34, yaw:0, s:1.08, fur:0x5868a0, earType:'floppy',   walkT:0, legAngle:0, wagAngle:0, tagCooldown:0 });
-    villageKids.push({ type:'tag', isIt:false, x:-2, z:27, yaw:0, s:1.14, fur:0x70a050, earType:'triangle', walkT:0, legAngle:0, wagAngle:0, tagCooldown:0 });
+    villageKids.push({ type:'twohead', x:-2, z:31, yaw:0, s:1.13,
+      fur1:0xc87040, fur2:0x5868a0, earType1:'triangle', earType2:'floppy',
+      walkT:0, legAngle:0, wagAngle:0, argTimer:0, argPhaseA:0, argPhaseB:2,
+      wanderTimer:80, wanderDir:1 });
     // Sleepers: snoozing in the east/west grass outside the racer oval
     villageKids.push({ type:'sleeper', x: 14, z:20, yaw: 1.2,  s:1.05, fur:0xe0b880, earType:'floppy',   wagAngle:0, wagT:0, text:'zzz...'  });
     villageKids.push({ type:'sleeper', x:-14, z:20, yaw:-0.5,  s:1.10, fur:0x709080, earType:'triangle', wagAngle:0, wagT:0, text:'mmph...' });
@@ -6773,7 +6857,73 @@
   function drawKidBubbles() {
     const W = canvas.width;
     const savedTA = ctx.textAlign, savedTB = ctx.textBaseline;
+    const TH_PHRASES_A = ['This way!',  'Go LEFT!',   'Follow me!', 'I know best!', 'Hurry up!'];
+    const TH_PHRASES_B = ['No, RIGHT!', 'That way!',  "I'm in charge!", 'Are you sure?', 'No, no, no!'];
+
+    function drawOneBubble(text, spX, spY, borderCol, textCol, alpha) {
+      const fSize = 11;
+      ctx.font = fSize + 'px Arial';
+      const tw = ctx.measureText(text).width;
+      const pad = 8, r = 6;
+      const bw = tw + pad*2, bh = fSize + pad*2;
+      const bx = Math.max(4, Math.min(W - bw - 4, spX - bw/2));
+      const by = spY - bh - 12;
+      if (by < -bh) return;
+      const tailX = Math.max(bx+r+4, Math.min(bx+bw-r-4, spX));
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = 'rgba(10,5,25,0.90)';
+      ctx.beginPath();
+      ctx.moveTo(bx+r, by); ctx.lineTo(bx+bw-r, by);
+      ctx.quadraticCurveTo(bx+bw, by, bx+bw, by+r);
+      ctx.lineTo(bx+bw, by+bh-r);
+      ctx.quadraticCurveTo(bx+bw, by+bh, bx+bw-r, by+bh);
+      ctx.lineTo(tailX+4, by+bh); ctx.lineTo(tailX, by+bh+8); ctx.lineTo(tailX-4, by+bh);
+      ctx.lineTo(bx+r, by+bh);
+      ctx.quadraticCurveTo(bx, by+bh, bx, by+bh-r);
+      ctx.lineTo(bx, by+r);
+      ctx.quadraticCurveTo(bx, by, bx+r, by);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = borderCol; ctx.lineWidth = 1; ctx.stroke();
+      ctx.fillStyle = textCol;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(text, bx+bw/2, by+bh/2);
+      ctx.globalAlpha = 1;
+      return { bx, by, bw, bh };
+    }
+
     for (const k of villageKids) {
+      const dist = Math.hypot(k.x - dogState.x, k.z - dogState.z);
+      if (dist > 10) continue;
+      const alpha = Math.max(0, Math.min(1, (10 - dist) / 3.5));
+
+      if (k.type === 'twohead') {
+        const headHt = 0.21 + k.s * 1.55;
+        // project each head separately
+        const spA = project(v3(k.x + Math.sin(k.yaw)*k.s*0.88, headHt, k.z + Math.cos(k.yaw)*k.s*0.88), cam);
+        const spB = project(v3(k.x - Math.sin(k.yaw)*k.s*0.88, headHt, k.z - Math.cos(k.yaw)*k.s*0.88), cam);
+        if (!spA || !spB) continue;
+        const txtA = TH_PHRASES_A[k.argPhaseA % TH_PHRASES_A.length];
+        const txtB = TH_PHRASES_B[k.argPhaseB % TH_PHRASES_B.length];
+        // Measure both bubbles to detect overlap
+        ctx.font = '11px Arial';
+        const bwA = ctx.measureText(txtA).width + 16;
+        const bwB = ctx.measureText(txtB).width + 16;
+        let axA = spA.x, axB = spB.x;
+        // If bubbles would horizontally overlap, push them apart
+        const gap = 6;
+        const overlapX = (bwA/2 + bwB/2 + gap) - Math.abs(axA - axB);
+        if (overlapX > 0) {
+          if (axA <= axB) { axA -= overlapX/2; axB += overlapX/2; }
+          else            { axA += overlapX/2; axB -= overlapX/2; }
+        }
+        // Bubble A: fur1 orange border
+        drawOneBubble(txtA, axA, spA.y, 'rgba(220,140,60,0.60)', '#f0c8a0', alpha);
+        // Bubble B: fur2 blue border — raised slightly so tails don't collide
+        drawOneBubble(txtB, axB, spB.y - (overlapX > 0 ? 22 : 0), 'rgba(80,130,220,0.55)', '#a8c8f0', alpha);
+        continue;
+      }
+
       const rawText = k.type === 'tag'
         ? (k.isIt ? "Tag! I'm IT!" : 'Run!!')
         : (k.text || '');
@@ -6781,9 +6931,6 @@
       const headY = k.type === 'sleeper' ? 0.21 + k.s*0.65 : 0.21 + k.s*1.55;
       const sp = project(v3(k.x, headY, k.z), cam);
       if (!sp) continue;
-      const dist = Math.hypot(k.x - dogState.x, k.z - dogState.z);
-      if (dist > 10) continue;
-      const alpha = Math.max(0, Math.min(1, (10 - dist) / 3.5));
       const fSize = 11;
       ctx.font = fSize + 'px Arial';
       const tw = ctx.measureText(rawText).width;
@@ -6796,14 +6943,11 @@
       ctx.globalAlpha = alpha;
       ctx.fillStyle = 'rgba(10,5,25,0.90)';
       ctx.beginPath();
-      ctx.moveTo(bx+r, by);
-      ctx.lineTo(bx+bw-r, by);
-      ctx.quadraticCurveTo(bx+bw, by,    bx+bw, by+r);
+      ctx.moveTo(bx+r, by); ctx.lineTo(bx+bw-r, by);
+      ctx.quadraticCurveTo(bx+bw, by, bx+bw, by+r);
       ctx.lineTo(bx+bw, by+bh-r);
       ctx.quadraticCurveTo(bx+bw, by+bh, bx+bw-r, by+bh);
-      ctx.lineTo(tailX+4, by+bh);
-      ctx.lineTo(tailX,   by+bh+8);
-      ctx.lineTo(tailX-4, by+bh);
+      ctx.lineTo(tailX+4, by+bh); ctx.lineTo(tailX, by+bh+8); ctx.lineTo(tailX-4, by+bh);
       ctx.lineTo(bx+r, by+bh);
       ctx.quadraticCurveTo(bx, by+bh, bx, by+bh-r);
       ctx.lineTo(bx, by+r);
@@ -6871,7 +7015,7 @@
     if (!inSciCenter)  eHint( 26,  2.4,   7.0,  3.8); // Science Center
                        eHint( 26,  2.4,  27.0,  3.8); // Bakery (decorative)
     // Satellite dish — Unit-7 interaction
-    if (allDogsInVillage()) eHint(10.5, 2.6, 5.0, 4.2);
+    if (isInVillage()) eHint(10.5, 2.6, 5.0, 4.2);
   }
 
   // 3D sign post labels — projected screen-space text shown near each direction sign
@@ -15775,9 +15919,7 @@
       const dpHints=['The keeper dog sweeps left then right — there\'s a gap on the right after each turn.','Kennel lights flicker near the west wall. Guards don\'t check that side often.','The supply cage hides a second captive. They know the door code.','Back kennel block is the last room — maximum guards, minimum cover. Be quick.'];
       for(let ki=0;ki<nK;ki++){
         const kZ=-24-ki*kStep, kM=kZ-kStep*.5, sd=rng()<.5?-1:1;
-        pwall(0,kZ,38,.4); // zone divider wall (full width, no gap needed — player passes through double door gap)
-        // Double door gap at centre (|x|<4 open, walls either side)
-        pwall(-sd*20,kZ,18,.4);pwall(sd*20,kZ,18,.4);
+        pwall(-21,kZ,17,.4);pwall(21,kZ,17,.4); // zone divider — gap at centre |x|<4
         const kv=Math.floor(rng()*4);
 
         if(kv===0){
@@ -15840,7 +15982,7 @@
       for(let pi=0;pi<profIdx-1;pi++){const px=(rng()-.5)*60,pz=-26-rng()*68;missionFieldPatrols.push({x:px,z:pz,startX:px,startZ:pz,dx:rng()<.5?1:0,dz:rng()<.5?0:1,t:rng()*Math.PI*2,range:8+rng()*8,tSpeed:.013+rng()*.004,fur:rng()<.4?0x4a3020:0x6080a0,ears:rng()<.4?'triangle':'floppy',isHuman:rng()>.4,spotted:false});}
 
       // ── Back block / objective (always z=-96 to -120) ─────────────────
-      pwall(0,-96,38,.4); // final divider
+      pwall(-21,-96,17,.4);pwall(21,-96,17,.4); // back block entry — gap at centre |x|<4
       [[-24,-104],[-24,-114],[0,-104],[0,-114],[24,-104],[24,-114]].forEach(([cx,cz])=>{
         pushBox(missionFieldQuads,cx,2,cz,8,2,4,pDark);addWall(cx,cz,8.2,4.2);
         pushBox(missionFieldQuads,cx,2,cz+4,8,2,.2,0x3a7858);
@@ -18855,6 +18997,7 @@
   const OV_SIZES       = [0.72, 1.0, 1.3];
   const OV_SIZE_LABELS = ['🐾 Tiny','🐕 Medium','🐘 Large'];
   const OV_EYE_LABELS  = ['● Round','◉ Big','〜 Almond'];
+  const OV_TAIL_LABELS = ['Stub','Short','Medium','Long','Fluffy'];
   const OV_EYE_COLORS  = [
     { name:'Brown',    hex:0x6b3a2a }, { name:'Amber',    hex:0xd4720a },
     { name:'Green',    hex:0x2e8b57 }, { name:'Blue',     hex:0x3a7abf },
@@ -18889,6 +19032,7 @@
   let ovcFurIdx = 0, ovcSpotPatIdx = 0, ovcSpotColIdx = 1;
   let ovcEarIdx = 0, ovcBodyIdx = 0, ovcSizeIdx = 1, ovcCollarIdx = 0;
   let ovcEyeIdx = 0, ovcEyeColIdx = 0;
+  let ovcTailIdx = 2; // 0=Stub,1=Short,2=Medium,3=Long,4=Fluffy
 
   // ── Persistence ─────────────────────────────────────────────────────────
   function ovLoadProfile() {
@@ -18955,58 +19099,72 @@
     const fill=(r1,c1,r2,c2,v)=>{ for(let r=Math.max(0,r1);r<=Math.min(GS-1,r2);r++) for(let c=Math.max(0,c1);c<=Math.min(GS-1,c2);c++) g[r][c]=v; };
     const set=(r,c,v)=>{ if(r>=0&&r<GS&&c>=0&&c<GS) g[r][c]=v; };
 
-    // Column offset for side/3/4 view — shift body right to simulate turn
-    const shift = angleIdx===1 ? 2 : angleIdx===2 ? 4 : 0;
-    const s=shift;
+    // Angles: 0=Front, 1=Side, 2=Back, 3=Other Side
+    // isFront: symmetric, both eyes/legs/ears visible
+    // isSide/isOtherSide: one eye/leg/ear; shift body to simulate profile
+    // isBack: no muzzle/nose/eyes
+    const isFront     = angleIdx===0;
+    const isBack      = angleIdx===2;
+    const isSide      = angleIdx===1;
+    const isOtherSide = angleIdx===3;
+    // Column shift — nudge body right for side views so silhouette reads as profile
+    const s = isSide ? 2 : isOtherSide ? 2 : 0;
 
-    // Fill structural regions (shifted for angled views)
+    // Fill structural regions
     fill(bt.bR1,bt.bC1+s,bt.bR2,bt.bC2+s,P.BDY);
     fill(bt.hR1,bt.hC1+s,bt.hR2,bt.hC2+s,P.HED);
-    fill(bt.tR1,bt.tC1+s,bt.tR2,bt.tC2+s,P.TAL);
+    // Tail shape
+    const tR1=bt.tR1, tC1=bt.tC1+s, tR2=bt.tR2, tC2=bt.tC2+s;
+    switch(ovcTailIdx) {
+      case 0: fill(tR2-2,tC1+1,tR2,tC2-1,P.TAL); break;                                     // Stub
+      case 1: fill(tR1+2,tC1,tR2,tC2,P.TAL); break;                                          // Short
+      case 3: fill(tR1-3,tC1,tR2,tC2,P.TAL); break;                                          // Long
+      case 4: fill(tR1,tC1-1,tR2,tC2,P.TAL); fill(tR1-2,tC1,tR1+2,tC2,P.TAL); break;       // Fluffy
+      default: fill(tR1,tC1,tR2,tC2,P.TAL);                                                   // Medium
+    }
+    // Front: both leg pairs; side/back/other: one pair only
     fill(bt.lR1,bt.lLL+s,bt.lR2,bt.lLR+s,P.LEG);
-    // For side view: only one pair of legs visible
-    if(angleIdx<2) fill(bt.lR1,bt.lRL+s,bt.lR2,bt.lRR+s,P.LEG);
+    if(isFront) fill(bt.lR1,bt.lRL+s,bt.lR2,bt.lRR+s,P.LEG);
     fill(bt.lR2,bt.lLL+s,bt.lR2,bt.lLR+s,P.PAW);
-    if(angleIdx<2) fill(bt.lR2,bt.lRL+s,bt.lR2,bt.lRR+s,P.PAW);
+    if(isFront) fill(bt.lR2,bt.lRL+s,bt.lR2,bt.lRR+s,P.PAW);
     // Collar
     fill(bt.hR2,bt.hC1-1+s,bt.hR2+1,bt.hC2+1+s,P.COL);
     // Muzzle & nose
     fill(bt.mR1,bt.mC1+s,bt.mR2,bt.mC2+s,P.MUZ);
     set(bt.nR,bt.nC+s,P.NOS); set(bt.nR,bt.nC+1+s,P.NOS);
 
-    // Back view: no muzzle/nose, no eyes, ears mirrored
-    const isBack = angleIdx===3;
+    // Back view: overwrite muzzle/nose with body color — no face
     if(isBack) {
-      fill(bt.mR1,bt.mC1+s,bt.mR2,bt.mC2+s,P.BDY); // overwrite muzzle
+      fill(bt.mR1,bt.mC1+s,bt.mR2,bt.mC2+s,P.BDY);
       set(bt.nR,bt.nC+s,P.BDY); set(bt.nR,bt.nC+1+s,P.BDY);
     }
 
-    // Eyes
+    // Eyes — front: both; side/other-side: one; back: none
     if(!isBack) {
       const eR=bt.eRow, eLC=bt.eLC+s, eRC=bt.eRC+s;
-      if(ovcEyeIdx===0) { set(eR,eLC,P.EYE); if(angleIdx<2) set(eR,eRC,P.EYE); }
-      else if(ovcEyeIdx===1) { fill(eR,eLC,eR+1,eLC+1,P.EYE); if(angleIdx<2) fill(eR,eRC,eR+1,eRC+1,P.EYE); }
+      if(ovcEyeIdx===0) { set(eR,eLC,P.EYE); if(isFront) set(eR,eRC,P.EYE); }
+      else if(ovcEyeIdx===1) { fill(eR,eLC,eR+1,eLC+1,P.EYE); if(isFront) fill(eR,eRC,eR+1,eRC+1,P.EYE); }
       else { // almond
         for(let dc=-1;dc<=1;dc++) set(eR,eLC+dc,P.EYE);
-        if(angleIdx<2) for(let dc=-1;dc<=1;dc++) set(eR,eRC+dc,P.EYE);
+        if(isFront) for(let dc=-1;dc<=1;dc++) set(eR,eRC+dc,P.EYE);
       }
     }
 
-    // Ears
+    // Ears — front: both; side/other-side: one; back: none
     const hR1=bt.hR1, hC1=bt.hC1+s, hC2=bt.hC2+s;
     switch(ovcEarIdx){
       case 0: fill(hR1-2,hC1,hR1-1,hC1+1,P.EAR); set(hR1-3,hC1,P.EAR);
-              if(!isBack&&angleIdx<2){fill(hR1-2,hC2-1,hR1-1,hC2,P.EAR);set(hR1-3,hC2,P.EAR);} break;
+              if(isFront){fill(hR1-2,hC2-1,hR1-1,hC2,P.EAR);set(hR1-3,hC2,P.EAR);} break;
       case 1: fill(hR1,hC1-2,hR1+5,hC1-1,P.EAR);
-              if(!isBack&&angleIdx<2) fill(hR1,hC2+1,hR1+5,hC2+2,P.EAR); break;
+              if(isFront) fill(hR1,hC2+1,hR1+5,hC2+2,P.EAR); break;
       case 2: fill(hR1-2,hC1,hR1-1,hC1+2,P.EAR);
-              if(!isBack&&angleIdx<2) fill(hR1-2,hC2-2,hR1-1,hC2,P.EAR); break;
+              if(isFront) fill(hR1-2,hC2-2,hR1-1,hC2,P.EAR); break;
       case 3: fill(hR1-1,hC1-1,hR1-1,hC1+2,P.EAR); set(hR1-2,hC1-2,P.EAR); set(hR1-2,hC1+3,P.EAR);
-              if(!isBack&&angleIdx<2){fill(hR1-1,hC2-2,hR1-1,hC2+1,P.EAR);set(hR1-2,hC2-3,P.EAR);set(hR1-2,hC2+2,P.EAR);} break;
+              if(isFront){fill(hR1-1,hC2-2,hR1-1,hC2+1,P.EAR);set(hR1-2,hC2-3,P.EAR);set(hR1-2,hC2+2,P.EAR);} break;
       case 4: fill(hR1-2,hC1,hR1-1,hC1+1,P.EAR); set(hR1-3,hC1,P.EAR); set(hR1-4,hC1,P.EAR);
-              if(!isBack&&angleIdx<2){fill(hR1-2,hC2-1,hR1-1,hC2,P.EAR);set(hR1-3,hC2,P.EAR);set(hR1-4,hC2,P.EAR);} break;
+              if(isFront){fill(hR1-2,hC2-1,hR1-1,hC2,P.EAR);set(hR1-3,hC2,P.EAR);set(hR1-4,hC2,P.EAR);} break;
       case 5: fill(hR1-1,hC1,hR1-1,hC1+1,P.EAR); set(hR1-2,hC1+1,P.EAR);
-              if(!isBack&&angleIdx<2){fill(hR1-1,hC2-1,hR1-1,hC2,P.EAR);set(hR1-2,hC2-1,P.EAR);} break;
+              if(isFront){fill(hR1-1,hC2-1,hR1-1,hC2,P.EAR);set(hR1-2,hC2-1,P.EAR);} break;
     }
     return g;
   }
@@ -19049,12 +19207,23 @@
       ctx2.strokeStyle='rgba(255,255,255,0.07)'; ctx2.lineWidth=0.5;
       ctx2.strokeRect(c*PS+0.25,r*PS+0.25,PS-0.5,PS-0.5);
     }
-    // Re-draw outline on top of painted cells (so the white border is always visible)
+    // Thin white outline around eyes and nose (they sit inside filled regions so the
+    // main edge-of-shape pass never reaches them — stroke each border with a non-matching neighbor)
+    const P=_PX;
+    ctx2.strokeStyle='rgba(255,255,255,0.80)';
+    ctx2.lineWidth=1.5;
     for(let r=0;r<GS;r++) for(let c=0;c<GS;c++) {
-      if(g[r][c]) continue;
-      if((r>0&&g[r-1][c])||(r<GS-1&&g[r+1][c])||(c>0&&g[r][c-1])||(c<GS-1&&g[r][c+1])){
-        // Already drawn above; skip (outline doesn't need re-draw)
-      }
+      const reg=g[r][c];
+      if(reg!==P.EYE&&reg!==P.NOS) continue;
+      const x=c*PS, y=r*PS;
+      ctx2.beginPath();
+      const top   =(r>0    ? g[r-1][c] : 0), bot=(r<GS-1 ? g[r+1][c] : 0);
+      const left  =(c>0    ? g[r][c-1] : 0), right=(c<GS-1 ? g[r][c+1] : 0);
+      if(top  !==reg){ctx2.moveTo(x,   y   );ctx2.lineTo(x+PS,y   );}
+      if(bot  !==reg){ctx2.moveTo(x,   y+PS);ctx2.lineTo(x+PS,y+PS);}
+      if(left !==reg){ctx2.moveTo(x,   y   );ctx2.lineTo(x,   y+PS);}
+      if(right!==reg){ctx2.moveTo(x+PS,y   );ctx2.lineTo(x+PS,y+PS);}
+      ctx2.stroke();
     }
   }
 
@@ -19119,6 +19288,7 @@
       ovcBodyIdx = onlineDogProfile.bodyIdx || 0;
       ovcEarIdx  = onlineDogProfile.earIdx  || 0;
       ovcEyeIdx  = onlineDogProfile.eyeIdx  || 0;
+      ovcTailIdx = onlineDogProfile.tailIdx !== undefined ? onlineDogProfile.tailIdx : 2;
       // Restore paint maps if saved
       if(onlineDogProfile.paintMaps) ovcPaintMaps=onlineDogProfile.paintMaps.map(m=>Object.assign({},m));
       document.getElementById('ov-dc-name').value=onlineDogProfile.name||'';
@@ -19146,6 +19316,7 @@
     buildBtns('ov-dc-body-btns',OV_BODY_LABELS,ovcBodyIdx,i=>{ovcBodyIdx=i;ovCreatorRefreshShape('body');});
     buildBtns('ov-dc-ear-btns', OV_EAR_LABELS, ovcEarIdx, i=>{ovcEarIdx =i;ovCreatorRefreshShape('ear');});
     buildBtns('ov-dc-eye-btns', OV_EYE_LABELS, ovcEyeIdx, i=>{ovcEyeIdx =i;ovCreatorRefreshShape('eye');});
+    buildBtns('ov-dc-tail-btns',OV_TAIL_LABELS,ovcTailIdx,i=>{ovcTailIdx=i;ovCreatorRefreshShape('tail');});
     // Build palette
     const pg=document.getElementById('ov-pal-grid');
     if(pg) {
@@ -19176,6 +19347,7 @@
     document.querySelectorAll('#ov-dc-body-btns .ov-opt-btn').forEach((b,i)=>b.classList.toggle('ov-selected',i===ovcBodyIdx));
     document.querySelectorAll('#ov-dc-ear-btns  .ov-opt-btn').forEach((b,i)=>b.classList.toggle('ov-selected',i===ovcEarIdx));
     document.querySelectorAll('#ov-dc-eye-btns  .ov-opt-btn').forEach((b,i)=>b.classList.toggle('ov-selected',i===ovcEyeIdx));
+    document.querySelectorAll('#ov-dc-tail-btns .ov-opt-btn').forEach((b,i)=>b.classList.toggle('ov-selected',i===ovcTailIdx));
     ovDrawCreatorCanvas();
   }
 
@@ -19200,11 +19372,7 @@
   function tryEnterOnlineVillage() {
     if (!isInVillage()) { toastMsg='You need to reach the village first!'; toastTimer=200; return; }
     ovLoadProfile();
-    if (!onlineDogProfile) {
-      ovOpenCreator();
-    } else {
-      ovConnectAndEnter();
-    }
+    ovOpenCreator();
   }
 
   function ovFinishCreator() {
@@ -19212,7 +19380,7 @@
     if (!nameVal) { document.getElementById('ov-dc-name').focus(); return; }
     onlineDogProfile = {
       name: nameVal,
-      bodyIdx: ovcBodyIdx, earIdx: ovcEarIdx, eyeIdx: ovcEyeIdx,
+      bodyIdx: ovcBodyIdx, earIdx: ovcEarIdx, eyeIdx: ovcEyeIdx, tailIdx: ovcTailIdx,
       paintMaps: ovcPaintMaps.map(m=>Object.assign({},m)),
       // legacy fields kept for 3D village rendering (derive dominant color from paint)
       furIdx: ovcFurIdx, sizeIdx: ovcSizeIdx || 1,
@@ -19976,6 +20144,10 @@
       <div class="ov-shape-group">
         <span class="ov-shape-label">Eyes:</span>
         <div id="ov-dc-eye-btns" style="display:flex;flex-wrap:wrap;gap:4px"></div>
+      </div>
+      <div class="ov-shape-group">
+        <span class="ov-shape-label">Tail:</span>
+        <div id="ov-dc-tail-btns" style="display:flex;flex-wrap:wrap;gap:4px"></div>
       </div>
     </div>
     <!-- Main: canvas + palette -->
