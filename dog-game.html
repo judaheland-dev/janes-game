@@ -15574,73 +15574,127 @@
       missionFieldItems.push({id:0,x:oSD*(MW-7),z:-110,type:'objective',label:m.objective,icon:'📄',collected:false});
 
     } else if (mapType === 'dog_neighborhood') {
-      // ── Dog Neighborhood: suburban streets, lawns, hedges ─────────────
+      // ── Procedural Dog Neighborhood ───────────────────────────────────
+      // 3–4 city blocks with houses, hedges, parked cars, street lamps, cross-streets.
 
-      // Grass lawns
-      for (let fx=-FIELD_W;fx<FIELD_W;fx+=3) for (let fz=-FIELD_D;fz<8;fz+=3) {
-        const e=((Math.floor(fx/3)+Math.floor(fz/3))&1);
-        missionFieldQuads.push({verts:[v3(fx,0.01,fz),v3(fx+3,0.01,fz),v3(fx+3,0.01,fz+3),v3(fx,0.01,fz+3)],color:e?0x2a4818:0x223a12,normal:v3(0,1,0),isGround:true});
-      }
-      // Main paved street (centre)
-      for (let gz=-FIELD_D;gz<8;gz+=2)
-        missionFieldQuads.push({verts:[v3(-4.5,0.02,gz),v3(4.5,0.02,gz),v3(4.5,0.02,gz+2),v3(-4.5,0.02,gz+2)],color:(gz/2&1)?0x707068:0x606058,normal:v3(0,1,0),isGround:true});
-      // Cross-streets
-      [-24,-52,-80].forEach(sz=>{
-        for (let ex=-FIELD_W;ex<FIELD_W;ex+=2)
-          missionFieldQuads.push({verts:[v3(ex,0.02,sz-1.5),v3(ex+2,0.02,sz-1.5),v3(ex+2,0.02,sz+1.5),v3(ex,0.02,sz+1.5)],color:(ex/2&1)?0x707068:0x606058,normal:v3(0,1,0),isGround:true});
-      });
-      // Houses
-      const dnHouses=[[-20,-14,7,5],[12,-14,7,5],[-20,-34,7,5],[12,-34,7,5],[-22,-55,8,5],[10,-55,8,5],[-20,-74,7,5],[12,-74,7,5],[-22,-94,8,5],[10,-94,8,5]];
-      const dnHouseCol=[0xd0b890,0xb8c0a8,0xc8a880,0xa8b8b0,0xd0c098];
-      dnHouses.forEach(([hx,hz,hw,hd],i)=>{
-        pushBox(missionFieldQuads,hx,2.2,hz,hw,2.2,hd,dnHouseCol[i%5]);
-        pushBox(missionFieldQuads,hx,4.5,hz,hw+0.8,0.7,hd+0.8,0x7a3820);
-        pushBox(missionFieldQuads,hx,1.2,hz+hd,0.8,1.2,0.15,0x2a1808);
-        addWall(hx,hz,hw+0.2,hd+0.2);
-        // Front garden dog house
-        pushBox(missionFieldQuads,hx+(rng()-0.5)*3,0.8,hz+hd+2.5,1.2,0.8,1.2,0x9a7040);
-        pushBox(missionFieldQuads,hx+(rng()-0.5)*3,1.7,hz+hd+2.5,1.4,0.5,1.4,0x7a4820);
-        // Shrub cover
-        const shrx=hx+(rng()-0.5)*(hw-1),shrz=hz-hd*0.3;
-        pushBox(missionFieldQuads,shrx,0.7,shrz,0.9,0.7,0.9,0x2a5018); addWall(shrx,shrz,1.1,1.1);
-      });
-      // Hedgerows (cover)
-      [[-8,-22,7],[-8,-42,7],[8,-22,7],[8,-42,7],[-8,-60,8],[8,-60,8],[-8,-80,7],[8,-80,7]].forEach(([hgx,hgz,hgl])=>{
-        pushBox(missionFieldQuads,hgx,0.8,hgz,0.7,0.8,hgl,0x1e4010); addWall(hgx,hgz,0.9,hgl);
-      });
-      // Parked cars (large cover)
-      [[-16,-28],[14,-28],[-16,-68],[14,-68],[-18,-90],[14,-90]].forEach(([cx,cz])=>{
-        pushBox(missionFieldQuads,cx,0.8,cz,3.0,0.8,6.5,0x304860+Math.floor(rng()*4)*0x100008); addWall(cx,cz,3.2,6.7);
-        pushBox(missionFieldQuads,cx,1.8,cz-1,2.6,1.0,4,0x283848);
-      });
-      // Street lamps
-      [-18,-36,-55,-74,-94].forEach(lpz=>{
-        [6.5,-6.5].forEach(lpx=>{
-          pushBox(missionFieldQuads,lpx,4.0,lpz,0.15,4.0,0.15,0x606060);
-          pushBox(missionFieldQuads,lpx,8.5,lpz,0.4,0.2,0.4,0xfff8c0);
-        });
-      });
-      // Objective: community hall at north end
-      pushBox(missionFieldQuads,0,3.5,-108,10,3.5,5,0xc8b890); addWall(0,-108,10.2,5.2);
-      pushBox(missionFieldQuads,0,7.3,-108,11,1.1,6,0x7a3820);
-      pushBox(missionFieldQuads,0,2.0,-103,1.5,2.0,0.2,0x2a1808);
-      // Flagpole
-      pushBox(missionFieldQuads,5,7.0,-103,0.18,7.0,0.18,0x606060);
-      pushBox(missionFieldQuads,5.1,12.5,-103,3.0,0.8,0.08,0xc03020);
-      missionFieldItems.push({id:0,x:0,z:-108,type:'objective',label:m.objective,icon:'🐾',collected:false});
-      // Hint NPCs
       const dnFurs=[0xd4a060,0x8a6040,0xb09070,0x706050,0xc0a880];
-      const dnHints=["I heard the watch captain does rounds near the middle cross-street.","The community hall is way up north — the captain guards the block past the hedge.","Someone left the side gate to the hall unlocked… or so I heard.","Watch out for the patrol around the parked cars — they're alert at night.","The watch captain loves a good stumper. Answer carefully!"];
-      for (let ni=0;ni<5;ni++) {
-        const nx=(rng()-0.5)*54,nz=-18-rng()*60;
-        missionFieldNpcs.push({x:nx,z:nz,label:'Neighbor 🐶',color:'#e8d090',fur:dnFurs[ni%5],ears:rng()<0.5?'floppy':'round',hint:dnHints[ni]});
-      }
-      // Patrols
-      [[0,-22,10,true],[-14,-42,12,false],[14,-42,12,false],[0,-62,13,true],[-16,-82,11,false],[14,-82,11,false]].forEach(([px,pz,range,horiz],pi)=>{
-        if (pi>profIdx+2) return;
-        missionFieldPatrols.push({x:px,z:pz,startX:px,startZ:pz,dx:horiz?1:0,dz:horiz?0:1,t:rng()*Math.PI*2,range,tSpeed:0.013,fur:dnFurs[pi%5],ears:rng()<0.5?'floppy':'triangle',isHuman:false,spotted:false});
-      });
+      const houseCol=[0xd0b890,0xb8c0a8,0xc8a880,0xa8b8b0,0xd0c098,0xc8b8a0,0xb8c8b0];
+      const dnHints=['The watch captain sweeps the far block — stay behind the hedges.','There\'s a gap in the hedge row at the east side. Use it.','Parked cars on the left block their line of sight completely.','The community hall guard faces north. Come from the side.','Neighbor gossip: the back alley between blocks is never watched.'];
 
+      // Grass lawn base
+      for(let fx=-FIELD_W;fx<FIELD_W;fx+=3)for(let fz=-FIELD_D;fz<8;fz+=3){
+        const e=((Math.floor(fx/3)+Math.floor(fz/3))&1);
+        missionFieldQuads.push({verts:[v3(fx,.01,fz),v3(fx+3,.01,fz),v3(fx+3,.01,fz+3),v3(fx,.01,fz+3)],color:e?0x2a4818:0x223a12,normal:v3(0,1,0),isGround:true});
+      }
+      // Centre street (x=−4.5..4.5, full depth)
+      for(let gz=-FIELD_D;gz<8;gz+=2)
+        missionFieldQuads.push({verts:[v3(-4.5,.02,gz),v3(4.5,.02,gz),v3(4.5,.02,gz+2),v3(-4.5,.02,gz+2)],color:(gz/2&1)?0x707068:0x606058,normal:v3(0,1,0),isGround:true});
+
+      // Street lamp helper
+      const lamp=(lx,lz)=>{pushBox(missionFieldQuads,lx,4,lz,.15,4,.15,0x606060);pushBox(missionFieldQuads,lx,8.5,lz,.4,.2,.4,0xfff8c0);};
+      // House helper (x,z = centre, hw/hd = half-extents)
+      const house=(hx,hz,hw,hd,ci)=>{
+        pushBox(missionFieldQuads,hx,2.2,hz,hw,2.2,hd,houseCol[ci%houseCol.length]);
+        pushBox(missionFieldQuads,hx,4.6,hz,hw+.8,.6,hd+.8,0x7a3820);
+        pushBox(missionFieldQuads,hx,1.2,hz+hd,.8,1.2,.15,0x2a1808);
+        addWall(hx,hz,hw+.2,hd+.2);
+        // Dog house in front yard
+        const dhox=(rng()-.5)*(hw-1);
+        pushBox(missionFieldQuads,hx+dhox,.8,hz+hd+2.5,1.2,.8,1.2,0x9a7040);
+        pushBox(missionFieldQuads,hx+dhox,1.7,hz+hd+2.5,1.4,.5,1.4,0x7a4820);
+      };
+      // Hedge helper
+      const hedge=(hx,hz,hl,horiz)=>{
+        const hw=horiz?hl:.7, hd=horiz?.7:hl;
+        pushBox(missionFieldQuads,hx,.8,hz,hw,.8,hd,0x1e4010);addWall(hx,hz,hw+.2,hd+.2);
+      };
+      // Parked car helper
+      const car=(cx,cz)=>{
+        pushBox(missionFieldQuads,cx,.8,cz,2.8,.8,6,0x304860+(Math.floor(rng()*5)*0x100010));addWall(cx,cz,3,6.2);
+        pushBox(missionFieldQuads,cx,1.8,cz-.8,2.4,.9,3.5,0x283848);
+      };
+
+      // 3–4 blocks stacked z=-8 → z=-112
+      const nB=3+Math.floor(rng()*2), bStep=104/nB;
+      let houseIdx=0;
+      for(let bi=0;bi<nB;bi++){
+        const bZ=-8-bi*bStep, bM=bZ-bStep*.5;
+        const bv=Math.floor(rng()*4), sd=rng()<.5?-1:1;
+
+        // Cross-street at block boundary
+        for(let ex=-FIELD_W;ex<FIELD_W;ex+=2)
+          missionFieldQuads.push({verts:[v3(ex,.02,bZ-1.8),v3(ex+2,.02,bZ-1.8),v3(ex+2,.02,bZ+1.8),v3(ex,.02,bZ+1.8)],color:(ex/2&1)?0x707068:0x606058,normal:v3(0,1,0),isGround:true});
+        // Street lamps at block corners
+        lamp(5.5,bZ);lamp(-5.5,bZ);
+
+        if(bv===0){
+          // Layout A: houses flanking both sides + hedgerow cover
+          const hHW=7+Math.floor(rng()*2), hHD=4+Math.floor(rng()*2);
+          const hOffX=sd*(FIELD_W*.5+hHW*.3+rng()*3);
+          house(hOffX,bM-6,hHW,hHD,houseIdx++);
+          house(-hOffX+sd*2,bM+6,hHW-1,hHD,houseIdx++);
+          // Hedgerows between houses and street
+          hedge(sd*6,bM,bStep*.3,false);
+          hedge(-sd*6,bM-4,bStep*.25,false);
+          // Parked car
+          car(sd*(FIELD_W*.35),bM+4);
+          // Neighbor NPC
+          if(missionFieldNpcs.length<5)missionFieldNpcs.push({x:hOffX,z:bM+2,label:'Neighbor 🐶',color:'#e8d090',fur:dnFurs[bi%5],ears:rng()<.5?'floppy':'round',hint:dnHints[bi%5]});
+          missionFieldPatrols.push({x:sd*10,z:bM,startX:sd*10,startZ:bM,dx:0,dz:1,t:rng()*Math.PI*2,range:bStep*.4,tSpeed:.013,fur:dnFurs[bi%5],ears:'floppy',isHuman:false,spotted:false});
+
+        }else if(bv===1){
+          // Layout B: dense block — 3 small houses + alley hedge down the middle
+          const hx1=sd*(FIELD_W*.55), hx2=-sd*(FIELD_W*.45), hx3=sd*(FIELD_W*.2+4);
+          [[hx1,bM-8,6,4],[hx2,bM+5,5,4],[hx3,bM,7,5]].forEach(([hx,hz,hw,hd])=>house(hx,hz,hw,hd,houseIdx++));
+          hedge(sd*7,bM,bStep*.35,false);
+          hedge(-sd*8,bM-5,bStep*.2,false);
+          // Cars on both sides of alley
+          car(sd*14,bM-8);car(-sd*12,bM+6);
+          // Two patrols
+          missionFieldPatrols.push({x:0,z:bM,startX:0,startZ:bM,dx:1,dz:0,t:rng()*Math.PI*2,range:FIELD_W*.5,tSpeed:.014,fur:dnFurs[bi%5],ears:'triangle',isHuman:false,spotted:false});
+          missionFieldPatrols.push({x:sd*12,z:bM+4,startX:sd*12,startZ:bM+4,dx:0,dz:1,t:rng()*Math.PI*2,range:bStep*.38,tSpeed:.012,fur:dnFurs[(bi+1)%5],ears:'floppy',isHuman:false,spotted:false});
+
+        }else if(bv===2){
+          // Layout C: park block — open space, trees, benches, hedge border
+          for(let ti=0;ti<10;ti++){const tx=(rng()-.5)*68;if(Math.abs(tx)<5)continue;addTree(tx,bZ-2-rng()*bStep*.85,.4+rng()*.4,missionFieldQuads);}
+          // Benches
+          for(let bni=0;bni<4;bni++){const bx=(rng()-.5)*52;if(Math.abs(bx)<5)continue;const bz=bZ-4-rng()*(bStep-6);pushBox(missionFieldQuads,bx,.5,bz,1.8,.5,.6,0x7a5830);addWall(bx,bz,2,.8);}
+          // Border hedges on E+W
+          hedge(sd*(FIELD_W-3),bM,bStep*.4,false);hedge(-sd*(FIELD_W-3),bM,bStep*.4,false);
+          if(missionFieldNpcs.length<5)missionFieldNpcs.push({x:sd*15,z:bM,label:'Dog Walker 🐕',color:'#d4c080',fur:dnFurs[bi%5],ears:'floppy',hint:dnHints[(bi+1)%5]});
+          missionFieldPatrols.push({x:0,z:bM,startX:0,startZ:bM,dx:1,dz:0,t:rng()*Math.PI*2,range:FIELD_W*.6,tSpeed:.015,fur:dnFurs[bi%5],ears:'round',isHuman:false,spotted:false});
+
+        }else{
+          // Layout D: corner shop block — large store on one side, cars + bins on the other
+          const sW=9+Math.floor(rng()*3),sD=bStep*.38;
+          pushBox(missionFieldQuads,sd*(FIELD_W-sW*.5),2.5,bM,sW,2.5,sD,houseCol[houseIdx%houseCol.length]);addWall(sd*(FIELD_W-sW*.5),bM,sW+.2,sD+.2);
+          pushBox(missionFieldQuads,sd*(FIELD_W-sW*.5),5.2,bM,sW+1,.5,sD+1,0x5a3818);
+          // Sign
+          pushBox(missionFieldQuads,sd*(FIELD_W-sW*.5),3.5,bM-sD+.1,sW*.7,.8,.1,0xd0a020);
+          houseIdx++;
+          // Bins and boxes along kerb opposite
+          for(let ci=0;ci<5;ci++){const bx=-sd*(5+rng()*18),bz=bZ-4-rng()*(bStep-6);pushBox(missionFieldQuads,bx,.6,bz,.6,.6,.6,0x405848);addWall(bx,bz,.8,.8);}
+          car(-sd*(FIELD_W*.4),bM+6);car(-sd*(FIELD_W*.25),bM-5);
+          missionFieldPatrols.push({x:-sd*12,z:bM,startX:-sd*12,startZ:bM,dx:1,dz:0,t:rng()*Math.PI*2,range:FIELD_W*.5,tSpeed:.013,fur:dnFurs[bi%5],ears:'floppy',isHuman:false,spotted:false});
+          missionFieldPatrols.push({x:sd*(FIELD_W-sW),z:bM+4,startX:sd*(FIELD_W-sW),startZ:bM+4,dx:0,dz:1,t:rng()*Math.PI*2,range:bStep*.3,tSpeed:.014,fur:dnFurs[(bi+2)%5],ears:'triangle',isHuman:false,spotted:false});
+        }
+      }
+
+      // Extra patrols by professor rank
+      for(let pi=0;pi<profIdx-1;pi++){const px=(rng()-.5)*70,pz=-14-rng()*88;missionFieldPatrols.push({x:px,z:pz,startX:px,startZ:pz,dx:rng()<.5?1:0,dz:rng()<.5?0:1,t:rng()*Math.PI*2,range:8+rng()*10,tSpeed:.012+rng()*.004,fur:dnFurs[pi%5],ears:rng()<.5?'floppy':'triangle',isHuman:false,spotted:false});}
+
+      // Ensure at least 3 neighbor NPCs
+      while(missionFieldNpcs.length<3){const ni=missionFieldNpcs.length;missionFieldNpcs.push({x:(rng()-.5)*60,z:-14-rng()*70,label:'Neighbor 🐶',color:'#e8d090',fur:dnFurs[ni%5],ears:rng()<.5?'floppy':'round',hint:dnHints[ni%5]});}
+
+      // Objective: community hall at north end (always)
+      pushBox(missionFieldQuads,0,3.5,-108,10,3.5,5,0xc8b890);addWall(0,-108,10.2,5.2);
+      pushBox(missionFieldQuads,0,7.3,-108,11,1.1,6,0x7a3820);
+      pushBox(missionFieldQuads,0,2,-103,1.5,2,.2,0x2a1808);
+      pushBox(missionFieldQuads,5,7,-103,.18,7,.18,0x606060);
+      pushBox(missionFieldQuads,5.1,12.5,-103,3,.8,.08,0xc03020);
+      missionFieldItems.push({id:0,x:0,z:-108,type:'objective',label:m.objective,icon:'🐾',collected:false});
+
+    } else if (mapType === 'dog_pound') {
     } else if (mapType === 'dog_pound') {
       // ── Dog Pound: concrete facility, kennels, guard room ─────────────
 
