@@ -13133,12 +13133,13 @@
       shopOverlayOpen = true;
       document.getElementById('shop-overlay').classList.remove('hidden');
     } else if (type === 'customize') {
-      document.getElementById('factory-menu-text').textContent =
-        'Customization is only available in the online village!';
-      setTimeout(() => {
-        document.getElementById('factory-menu-text').textContent =
-          'Welcome to the Pouch Factory! What can I do for you?';
-      }, 2400);
+      // Ensure a profile exists so swatches can save
+      if (!onlineDogProfile) {
+        onlineDogProfile = { name:'My Dog', furIdx:0, earIdx:0, bodyIdx:0, sizeIdx:1, spotPatIdx:0, spotColIdx:0, collarIdx:0 };
+        ovSaveProfile();
+      }
+      hideFactoryMenu();
+      ovOpenCustom();
     } else {
       hideFactoryMenu();
       exitFactory();
