@@ -15850,122 +15850,85 @@
       missionFieldItems.push({id:0,x:0,z:-115,type:'objective',label:m.objective,icon:'🔓',collected:false});
 
     } else if (mapType === 'city') {
-      // ── Big City: skyscraper blocks, grid streets, alleys, covers ─────
-      // Main street x=-5..5, west district x=-22..-6, east district x=6..22
-      // Cross-streets at z=-30, -62, -92. Three tower zones + objective at z=-108.
+      // ── Procedural City ───────────────────────────────────────────────
+      // Centre street + 3–4 district blocks. Cross-streets at zone seams.
+      // Objective building always at north end (z=-94 to -120).
 
-      // Outer collision boundary
-      addWall(0,-120,22,0.5); addWall(-22,-57,0.5,63); addWall(22,-57,0.5,63);
+      const bwall=(cx,cz,hw,hh,hd,col)=>{pushBox(missionFieldQuads,cx,hh,cz,hw,hh,hd,col);addWall(cx,cz,hw+.2,hd+.2);};
+      const lamp=(lx,lz)=>{pushBox(missionFieldQuads,lx,5.5,lz,.12,5.5,.12,0x484840);pushBox(missionFieldQuads,lx,11.1,lz,.4,.15,.4,0xfff8e0);};
+      const car=(cx,cz)=>{pushBox(missionFieldQuads,cx,.85,cz,3,.85,5.5,0x304870+Math.floor(rng()*6)*0x100008);addWall(cx,cz,3.2,5.7);pushBox(missionFieldQuads,cx,1.8,cz-.5,2.4,.95,3,0x283848);};
 
-      const bwall=(cx,cz,hw,hh,hd,col)=>{pushBox(missionFieldQuads,cx,hh,cz,hw,hh,hd,col);addWall(cx,cz,hw+0.2,hd+0.2);};
+      // Outer boundary
+      addWall(0,-120,22,.5);addWall(-22,-57,.5,63);addWall(22,-57,.5,63);
 
-      // Main street overlay (slightly lighter than floor tiles already placed)
-      for (let sz=-120;sz<8;sz+=2)
-        missionFieldQuads.push({verts:[v3(-5,0.02,sz),v3(5,0.02,sz),v3(5,0.02,sz+2),v3(-5,0.02,sz+2)],color:0x545460,normal:v3(0,1,0),isGround:true});
-      // Centre dashes
-      for (let dz=-120;dz<8;dz+=4)
-        missionFieldQuads.push({verts:[v3(-0.18,0.03,dz),v3(0.18,0.03,dz),v3(0.18,0.03,dz+2),v3(-0.18,0.03,dz+2)],color:0xd0c840,normal:v3(0,1,0),isGround:true});
-      // Cross streets + zebra crossings
-      [-30,-62,-92].forEach(sz=>{
-        for (let cx2=-22;cx2<22;cx2+=2)
-          missionFieldQuads.push({verts:[v3(cx2,0.025,sz-3),v3(cx2+2,0.025,sz-3),v3(cx2+2,0.025,sz+3),v3(cx2,0.025,sz+3)],color:0x4e4e58,normal:v3(0,1,0),isGround:true});
-        for (let s=0;s<4;s++)
-          missionFieldQuads.push({verts:[v3(-5+s*2.5,0.03,sz-3),v3(-5+s*2.5+1.5,0.03,sz-3),v3(-5+s*2.5+1.5,0.03,sz+3),v3(-5+s*2.5,0.03,sz+3)],color:0xc8c8c0,normal:v3(0,1,0),isGround:true});
-      });
+      // Main street + centre dashes (always)
+      for(let sz=-120;sz<8;sz+=2)missionFieldQuads.push({verts:[v3(-5,.02,sz),v3(5,.02,sz),v3(5,.02,sz+2),v3(-5,.02,sz+2)],color:0x545460,normal:v3(0,1,0),isGround:true});
+      for(let dz=-120;dz<8;dz+=4)missionFieldQuads.push({verts:[v3(-.18,.03,dz),v3(.18,.03,dz),v3(.18,.03,dz+2),v3(-.18,.03,dz+2)],color:0xd0c840,normal:v3(0,1,0),isGround:true});
 
-      // Zone 1: Commercial towers (z=4 to -28)
-      bwall(-14,-11,6,5,16,0x606878); bwall(14,-11,6,5,16,0x5c7080);
-      // Windows on east/west tower faces
-      for (let wy=1;wy<9;wy+=2) for (let wz=-4;wz>=-22;wz-=3) {
-        pushBox(missionFieldQuads,-7.9,wy,wz,0.05,0.5,0.9,0x80c0e0);
-        pushBox(missionFieldQuads, 7.9,wy,wz,0.05,0.5,0.9,0x80c0e0);
+      // ── 3–4 district blocks ──────────────────────────────────────────
+      const nZ=3+Math.floor(rng()*2), zStep=84/nZ;
+      const cityHints=['The guard at the central crossing doesn\'t look left — slip past on his blind side.','Market stalls near the fountain give cover. Wait for the patrol to pass.','The loading dock on the west alley is unguarded. Crates give cover to the back.','Top-floor lights stay on in that tower — security cams. Move between the windows.'];
+
+      for(let zi=0;zi<nZ;zi++){
+        const zS=-10-zi*zStep, zM=zS-zStep*.5, sd=rng()<.5?-1:1;
+        const zv=Math.floor(rng()*4);
+
+        // Cross-street + zebra crossing at each zone seam
+        const csz=zS-(zi===0?0:1);
+        for(let cx2=-22;cx2<22;cx2+=2)missionFieldQuads.push({verts:[v3(cx2,.025,csz-3),v3(cx2+2,.025,csz-3),v3(cx2+2,.025,csz+3),v3(cx2,.025,csz+3)],color:0x4e4e58,normal:v3(0,1,0),isGround:true});
+        for(let s=0;s<4;s++)missionFieldQuads.push({verts:[v3(-5+s*2.5,.03,csz-3),v3(-5+s*2.5+1.5,.03,csz-3),v3(-5+s*2.5+1.5,.03,csz+3),v3(-5+s*2.5,.03,csz+3)],color:0xc8c8c0,normal:v3(0,1,0),isGround:true});
+        car(sd<0?-15:15,csz);car(sd<0?13:-13,csz+2);
+        lamp(-6.5,csz);lamp(6.5,csz);
+
+        if(zv===0){
+          // Layout A: Commercial — towers flanking, storefronts for cover
+          const tc=0x585870+Math.floor(rng()*4)*0x000808;
+          bwall(-14,zM,6,5,zStep*.7,tc);bwall(14,zM,6,5,zStep*.7,tc+0x080808);
+          for(let wy=1;wy<9;wy+=2)for(let wz=zS-3;wz>zS-zStep+4;wz-=3){pushBox(missionFieldQuads,-7.9,wy,wz,.05,.5,.9,0x80c0e0);pushBox(missionFieldQuads,7.9,wy,wz,.05,.5,.9,0x80c0e0);}
+          [zS-8,zM].forEach(sz2=>{pushBox(missionFieldQuads,-9.5,1,sz2,.15,1,1.5,0x808888);addWall(-9.5,sz2,.35,1.7);pushBox(missionFieldQuads,-9.5,2.25,sz2+sd*.6,1,.08,1.2,0xc08040);pushBox(missionFieldQuads,9.5,1,sz2,.15,1,1.5,0x808888);addWall(9.5,sz2,.35,1.7);});
+          missionFieldPatrols.push({x:0,z:zM,startX:0,startZ:zM,dx:1,dz:0,t:rng()*Math.PI*2,range:11,tSpeed:.013,fur:0x6080a0,ears:'floppy',isHuman:true,spotted:false});
+          if(missionFieldNpcs.length<1)missionFieldNpcs.push({x:sd*10,z:zS-6,label:'Informant 🐕',color:'#d0c8a0',fur:0xa09080,ears:'floppy',hint:cityHints[0]});
+
+        }else if(zv===1){
+          // Layout B: Plaza — fountain + benches, market stalls, two patrols
+          [[-2.5,zM],[2.5,zM],[-2.5,zM+2],[2.5,zM+2]].forEach(([bx,bz])=>pushBox(missionFieldQuads,bx,.5,bz,1.6,.12,.5,0x907860));
+          pushBox(missionFieldQuads,0,.9,zM,1.4,.9,1.4,0x708090);pushBox(missionFieldQuads,0,2,zM,.7,.4,.7,0x8098b0);
+          [sd*-14,sd*14].forEach(mx=>{pushBox(missionFieldQuads,mx,1.2,zM,2.4,1.2,1.4,0x907050);addWall(mx,zM,2.6,1.6);pushBox(missionFieldQuads,mx,2.55,zM,3,.1,2,0xd09060);});
+          bwall(sd>0?-18:18,zM,4,4,zStep*.55,0x505068);bwall(sd>0?18:-18,zM,4,4,zStep*.55,0x505068);
+          missionFieldPatrols.push({x:0,z:zM,startX:0,startZ:zM,dx:1,dz:0,t:rng()*Math.PI*2,range:13,tSpeed:.012,fur:0x6080a0,ears:'floppy',isHuman:true,spotted:false});
+          missionFieldPatrols.push({x:sd*12,z:zM,startX:sd*12,startZ:zM,dx:0,dz:1,t:rng()*Math.PI*2,range:zStep*.38,tSpeed:.016,fur:0x302020,ears:'triangle',isHuman:false,spotted:false});
+          if(missionFieldNpcs.length<1)missionFieldNpcs.push({x:-sd*10,z:zM-3,label:'Informant 🐕',color:'#d0c8a0',fur:0xa09080,ears:'floppy',hint:cityHints[1]});
+
+        }else if(zv===2){
+          // Layout C: Industrial — dumpsters + crates in alleys, guard dog patrol
+          bwall(sd>0?-17:17,zM,5,5,zStep*.65,0x485058);bwall(sd>0?17:-17,zM,5,5,zStep*.65,0x505860);
+          for(let di=0;di<4;di++){const dz=zS-5-di*(zStep*.7/4);const ax=sd>0?-7.5:7.5;pushBox(missionFieldQuads,ax,.9,dz,1.2,.9,2.2,0x303840);addWall(ax,dz,1.4,2.4);pushBox(missionFieldQuads,-ax,.9,dz-2,1.4,.9,1.4,0x5a4820);addWall(-ax,dz-2,1.6,1.6);}
+          missionFieldPatrols.push({x:sd*14,z:zM,startX:sd*14,startZ:zM,dx:0,dz:1,t:rng()*Math.PI*2,range:zStep*.4,tSpeed:.016,fur:0x302020,ears:'triangle',isHuman:false,spotted:false});
+          missionFieldPatrols.push({x:0,z:zM,startX:0,startZ:zM,dx:1,dz:0,t:rng()*Math.PI*2,range:14,tSpeed:.013,fur:0x6080a0,ears:'floppy',isHuman:true,spotted:false});
+          if(missionFieldNpcs.length<1)missionFieldNpcs.push({x:sd*9,z:zM+3,label:'Informant 🐕',color:'#d0c8a0',fur:0xa09080,ears:'floppy',hint:cityHints[2]});
+
+        }else{
+          // Layout D: Business district — tall towers, fire escape, traffic light
+          const tc2=0x5a6070+Math.floor(rng()*4)*0x000808;
+          bwall(-14,zM,7,6.5,zStep*.72,tc2);bwall(14,zM,7,6.5,zStep*.72,tc2+0x080808);
+          for(let wy=1;wy<12;wy+=2)for(let wz=zS-3;wz>zS-zStep+4;wz-=3){pushBox(missionFieldQuads,-6.9,wy,wz,.05,.55,.9,0x70b8d8);pushBox(missionFieldQuads,6.9,wy,wz,.05,.55,.9,0x70b8d8);}
+          for(let fe=0;fe<4;fe++)pushBox(missionFieldQuads,-7.9,fe*2.5+1.2,zS-6+fe*2.5,.18,.08,1.8,0x505058);
+          pushBox(missionFieldQuads,5.8,5.5,zS,.12,5.5,.12,0x404040);pushBox(missionFieldQuads,5.8,11.1,zS,.45,.45,.45,0x282828);pushBox(missionFieldQuads,5.8,11.5,zS,.28,.18,.28,0xe04020);
+          missionFieldPatrols.push({x:0,z:zM,startX:0,startZ:zM,dx:1,dz:0,t:rng()*Math.PI*2,range:15,tSpeed:.012,fur:0x6080a0,ears:'floppy',isHuman:true,spotted:false});
+          if(profIdx>=1)missionFieldPatrols.push({x:sd*16,z:zM,startX:sd*16,startZ:zM,dx:0,dz:1,t:rng()*Math.PI*2,range:zStep*.36,tSpeed:.016,fur:0x281818,ears:'triangle',isHuman:false,spotted:false});
+        }
       }
-      // Storefronts (cover behind shop awnings)
-      [[-9.5,-8,-1.5],[-9.5,-20,-1.5],[9.5,-8,1.5],[9.5,-20,1.5]].forEach(([sx,sz2,sw])=>{
-        pushBox(missionFieldQuads,sx,1.0,sz2,0.15,1.0,1.5,0x808888); addWall(sx,sz2,0.35,1.7);
-        pushBox(missionFieldQuads,sx,2.25,sz2+sw*0.4,1.0,0.08,1.2,0xc08040);
-      });
-      // Street lights
-      [0,-14].forEach(lz2=>{
-        [-6.5,6.5].forEach(lx2=>{pushBox(missionFieldQuads,lx2,5.5,lz2,0.12,5.5,0.12,0x484840);pushBox(missionFieldQuads,lx2,11.1,lz2,0.4,0.15,0.4,0xfff8e0);});
-      });
-      // Parked cars at cross-street 1
-      [[-16,-31],[14,-31],[-17,-29],[15,-29]].forEach(([cx3,cz3])=>{
-        pushBox(missionFieldQuads,cx3,0.85,cz3,3,0.85,5.5,0x304870+Math.floor(rng()*6)*0x100008); addWall(cx3,cz3,3.2,5.7);
-        pushBox(missionFieldQuads,cx3,1.8,cz3-0.5,2.4,0.95,3,0x283848);
-      });
-      // Traffic light
-      pushBox(missionFieldQuads,5.8,5.5,-30,0.12,5.5,0.12,0x404040);
-      pushBox(missionFieldQuads,5.8,11.1,-30,0.45,0.45,0.45,0x282828);
-      pushBox(missionFieldQuads,5.8,11.5,-30,0.28,0.18,0.28,0xe04020);
 
-      // Zone 2: Business towers (z=-34 to -60)
-      bwall(-14,-47,6,6.5,20,0x585870); bwall(14,-47,6,6.5,20,0x506878);
-      for (let wy=1;wy<12;wy+=2) for (let wz=-36;wz>=-56;wz-=3) {
-        pushBox(missionFieldQuads,-7.9,wy,wz,0.05,0.55,0.9,0x70b8d8);
-        pushBox(missionFieldQuads, 7.9,wy,wz,0.05,0.55,0.9,0x70b8d8);
-      }
-      // Alley dumpsters (cover)
-      [[-7.5,-40],[-7.5,-52],[7.5,-40],[7.5,-52]].forEach(([dx,dz4])=>{
-        pushBox(missionFieldQuads,dx,0.9,dz4,1.2,0.9,2.2,0x303840); addWall(dx,dz4,1.4,2.4);
-      });
-      // Fire escape railings (decorative cover on building face)
-      for (let fes=0;fes<4;fes++) pushBox(missionFieldQuads,-7.9,fes*2.5+1.2,-56+fes*2.5,0.18,0.08,1.8,0x505058);
-      // Plaza at cross-street 2 — benches + fountain
-      [[-2.5,-62],[2.5,-62],[-2.5,-60],[2.5,-60]].forEach(([bx2,bz2])=>{pushBox(missionFieldQuads,bx2,0.5,bz2,1.6,0.12,0.5,0x907860);});
-      pushBox(missionFieldQuads,0,0.9,-61,1.4,0.9,1.4,0x708090); pushBox(missionFieldQuads,0,2.0,-61,0.7,0.4,0.7,0x8098b0);
-      // Parked cars at cross-street 2
-      [[-16,-63],[15,-63],[-17,-61],[15,-61]].forEach(([cx4,cz4])=>{
-        pushBox(missionFieldQuads,cx4,0.85,cz4,3,0.85,5,0x484060+Math.floor(rng()*4)*0x100010); addWall(cx4,cz4,3.2,5.2);
-        pushBox(missionFieldQuads,cx4,1.75,cz4-0.4,2.4,0.9,2.8,0x383050);
-      });
-      [-6.5,6.5].forEach(lx5=>{pushBox(missionFieldQuads,lx5,5.5,-47,0.12,5.5,0.12,0x484840);pushBox(missionFieldQuads,lx5,11.1,-47,0.4,0.15,0.4,0xfff8e0);});
+      // Extra patrols by rank
+      for(let pi=0;pi<profIdx-1;pi++){const px=(rng()-.5)*36,pz=-20-rng()*74;missionFieldPatrols.push({x:px,z:pz,startX:px,startZ:pz,dx:rng()<.5?1:0,dz:rng()<.5?0:1,t:rng()*Math.PI*2,range:8+rng()*8,tSpeed:.014,fur:0x302020,ears:'triangle',isHuman:false,spotted:false});}
 
-      // Zone 3: Institutional towers (z=-66 to -92)
-      bwall(-14,-79,7,7.5,22,0x505068); bwall(14,-79,7,7.5,22,0x4c6070);
-      for (let wy=1;wy<13;wy+=2) for (let wz=-68;wz>=-88;wz-=3) {
-        pushBox(missionFieldQuads,-6.9,wy,wz,0.05,0.6,0.9,0x68b0d0);
-        pushBox(missionFieldQuads, 6.9,wy,wz,0.05,0.6,0.9,0x68b0d0);
-      }
-      // Market stalls at cross-street 3
-      [[-16,-92],[-8,-92],[0,-92],[8,-92],[16,-92]].forEach(([mx,mzz])=>{
-        pushBox(missionFieldQuads,mx,1.2,mzz,2.4,1.2,1.4,0x907050); addWall(mx,mzz,2.6,1.6);
-        pushBox(missionFieldQuads,mx,2.55,mzz,3.0,0.1,2.0,0xd09060);
-      });
-      // Street lights zone 3
-      [-6.5,6.5].forEach(lx6=>{pushBox(missionFieldQuads,lx6,5.5,-79,0.12,5.5,0.12,0x484840);pushBox(missionFieldQuads,lx6,11.1,-79,0.4,0.15,0.4,0xfff8e0);});
-      // Parked cars at cross-street 3
-      [[-15,-91],[14,-91]].forEach(([cx5,cz5])=>{pushBox(missionFieldQuads,cx5,0.85,cz5,3,0.85,5,0x304858+Math.floor(rng()*5)*0x100008);addWall(cx5,cz5,3.2,5.2);});
-
-      // Zone 4: Objective building — government/target structure (z=-94 to -120)
-      bwall(0,-108,11,5.5,12,0x686070);   // main target building
-      bwall(-16,-106,4.5,4.0,8,0x585068); // west annex
-      bwall(16,-106,4.5,4.0,8,0x505870);  // east annex
-      // Skylights on objective building roof
-      [-4,0,4].forEach(sx5=>pushBox(missionFieldQuads,sx5,11.2,-108,2.2,0.1,2.8,0x4080a0));
-      // Loading dock crates (cover near objective)
-      [[-6,-100],[6,-100],[-6,-116],[6,-116]].forEach(([cx6,cz6])=>{
-        pushBox(missionFieldQuads,cx6,0.9,cz6,1.4,0.9,1.4,0x5a4820); addWall(cx6,cz6,1.6,1.6);
-      });
-      // Objective beacon
-      pushBox(missionFieldQuads,0,2.1,-108,0.5,0.3,0.4,0xffe060);
+      // ── Objective building (always z=-94 to -120) ────────────────────
+      bwall(0,-108,11,5.5,12,0x686070);bwall(-16,-106,4.5,4,8,0x585068);bwall(16,-106,4.5,4,8,0x505870);
+      [-4,0,4].forEach(sx=>pushBox(missionFieldQuads,sx,11.2,-108,2.2,.1,2.8,0x4080a0));
+      [[-6,-100],[6,-100],[-6,-116],[6,-116]].forEach(([cx,cz])=>{pushBox(missionFieldQuads,cx,.9,cz,1.4,.9,1.4,0x5a4820);addWall(cx,cz,1.6,1.6);});
+      pushBox(missionFieldQuads,0,2.1,-108,.5,.3,.4,0xffe060);
+      if(missionFieldNpcs.length<1)missionFieldNpcs.push({x:-8,z:-15,label:'Informant 🐕',color:'#d0c8a0',fur:0xa09080,ears:'floppy',hint:cityHints[0]});
       missionFieldItems.push({id:0,x:0,z:-108,type:'objective',label:m.objective,icon:'🏙️',collected:false});
-
-      // City informant NPC
-      missionFieldNpcs.push({x:-8,z:-15,label:'Informant 🐕',color:'#d0c8a0',fur:0xa09080,ears:'floppy',hint:"The target is the big building at the north end. The guard at the central crossing is the one you need to slip past."});
-
-      // Patrols — city operatives
-      missionFieldPatrols.push({x:0,z:-13,startX:0,startZ:-13,dx:1,dz:0,t:rng()*Math.PI*2,range:11,tSpeed:0.013,fur:0x6080a0,ears:'floppy',patrolType:'human',isHuman:true,spotted:false});
-      missionFieldPatrols.push({x:0,z:-47,startX:0,startZ:-47,dx:1,dz:0,t:rng()*Math.PI*2,range:15,tSpeed:0.012,fur:0x6080a0,ears:'floppy',patrolType:'human',isHuman:true,spotted:false});
-      missionFieldPatrols.push({x:0,z:-79,startX:0,startZ:-79,dx:1,dz:0,t:rng()*Math.PI*2,range:17,tSpeed:0.012,fur:0x6080a0,ears:'floppy',patrolType:'human',isHuman:true,spotted:false});
-      missionFieldPatrols.push({x:-16,z:-50,startX:-16,startZ:-50,dx:0,dz:1,t:rng()*Math.PI*2,range:14,tSpeed:0.016,fur:0x302020,ears:'triangle',isHuman:false,spotted:false});
-      if (profIdx>=1) missionFieldPatrols.push({x:16,z:-50,startX:16,startZ:-50,dx:0,dz:1,t:rng()*Math.PI*2,range:14,tSpeed:0.016,fur:0x281818,ears:'triangle',isHuman:false,spotted:false});
-      if (profIdx>=2) missionFieldPatrols.push({x:0,z:-102,startX:0,startZ:-102,dx:1,dz:0,t:rng()*Math.PI*2,range:10,tSpeed:0.017,fur:0x281818,ears:'triangle',isHuman:false,spotted:false});
-      if (profIdx>=3) missionFieldPatrols.push({x:-15,z:-79,startX:-15,startZ:-79,dx:0,dz:1,t:rng()*Math.PI*2,range:14,tSpeed:0.013,fur:0x6080a0,ears:'floppy',patrolType:'human',isHuman:true,spotted:false});
-      for (let pi3=0;pi3<profIdx-1;pi3++) {
-        const px3=(rng()-0.5)*36,pz3=-20-rng()*80;
-        missionFieldPatrols.push({x:px3,z:pz3,startX:px3,startZ:pz3,dx:rng()<0.5?1:0,dz:rng()<0.5?0:1,t:rng()*Math.PI*2,range:8+rng()*8,tSpeed:0.014,fur:0x302020,ears:'triangle',isHuman:false,spotted:false});
-      }
 
     } else if (mapType === 'maze') {
 
