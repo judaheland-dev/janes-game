@@ -19051,19 +19051,11 @@
   }
   ovLoadProfile();
 
-  // ── Dog Paint Creator ──────────────────────────────────────────────────
-  // ovcPaint: per-angle paint maps. Each angle maps "r,c" -> hex color string.
-  // Angles: 0=front, 1=3/4-right, 2=side, 3=back
-  const OVC_ANGLE_LABELS = ['Front', 'Side', 'Back', 'Other Side'];
-  let ovcViewAngle = 0;         // 0-3
-  let ovcPaintMaps = [{},{},{},{}];  // one object per angle, key='r,c', value='#rrggbb'
+  // ── Dog Paint Creator — 3D click-to-paint system ──────────────────────
   let ovcPaintColor = '#d4a848'; // currently selected paint color (hex string)
   let ovcEraserMode = false;
-  let ovcPainting   = false;    // mouse/touch held
-  const OVC_GS = 32;            // grid size
-  const OVC_PS = 13;            // pixel size (canvas = GS*PS = 416px)
 
-  // Full painting color palette (fur + spot + eye + collar colors flattened, unique)
+  // Full painting color palette
   const OVC_PALETTE = [
     '#f0ece0','#e8d8b0','#d4a848','#c09060','#b87830','#e07820','#c08048','#e8b880',
     '#d09098','#b8a8d0','#80c8a8','#6080c0','#b86030','#8c3820','#6b3820','#4a2810',
@@ -19079,187 +19071,246 @@
     const b=Math.min(255,((hex    )&0xff)+(255*(1-((hex    )&0xff)/255)*f));
     return ((r|0)<<16)|((g|0)<<8)|(b|0);
   }
+  // Convert '#rrggbb' string → 0xRRGGBB integer
+  function hexStrToInt(h) { return parseInt((h||'#d4a848').replace('#',''),16); }
+  // Convert 0xRRGGBB integer → '#rrggbb' string
+  function intToHexStr(n) { return '#'+((n>>>0)&0xffffff).toString(16).padStart(6,'0'); }
 
-  // Region codes
-  const _PX = Object.freeze({ EMPTY:0, BDY:1, HED:2, EAR:3, MUZ:4, NOS:5, EYE:6, COL:7, LEG:8, TAL:9, PAW:10 });
+  // ── pushBoxPart: like pushBox but tags every face with a part name ────────
+  // (Uses world coords directly — no _pbXZ scaling — for dog preview rendering)
+  function pushBoxPart(list, cx, cy, cz, w, h, d, color, part, yaw=0, rx=0) {
+    const corners = [
+      v3(-w,-h,-d), v3( w,-h,-d), v3( w, h,-d), v3(-w, h,-d),
+      v3(-w,-h, d), v3( w,-h, d), v3( w, h, d), v3(-w, h, d),
+    ].map(v => {
+      let u = v;
+      if (rx)  u = rotX(u, rx);
+      if (yaw) u = rotY(u, yaw);
+      return add(u, v3(cx,cy,cz));
+    });
+    const faces=[
+      [4,5,6,7,v3(0,0,1)],[1,0,3,2,v3(0,0,-1)],
+      [5,1,2,6,v3(1,0,0)],[0,4,7,3,v3(-1,0,0)],
+      [7,6,2,3,v3(0,1,0)],[0,1,5,4,v3(0,-1,0)],
+    ];
+    faces.forEach(([a,b,c,d2,n])=>{
+      let nw=n;
+      if(rx)  nw=rotX(nw,rx);
+      if(yaw) nw=rotY(nw,yaw);
+      list.push({verts:[corners[a],corners[b],corners[c],corners[d2]],color,normal:nw,part});
+    });
+  }
 
-  // Body layout table (same as before — 7 body types)
-  const OV_PX_BODY = [
-    { hR1:4,hC1:9,hR2:9,hC2:22,  bR1:9,bC1:8,bR2:19,bC2:23,  lR1:19,lR2:25,lLL:9,lLR:12,lRL:19,lRR:22,  tR1:12,tC1:4,tR2:18,tC2:7,  eRow:7,eLC:12,eRC:19, mR1:8,mC1:13,mR2:9,mC2:18,  nR:8,nC:15  }, // normal
-    { hR1:3,hC1:7,hR2:9,hC2:24,  bR1:9,bC1:5,bR2:20,bC2:26,  lR1:20,lR2:25,lLL:7,lLR:10,lRL:22,lRR:25,  tR1:12,tC1:2,tR2:19,tC2:5,  eRow:6,eLC:10,eRC:21, mR1:7,mC1:11,mR2:9,mC2:20,  nR:8,nC:15  }, // chubby
-    { hR1:4,hC1:10,hR2:9,hC2:21, bR1:9,bC1:10,bR2:19,bC2:21, lR1:19,lR2:24,lLL:11,lLR:13,lRL:18,lRR:20, tR1:12,tC1:6,tR2:17,tC2:9,  eRow:7,eLC:12,eRC:19, mR1:8,mC1:13,mR2:9,mC2:18,  nR:8,nC:15  }, // slim
-    { hR1:2,hC1:9,hR2:7,hC2:22,  bR1:7,bC1:8,bR2:21,bC2:23,  lR1:21,lR2:29,lLL:9,lLR:12,lRL:19,lRR:22,  tR1:10,tC1:4,tR2:20,tC2:7,  eRow:4,eLC:12,eRC:19, mR1:6,mC1:13,mR2:7,mC2:18,  nR:6,nC:15  }, // tall
-    { hR1:7,hC1:10,hR2:12,hC2:21,bR1:12,bC1:10,bR2:20,bC2:21,lR1:20,lR2:24,lLL:11,lLR:13,lRL:18,lRR:20, tR1:14,tC1:7,tR2:18,tC2:10, eRow:9,eLC:12,eRC:19, mR1:11,mC1:13,mR2:12,mC2:18, nR:11,nC:15 }, // tiny
-    { hR1:3,hC1:7,hR2:9,hC2:24,  bR1:9,bC1:5,bR2:19,bC2:26,  lR1:19,lR2:25,lLL:7,lLR:11,lRL:21,lRR:25,  tR1:11,tC1:2,tR2:18,tC2:6,  eRow:6,eLC:10,eRC:21, mR1:7,mC1:11,mR2:9,mC2:20,  nR:7,nC:15  }, // fluffy
-    { hR1:4,hC1:10,hR2:8,hC2:21, bR1:8,bC1:9,bR2:20,bC2:22,  lR1:20,lR2:27,lLL:10,lLR:13,lRL:18,lRR:21, tR1:11,tC1:5,tR2:19,tC2:8,  eRow:6,eLC:12,eRC:19, mR1:7,mC1:13,mR2:8,mC2:18,  nR:7,nC:15  }, // athletic
-  ];
-
-  // Build the structural region grid for a given angle
-  // angle 0=front, 1=3/4 (shift), 2=side (profile), 3=back (mirrored front)
-  function ovBuildGrid(angleIdx) {
-    const GS=OVC_GS;
-    const g=Array.from({length:GS},()=>new Uint8Array(GS));
-    const P=_PX;
-    const bt=OV_PX_BODY[Math.min(ovcBodyIdx,OV_PX_BODY.length-1)];
-    const fill=(r1,c1,r2,c2,v)=>{ for(let r=Math.max(0,r1);r<=Math.min(GS-1,r2);r++) for(let c=Math.max(0,c1);c<=Math.min(GS-1,c2);c++) g[r][c]=v; };
-    const set=(r,c,v)=>{ if(r>=0&&r<GS&&c>=0&&c<GS) g[r][c]=v; };
-
-    // Angles: 0=Front, 1=Side, 2=Back, 3=Other Side
-    // isFront: symmetric, both eyes/legs/ears visible
-    // isSide/isOtherSide: one eye/leg/ear; shift body to simulate profile
-    // isBack: no muzzle/nose/eyes
-    const isFront     = angleIdx===0;
-    const isBack      = angleIdx===2;
-    const isSide      = angleIdx===1;
-    const isOtherSide = angleIdx===3;
-    // Column shift — nudge body right for side views so silhouette reads as profile
-    const s = isSide ? 2 : isOtherSide ? 2 : 0;
-
-    // Fill structural regions
-    fill(bt.bR1,bt.bC1+s,bt.bR2,bt.bC2+s,P.BDY);
-    fill(bt.hR1,bt.hC1+s,bt.hR2,bt.hC2+s,P.HED);
-    // Tail shape
-    const tR1=bt.tR1, tC1=bt.tC1+s, tR2=bt.tR2, tC2=bt.tC2+s;
-    switch(ovcTailIdx) {
-      case 0: fill(tR2-2,tC1+1,tR2,tC2-1,P.TAL); break;                                     // Stub
-      case 1: fill(tR1+2,tC1,tR2,tC2,P.TAL); break;                                          // Short
-      case 3: fill(tR1-3,tC1,tR2,tC2,P.TAL); break;                                          // Long
-      case 4: fill(tR1,tC1-1,tR2,tC2,P.TAL); fill(tR1-2,tC1,tR1+2,tC2,P.TAL); break;       // Fluffy
-      default: fill(tR1,tC1,tR2,tC2,P.TAL);                                                   // Medium
-    }
-    // Front: both leg pairs; side/back/other: one pair only
-    fill(bt.lR1,bt.lLL+s,bt.lR2,bt.lLR+s,P.LEG);
-    if(isFront) fill(bt.lR1,bt.lRL+s,bt.lR2,bt.lRR+s,P.LEG);
-    fill(bt.lR2,bt.lLL+s,bt.lR2,bt.lLR+s,P.PAW);
-    if(isFront) fill(bt.lR2,bt.lRL+s,bt.lR2,bt.lRR+s,P.PAW);
+  // ── buildPartTaggedDog ────────────────────────────────────────────────────
+  // Builds 3-D quads for an online dog, tagging each face with its body part.
+  // partColors: { body, head, ear, muzzle, collar, leg, paw, tail } (hex strings, optional)
+  // Falls back to a warm tan for any unset part.
+  const OVC_DEFAULT_PARTS = {
+    body:'#d4a848', head:'#d4a848', ear:'#b87830', muzzle:'#e8d8b0',
+    collar:'#2060c0', leg:'#d4a848', paw:'#2a1808', tail:'#d4a848',
+  };
+  function buildPartTaggedDog(list, wx, wz, s, partColors, facingYaw, earType, bodyIdx) {
+    const pc = Object.assign({}, OVC_DEFAULT_PARTS, partColors||{});
+    const bc  = hexStrToInt(pc.body),   hc  = hexStrToInt(pc.head);
+    const ec  = hexStrToInt(pc.ear),    mc  = hexStrToInt(pc.muzzle);
+    const cc  = hexStrToInt(pc.collar), lc  = hexStrToInt(pc.leg);
+    const pwc = hexStrToInt(pc.paw),    tc  = hexStrToInt(pc.tail);
+    const fl=0.21;
+    let bw=0.46,bh=0.28,bd=0.72,legLat=0.28,legLon=0.40,legH=0.20;
+    if(bodyIdx===1){bw=0.58;bh=0.34;}
+    if(bodyIdx===2){bw=0.36;bh=0.22;}
+    if(bodyIdx===3){bw=0.42;bh=0.22;legLon=0.50;legH=0.28;}
+    if(bodyIdx===4){bw=0.36;bh=0.20;bd=0.55;}
+    if(bodyIdx===5){bw=0.52;bh=0.32;bd=0.76;}
+    if(bodyIdx===6){bw=0.38;bh=0.24;bd=0.78;legLat=0.30;legH=0.26;}
+    const sy=facingYaw, cy2=Math.cos(facingYaw);
+    const rvx=Math.cos(facingYaw), rvz=-Math.sin(facingYaw);
+    // Body
+    pushBoxPart(list, wx, fl+0.54*s, wz, bw*s,bh*s,bd*s, bc,'body',facingYaw);
+    // Head
+    const hx=wx+Math.sin(facingYaw)*0.78*s, hz=wz+Math.cos(facingYaw)*0.78*s;
+    const hW=(bodyIdx===1||bodyIdx===5)?0.38:0.34;
+    pushBoxPart(list, hx, fl+0.96*s, hz, hW*s,0.32*s,0.32*s, hc,'head',facingYaw);
+    // Muzzle
+    const snx=wx+Math.sin(facingYaw)*1.22*s, snz=wz+Math.cos(facingYaw)*1.22*s;
+    pushBoxPart(list, snx,fl+0.85*s,snz, 0.15*s,0.09*s,0.14*s, mc,'muzzle',facingYaw);
+    // Nose (part of muzzle visually)
+    pushBoxPart(list, wx+Math.sin(facingYaw)*1.35*s,fl+0.90*s,wz+Math.cos(facingYaw)*1.35*s, 0.05*s,0.04*s,0.04*s, 0x1a0a08,'muzzle',facingYaw);
+    // Tail
+    const tlx=wx-Math.sin(facingYaw)*0.72*s, tlz=wz-Math.cos(facingYaw)*0.72*s;
+    pushBoxPart(list, tlx,fl+0.84*s,tlz, 0.08*s,0.08*s,0.20*s, tc,'tail',facingYaw+0.4);
+    // Legs + paws
+    [[legLat*s,legLon*s],[-legLat*s,legLon*s],[legLat*s,-legLon*s],[-legLat*s,-legLon*s]].forEach(([lat,lon])=>{
+      const lx=wx+rvx*lat+Math.sin(facingYaw)*lon, lz=wz+rvz*lat+Math.cos(facingYaw)*lon;
+      pushBoxPart(list, lx,fl+legH*s, lz, 0.10*s,legH*s,0.10*s, lc,'leg',facingYaw);
+      pushBoxPart(list, lx,fl+0.04*s, lz, 0.13*s,0.05*s,0.13*s, pwc,'paw',facingYaw);
+    });
     // Collar
-    fill(bt.hR2,bt.hC1-1+s,bt.hR2+1,bt.hC2+1+s,P.COL);
-    // Muzzle & nose
-    fill(bt.mR1,bt.mC1+s,bt.mR2,bt.mC2+s,P.MUZ);
-    set(bt.nR,bt.nC+s,P.NOS); set(bt.nR,bt.nC+1+s,P.NOS);
-
-    // Back view: overwrite muzzle/nose with body color — no face
-    if(isBack) {
-      fill(bt.mR1,bt.mC1+s,bt.mR2,bt.mC2+s,P.BDY);
-      set(bt.nR,bt.nC+s,P.BDY); set(bt.nR,bt.nC+1+s,P.BDY);
-    }
-
-    // Eyes — front: both; side/other-side: one; back: none
-    if(!isBack) {
-      const eR=bt.eRow, eLC=bt.eLC+s, eRC=bt.eRC+s;
-      if(ovcEyeIdx===0) { set(eR,eLC,P.EYE); if(isFront) set(eR,eRC,P.EYE); }
-      else if(ovcEyeIdx===1) { fill(eR,eLC,eR+1,eLC+1,P.EYE); if(isFront) fill(eR,eRC,eR+1,eRC+1,P.EYE); }
-      else { // almond
-        for(let dc=-1;dc<=1;dc++) set(eR,eLC+dc,P.EYE);
-        if(isFront) for(let dc=-1;dc<=1;dc++) set(eR,eRC+dc,P.EYE);
-      }
-    }
-
-    // Ears — front: both; side/other-side: one; back: none
-    const hR1=bt.hR1, hC1=bt.hC1+s, hC2=bt.hC2+s;
-    switch(ovcEarIdx){
-      case 0: fill(hR1-2,hC1,hR1-1,hC1+1,P.EAR); set(hR1-3,hC1,P.EAR);
-              if(isFront){fill(hR1-2,hC2-1,hR1-1,hC2,P.EAR);set(hR1-3,hC2,P.EAR);} break;
-      case 1: fill(hR1,hC1-2,hR1+5,hC1-1,P.EAR);
-              if(isFront) fill(hR1,hC2+1,hR1+5,hC2+2,P.EAR); break;
-      case 2: fill(hR1-2,hC1,hR1-1,hC1+2,P.EAR);
-              if(isFront) fill(hR1-2,hC2-2,hR1-1,hC2,P.EAR); break;
-      case 3: fill(hR1-1,hC1-1,hR1-1,hC1+2,P.EAR); set(hR1-2,hC1-2,P.EAR); set(hR1-2,hC1+3,P.EAR);
-              if(isFront){fill(hR1-1,hC2-2,hR1-1,hC2+1,P.EAR);set(hR1-2,hC2-3,P.EAR);set(hR1-2,hC2+2,P.EAR);} break;
-      case 4: fill(hR1-2,hC1,hR1-1,hC1+1,P.EAR); set(hR1-3,hC1,P.EAR); set(hR1-4,hC1,P.EAR);
-              if(isFront){fill(hR1-2,hC2-1,hR1-1,hC2,P.EAR);set(hR1-3,hC2,P.EAR);set(hR1-4,hC2,P.EAR);} break;
-      case 5: fill(hR1-1,hC1,hR1-1,hC1+1,P.EAR); set(hR1-2,hC1+1,P.EAR);
-              if(isFront){fill(hR1-1,hC2-1,hR1-1,hC2,P.EAR);set(hR1-2,hC2-1,P.EAR);} break;
-    }
-    return g;
-  }
-
-  // Draw the canvas: outline + paint layer
-  function ovDrawCreatorCanvas() {
-    const cv=document.getElementById('ov-dc-canvas');
-    if(!cv) return;
-    const ctx2=cv.getContext('2d');
-    const GS=OVC_GS, PS=OVC_PS;
-    const CW=GS*PS, CH=GS*PS;
-    if(cv.width!==CW||cv.height!==CH){ cv.width=CW; cv.height=CH; }
-    ctx2.fillStyle='#06080f'; ctx2.fillRect(0,0,CW,CH);
-
-    const g=ovBuildGrid(ovcViewAngle);
-    const paint=ovcPaintMaps[ovcViewAngle];
-
-    // Draw filled (painted) cells and white outline cells
-    for(let r=0;r<GS;r++) for(let c=0;c<GS;c++) {
-      const reg=g[r][c];
-      if(!reg) {
-        // Check if adjacent to a filled cell — if so draw outline pixel
-        if((r>0&&g[r-1][c])||(r<GS-1&&g[r+1][c])||(c>0&&g[r][c-1])||(c<GS-1&&g[r][c+1])){
-          ctx2.fillStyle='#ffffff';
-          ctx2.fillRect(c*PS,r*PS,PS,PS);
-        }
-        continue;
-      }
-      // Interior cell: show paint color if painted, else dark fill
-      const key=r+','+c;
-      if(paint[key]) {
-        ctx2.fillStyle=paint[key];
-        ctx2.fillRect(c*PS,r*PS,PS,PS);
-      } else {
-        // Unpainted interior: dim the outline so it reads as inside the shape
-        ctx2.fillStyle='rgba(20,30,50,0.70)';
-        ctx2.fillRect(c*PS,r*PS,PS,PS);
-      }
-      // Cell grid line
-      ctx2.strokeStyle='rgba(255,255,255,0.07)'; ctx2.lineWidth=0.5;
-      ctx2.strokeRect(c*PS+0.25,r*PS+0.25,PS-0.5,PS-0.5);
-    }
-    // Thin white outline around eyes and nose (they sit inside filled regions so the
-    // main edge-of-shape pass never reaches them — stroke each border with a non-matching neighbor)
-    const P=_PX;
-    ctx2.strokeStyle='rgba(255,255,255,0.80)';
-    ctx2.lineWidth=1.5;
-    for(let r=0;r<GS;r++) for(let c=0;c<GS;c++) {
-      const reg=g[r][c];
-      if(reg!==P.EYE&&reg!==P.NOS) continue;
-      const x=c*PS, y=r*PS;
-      ctx2.beginPath();
-      const top   =(r>0    ? g[r-1][c] : 0), bot=(r<GS-1 ? g[r+1][c] : 0);
-      const left  =(c>0    ? g[r][c-1] : 0), right=(c<GS-1 ? g[r][c+1] : 0);
-      if(top  !==reg){ctx2.moveTo(x,   y   );ctx2.lineTo(x+PS,y   );}
-      if(bot  !==reg){ctx2.moveTo(x,   y+PS);ctx2.lineTo(x+PS,y+PS);}
-      if(left !==reg){ctx2.moveTo(x,   y   );ctx2.lineTo(x,   y+PS);}
-      if(right!==reg){ctx2.moveTo(x+PS,y   );ctx2.lineTo(x+PS,y+PS);}
-      ctx2.stroke();
-    }
-  }
-
-  // Convert canvas mouse/touch position to grid cell
-  function ovcCanvasToCell(e, cv) {
-    const rect=cv.getBoundingClientRect();
-    const scaleX=cv.width/rect.width, scaleY=cv.height/rect.height;
-    const cx=(e.clientX-rect.left)*scaleX, cy=(e.clientY-rect.top)*scaleY;
-    return { r: Math.floor(cy/OVC_PS), c: Math.floor(cx/OVC_PS) };
-  }
-
-  function ovcPaintCell(r,c) {
-    const GS=OVC_GS;
-    if(r<0||r>=GS||c<0||c>=GS) return;
-    const g=ovBuildGrid(ovcViewAngle);
-    if(!g[r][c]) return; // only paint inside the outline
-    const key=r+','+c;
-    if(ovcEraserMode) {
-      delete ovcPaintMaps[ovcViewAngle][key];
+    pushBoxPart(list, hx,fl+0.78*s,hz, 0.36*s,0.06*s,0.36*s, cc,'collar',facingYaw);
+    // Ears
+    const ex=Math.cos(facingYaw)*0.30*s, ez=-Math.sin(facingYaw)*0.30*s;
+    if(earType==='floppy'){
+      pushBoxPart(list,hx+ex,fl+0.88*s,hz+ez,0.06*s,0.20*s,0.10*s,ec,'ear',facingYaw);
+      pushBoxPart(list,hx-ex,fl+0.88*s,hz-ez,0.06*s,0.20*s,0.10*s,ec,'ear',facingYaw);
+    } else if(earType==='rounded'){
+      pushBoxPart(list,hx+ex,fl+1.12*s,hz+ez,0.12*s,0.14*s,0.10*s,ec,'ear',facingYaw);
+      pushBoxPart(list,hx-ex,fl+1.12*s,hz-ez,0.12*s,0.14*s,0.10*s,ec,'ear',facingYaw);
+    } else if(earType==='bat'){
+      pushBoxPart(list,hx+ex*1.4,fl+1.16*s,hz+ez*1.4,0.16*s,0.20*s,0.06*s,ec,'ear',facingYaw);
+      pushBoxPart(list,hx-ex*1.4,fl+1.16*s,hz-ez*1.4,0.16*s,0.20*s,0.06*s,ec,'ear',facingYaw);
+    } else if(earType==='tufted'){
+      pushBoxPart(list,hx+ex,fl+1.14*s,hz+ez,0.09*s,0.22*s,0.07*s,ec,'ear',facingYaw);
+      pushBoxPart(list,hx+ex,fl+1.38*s,hz+ez,0.07*s,0.06*s,0.07*s,ovLighten(ec,0.3),'ear',facingYaw);
+      pushBoxPart(list,hx-ex,fl+1.14*s,hz-ez,0.09*s,0.22*s,0.07*s,ec,'ear',facingYaw);
+      pushBoxPart(list,hx-ex,fl+1.38*s,hz-ez,0.07*s,0.06*s,0.07*s,ovLighten(ec,0.3),'ear',facingYaw);
+    } else if(earType==='perky'){
+      pushBoxPart(list,hx+ex*0.8,fl+1.10*s,hz+ez*0.8,0.07*s,0.16*s,0.06*s,ec,'ear',facingYaw);
+      pushBoxPart(list,hx-ex*0.8,fl+1.10*s,hz-ez*0.8,0.07*s,0.16*s,0.06*s,ec,'ear',facingYaw);
     } else {
-      ovcPaintMaps[ovcViewAngle][key]=ovcPaintColor;
+      pushBoxPart(list,hx+ex,fl+1.14*s,hz+ez,0.09*s,0.22*s,0.07*s,ec,'ear',facingYaw);
+      pushBoxPart(list,hx-ex,fl+1.14*s,hz-ez,0.09*s,0.22*s,0.07*s,ec,'ear',facingYaw);
     }
-    ovDrawCreatorCanvas();
   }
 
-  function ovcRotate(dir) {
-    ovcViewAngle=(ovcViewAngle+dir+4)%4;
-    const labels=['Front','Side','Back','Other Side'];
-    const lbl=document.getElementById('ov-dc-angle-label');
-    if(lbl) lbl.textContent=labels[ovcViewAngle];
-    ovDrawCreatorCanvas();
+  // 2-D point-in-convex-polygon (winding sign test)
+  function pointInPoly2D(mx, my, pts) {
+    let sign = 0;
+    const n = pts.length;
+    for (let i = 0; i < n; i++) {
+      const a = pts[i], b = pts[(i+1)%n];
+      const cross = (b.x-a.x)*(my-a.y) - (b.y-a.y)*(mx-a.x);
+      if (cross === 0) continue;
+      const s = cross > 0 ? 1 : -1;
+      if (sign === 0) sign = s;
+      else if (sign !== s) return false;
+    }
+    return sign !== 0;
+  }
+
+  // ── 3D Part Painter — shared engine for both customization canvases ──────────
+  const OVC_CAM_POS   = { x:0, y:1.1, z:-2.8 };
+  const OVC_CAM_PITCH = 0.18;
+
+  function ovc3DProject(quads, PW, PH) {
+    const pF = (PH * 0.55) / 0.40;
+    const result = [];
+    for (const q of quads) {
+      let ok = true;
+      const pts = q.verts.map(pt => {
+        let v = sub(pt, v3(OVC_CAM_POS.x, OVC_CAM_POS.y, OVC_CAM_POS.z));
+        v = rotX(v, -OVC_CAM_PITCH);
+        if (v.z <= 0.05) { ok = false; return null; }
+        return { x: PW/2 + (v.x/v.z)*pF, y: PH/2 - (v.y/v.z)*pF, z: v.z };
+      });
+      if (!ok) continue;
+      const avgZ = pts.reduce((s,p)=>s+p.z,0)/pts.length;
+      result.push({ pts, avgZ, color: q.color, normal: q.normal, part: q.part });
+    }
+    result.sort((a,b) => b.avgZ - a.avgZ);
+    return result;
+  }
+
+  function ovc3DDraw(canvasEl, quads, PW, PH) {
+    const ctx2 = canvasEl.getContext('2d');
+    ctx2.fillStyle = '#06080f'; ctx2.fillRect(0, 0, PW, PH);
+    const fg = ctx2.createRadialGradient(PW/2, PH*0.9, 0, PW/2, PH*0.9, PW*0.38);
+    fg.addColorStop(0, 'rgba(20,60,120,0.30)'); fg.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx2.fillStyle = fg;
+    ctx2.beginPath(); ctx2.ellipse(PW/2, PH*0.9, PW*0.38, PH*0.06, 0, 0, Math.PI*2); ctx2.fill();
+    const projected = ovc3DProject(quads, PW, PH);
+    const sun = normalise(v3(0.5, 1.0, -0.7));
+    for (const { pts, color, normal } of projected) {
+      const nw = normalise(normal||v3(0,1,0));
+      const diff = Math.max(0, nw.x*sun.x+nw.y*sun.y+nw.z*sun.z);
+      const bright = 0.38 + 0.62*diff;
+      const r2 = Math.min(255, ((color>>16)&0xff)*bright)|0;
+      const g2 = Math.min(255, ((color>>8 )&0xff)*bright)|0;
+      const b2 = Math.min(255, ((color    )&0xff)*bright)|0;
+      ctx2.fillStyle = `rgb(${r2},${g2},${b2})`;
+      ctx2.strokeStyle = 'rgba(0,0,0,0.18)'; ctx2.lineWidth = 0.5;
+      ctx2.beginPath();
+      ctx2.moveTo(pts[0].x, pts[0].y);
+      for (let i=1; i<pts.length; i++) ctx2.lineTo(pts[i].x, pts[i].y);
+      ctx2.closePath(); ctx2.fill(); ctx2.stroke();
+    }
+    ctx2.save(); ctx2.font='bold 11px Arial'; ctx2.fillStyle='rgba(140,200,255,0.70)';
+    ctx2.textAlign='center'; ctx2.textBaseline='bottom';
+    ctx2.fillText('Click a part to paint it', PW/2, PH-4); ctx2.restore();
+    return projected;
+  }
+
+  function ovc3DHitTest(canvasEl, clientX, clientY, projected) {
+    const rect = canvasEl.getBoundingClientRect();
+    const sx = canvasEl.width / rect.width, sy = canvasEl.height / rect.height;
+    const mx = (clientX - rect.left)*sx, my = (clientY - rect.top)*sy;
+    for (let i = projected.length-1; i >= 0; i--) {
+      const q = projected[i];
+      if (q.part && pointInPoly2D(mx, my, q.pts)) return q.part;
+    }
+    return null;
+  }
+
+  let ovcRaf3D = 0;
+  let ovcActiveCanvas = null;
+  let ovcYaw3D = Math.PI * 0.75;
+  let ovcDrag3D = false, ovcDragX3D = 0;
+  let ovcAutoRot3D = true;
+  let ovcAutoTimer3D = 0;
+  let ovc3DLastProjected = [];
+
+  const OVC_PART_LABELS = { body:'Body', head:'Head', ear:'Ears', muzzle:'Snout', collar:'Collar', leg:'Legs', paw:'Paws', tail:'Tail' };
+
+  function ovc3DDrawFrame() {
+    if (!ovcActiveCanvas) { ovcRaf3D = 0; return; }
+    const canvasId = ovcActiveCanvas === 'creator' ? 'ov-dc-canvas' : 'cp-preview';
+    const canvasEl = document.getElementById(canvasId);
+    if (!canvasEl) { ovcRaf3D = 0; ovcActiveCanvas = null; return; }
+    const creatorVisible = ovcActiveCanvas === 'creator' && !document.getElementById('ov-dog-creator').classList.contains('hidden');
+    const customVisible  = ovcActiveCanvas === 'custom'  && ovCustomOpen;
+    if (!creatorVisible && !customVisible) { ovcRaf3D = 0; ovcActiveCanvas = null; return; }
+    if (ovcAutoRot3D) ovcYaw3D += 0.012;
+    const p = onlineDogProfile || {};
+    const earType = OV_EAR_TYPES[Math.min(p.earIdx||0, OV_EAR_TYPES.length-1)];
+    const s = OV_SIZES[Math.min(p.sizeIdx||1,2)];
+    const partColors = p.partColors || {};
+    const quads = [];
+    buildPartTaggedDog(quads, 0, 0, s, partColors, ovcYaw3D, earType, p.bodyIdx||0);
+    const PW = canvasEl.width, PH = canvasEl.height;
+    ovc3DLastProjected = ovc3DDraw(canvasEl, quads, PW, PH);
+    ovcRaf3D = requestAnimationFrame(ovc3DDrawFrame);
+  }
+
+  function ovc3DStart(which) {
+    ovcActiveCanvas = which; ovcAutoRot3D = true;
+    if (!ovcRaf3D) ovcRaf3D = requestAnimationFrame(ovc3DDrawFrame);
+  }
+  function ovc3DStop() {
+    ovcActiveCanvas = null;
+    if (ovcRaf3D) { cancelAnimationFrame(ovcRaf3D); ovcRaf3D = 0; }
+  }
+  function ovc3DBindDrag(canvasEl) {
+    if (canvasEl._ovc3DBound) return; canvasEl._ovc3DBound = true;
+    const startDrag = x => { ovcDrag3D=true; ovcDragX3D=x; ovcAutoRot3D=false; clearTimeout(ovcAutoTimer3D); };
+    const moveDrag  = x => { if(!ovcDrag3D)return; ovcYaw3D+=(x-ovcDragX3D)*-0.013; ovcDragX3D=x; };
+    const endDrag   = ()=>{ ovcDrag3D=false; ovcAutoTimer3D=setTimeout(()=>{ovcAutoRot3D=true;},2000); };
+    canvasEl.addEventListener('mousedown', e=>startDrag(e.clientX));
+    window.addEventListener('mousemove', e=>moveDrag(e.clientX));
+    window.addEventListener('mouseup', endDrag);
+    canvasEl.addEventListener('touchstart',e=>{e.preventDefault();startDrag(e.touches[0].clientX);},{passive:false});
+    window.addEventListener('touchmove',e=>{if(ovcDrag3D)moveDrag(e.touches[0].clientX);});
+    window.addEventListener('touchend', endDrag);
+  }
+  function ovc3DClickPaint(canvasEl, clientX, clientY) {
+    if (!ovc3DLastProjected.length) return;
+    const part = ovc3DHitTest(canvasEl, clientX, clientY, ovc3DLastProjected);
+    if (!part) return;
+    if (!onlineDogProfile) onlineDogProfile = {};
+    if (!onlineDogProfile.partColors) onlineDogProfile.partColors = {};
+    if (ovcEraserMode) delete onlineDogProfile.partColors[part];
+    else onlineDogProfile.partColors[part] = ovcPaintColor;
+    ovSaveProfile();
+    const lbl = document.getElementById('ov-dc-part-label') || document.getElementById('cp-part-label');
+    if (lbl) { lbl.textContent=(ovcEraserMode?'Reset: ':'Painted: ')+(OVC_PART_LABELS[part]||part); lbl.style.opacity='1'; clearTimeout(lbl._t); lbl._t=setTimeout(()=>{lbl.style.opacity='0';},1200); }
   }
 
   function ovcSelectColor(hexStr) {
@@ -19278,14 +19329,15 @@
   }
 
   function ovcClearPaint() {
-    ovcPaintMaps[ovcViewAngle]={};
-    ovDrawCreatorCanvas();
+    if (!onlineDogProfile) return;
+    onlineDogProfile.partColors = {};
+    ovSaveProfile();
   }
+
+
 
   // ── Dog Creator UI ─────────────────────────────────────────────────────
   function ovOpenCreator() {
-    ovcPaintMaps=[{},{},{},{}];
-    ovcViewAngle=0;
     ovcEraserMode=false;
     ovcPaintColor='#d4a848';
     // Restore shape choices from existing profile
@@ -19294,16 +19346,21 @@
       ovcEarIdx  = onlineDogProfile.earIdx  || 0;
       ovcEyeIdx  = onlineDogProfile.eyeIdx  || 0;
       ovcTailIdx = onlineDogProfile.tailIdx !== undefined ? onlineDogProfile.tailIdx : 2;
-      // Restore paint maps if saved
-      if(onlineDogProfile.paintMaps) ovcPaintMaps=onlineDogProfile.paintMaps.map(m=>Object.assign({},m));
       document.getElementById('ov-dc-name').value=onlineDogProfile.name||'';
     }
     document.getElementById('ov-dog-creator').classList.remove('hidden');
     ovCreatorBuildUI();
-    ovDrawCreatorCanvas();
+    const cv = document.getElementById('ov-dc-canvas');
+    if (cv) {
+      cv.width = 400; cv.height = 300;
+      ovc3DBindDrag(cv);
+      if (!cv._ovc3DClickBound) { cv._ovc3DClickBound=true; cv.addEventListener('click', e=>ovc3DClickPaint(cv,e.clientX,e.clientY)); cv.addEventListener('touchend',e=>{e.preventDefault();const t=e.changedTouches[0];ovc3DClickPaint(cv,t.clientX,t.clientY);},{passive:false}); }
+    }
+    ovc3DStart('creator');
   }
   function ovCloseCreator() {
     document.getElementById('ov-dog-creator').classList.add('hidden');
+    ovc3DStop();
   }
 
   function ovCreatorBuildUI() {
@@ -19335,17 +19392,6 @@
         pg.appendChild(sw);
       });
     }
-    // Set up canvas mouse/touch painting
-    const cv=document.getElementById('ov-dc-canvas');
-    if(cv && !cv._ovcBound) {
-      cv._ovcBound=true;
-      cv.addEventListener('mousedown',e=>{ovcPainting=true;const {r,c}=ovcCanvasToCell(e,cv);ovcPaintCell(r,c);});
-      cv.addEventListener('mousemove',e=>{if(!ovcPainting)return;const {r,c}=ovcCanvasToCell(e,cv);ovcPaintCell(r,c);});
-      window.addEventListener('mouseup',()=>ovcPainting=false);
-      cv.addEventListener('touchstart',e=>{e.preventDefault();ovcPainting=true;const t=e.touches[0];const {r,c}=ovcCanvasToCell(t,cv);ovcPaintCell(r,c);},{passive:false});
-      cv.addEventListener('touchmove', e=>{e.preventDefault();if(!ovcPainting)return;const t=e.touches[0];const {r,c}=ovcCanvasToCell(t,cv);ovcPaintCell(r,c);},{passive:false});
-      cv.addEventListener('touchend', ()=>ovcPainting=false);
-    }
   }
 
   function ovCreatorRefreshShape(what) {
@@ -19353,7 +19399,7 @@
     document.querySelectorAll('#ov-dc-ear-btns  .ov-opt-btn').forEach((b,i)=>b.classList.toggle('ov-selected',i===ovcEarIdx));
     document.querySelectorAll('#ov-dc-eye-btns  .ov-opt-btn').forEach((b,i)=>b.classList.toggle('ov-selected',i===ovcEyeIdx));
     document.querySelectorAll('#ov-dc-tail-btns .ov-opt-btn').forEach((b,i)=>b.classList.toggle('ov-selected',i===ovcTailIdx));
-    ovDrawCreatorCanvas();
+    // 3D RAF handles re-draw automatically
   }
 
   // Round swatch row (used by in-village custom panel)
@@ -19377,20 +19423,24 @@
   function tryEnterOnlineVillage() {
     if (!isInVillage()) { toastMsg='You need to reach the village first!'; toastTimer=200; return; }
     ovLoadProfile();
-    ovOpenCreator();
+    if (!onlineDogProfile) {
+      onlineDogProfile = { name:'My Dog', furIdx:0, earIdx:0, bodyIdx:0, sizeIdx:1, spotPatIdx:0, spotColIdx:0, collarIdx:0 };
+      ovSaveProfile();
+    }
+    cpFromFactory = true;
+    ovOpenCustom();
   }
 
   function ovFinishCreator() {
     const nameVal = document.getElementById('ov-dc-name').value.trim();
     if (!nameVal) { document.getElementById('ov-dc-name').focus(); return; }
-    onlineDogProfile = {
+    onlineDogProfile = Object.assign(onlineDogProfile || {}, {
       name: nameVal,
       bodyIdx: ovcBodyIdx, earIdx: ovcEarIdx, eyeIdx: ovcEyeIdx, tailIdx: ovcTailIdx,
-      paintMaps: ovcPaintMaps.map(m=>Object.assign({},m)),
-      // legacy fields kept for 3D village rendering (derive dominant color from paint)
+      partColors: (onlineDogProfile && onlineDogProfile.partColors) || {},
       furIdx: ovcFurIdx, sizeIdx: ovcSizeIdx || 1,
-      earIdx: ovcEarIdx, spotPatIdx: 0, spotColIdx: 0, collarIdx: 0,
-    };
+      spotPatIdx: 0, spotColIdx: 0, collarIdx: 0,
+    });
     ovSaveProfile();
     ovCloseCreator();
     ovConnectAndEnter();
@@ -19506,22 +19556,138 @@
     toastMsg = 'Left Online Village'; toastTimer = 180;
   }
 
-  // ── Online village geometry ─────────────────────────────────────────────
-  // World is built at 1:1 scale (no _pbXZ doubling).
-  // The map is large: roughly −220..+220 on X and Z.
+  // ── Online village geometry — Warbark Village layout, no NPCs/buildings except cave ──
   function buildOnlineVillage() {
     ovVillageQuads.length = 0;
     const Q = ovVillageQuads;
-    // _pbXZ stays 1 — no scaling needed; we use big raw coords instead
 
-    // ── Ground tiles ──────────────────────────────────────────────────────
-    const HALF = 220, TILE = 16;
-    for (let gx=-HALF; gx<HALF; gx+=TILE) {
-      for (let gz=-HALF; gz<HALF; gz+=TILE) {
-        const c = ((Math.floor(gx/TILE)+Math.floor(gz/TILE))&1) ? 0x2a2620 : 0x252118;
-        Q.push({ verts:[v3(gx,0,gz),v3(gx+TILE,0,gz),v3(gx+TILE,0,gz+TILE),v3(gx,0,gz+TILE)], color:c, normal:v3(0,1,0), isGround:true });
+    // ── Ground (±54, 6-unit tiles) ────────────────────────────────────────
+    for (let gx=-54; gx<54; gx+=6) {
+      for (let gz=-54; gz<54; gz+=6) {
+        Q.push({ verts:[v3(gx,0,gz),v3(gx+6,0,gz),v3(gx+6,0,gz+6),v3(gx,0,gz+6)],
+          color:((Math.floor(gx/6)+Math.floor(gz/6))&1)?0x2c2820:0x28241c, normal:v3(0,1,0), isGround:true });
       }
     }
+    // ── Grass centre ──────────────────────────────────────────────────────
+    for (let gx=-32; gx<32; gx+=3) {
+      for (let gz=-42; gz<46; gz+=3) {
+        Q.push({ verts:[v3(gx,0.010,gz),v3(gx+3,0.010,gz),v3(gx+3,0.010,gz+3),v3(gx,0.010,gz+3)],
+          color:((Math.floor(gx/3)+Math.floor(gz/3))&1)?0x3d6e1e:0x2e5814, normal:v3(0,1,0), isGround:true });
+      }
+    }
+    // ── N-S path ──────────────────────────────────────────────────────────
+    for (let gz=-54; gz<54; gz+=2.5) {
+      Q.push({ verts:[v3(-3.2,0.015,gz),v3(3.2,0.015,gz),v3(3.2,0.015,gz+2.5),v3(-3.2,0.015,gz+2.5)],
+        color:(Math.floor(gz/2.5)&1)?0x7a5c38:0x6a4e2c, normal:v3(0,1,0), isGround:true });
+    }
+    // ── E-W path ─────────────────────────────────────────────────────────
+    for (let gx=-54; gx<54; gx+=2.5) {
+      if (Math.abs(gx+1.25)<=3.2) continue;
+      Q.push({ verts:[v3(gx,0.015,-3.2),v3(gx+2.5,0.015,-3.2),v3(gx+2.5,0.015,3.2),v3(gx,0.015,3.2)],
+        color:(Math.floor(gx/2.5)&1)?0x7a5c38:0x6a4e2c, normal:v3(0,1,0), isGround:true });
+    }
+
+    // ── Well (x=0, z=-8) — same as main village ───────────────────────────
+    pushBox(Q,  0, 0.42, -8, 2.0, 0.42, 2.0, 0x7a7268);
+    pushBox(Q,  0, 1.12, -8, 1.5, 0.34, 1.5, 0x6c6460);
+    Q.push({ verts:[v3(-1.0,1.06,-9.0),v3(1.0,1.06,-9.0),v3(1.0,1.06,-7.0),v3(-1.0,1.06,-7.0)], color:0x0c2860, normal:v3(0,1,0), isGround:true });
+    Q.push({ verts:[v3(-0.55,1.44,-8.55),v3(0.55,1.44,-8.55),v3(0.55,1.44,-7.45),v3(-0.55,1.44,-7.45)], color:0x2c68d8, normal:v3(0,1,0), isGround:true });
+    pushBox(Q, -1.4, 2.82, -8, 0.09, 1.72, 0.09, 0x6a4820);
+    pushBox(Q,  1.4, 2.82, -8, 0.09, 1.72, 0.09, 0x6a4820);
+    pushBox(Q,  0,   4.56, -8, 1.55, 0.09, 0.09, 0x5a3c18);
+    pushBox(Q,  0,   3.22, -8, 0.05, 1.2,  0.05, 0x483828);
+    pushBox(Q,  0, 2.08, -8, 0.24, 0.30, 0.20, 0x7a4c1c);
+    pushBox(Q,  0, 2.40, -8, 0.28, 0.04, 0.24, 0x5a3810);
+
+    // ── Cave entrance (x=-12, z=-30) — only building ──────────────────────
+    pushBox(Q, -12, 2.52, -33.5, 8.5, 2.5,  5.0, 0x484440);
+    pushBox(Q, -12, 4.52, -33.8, 6.0, 2.0,  4.0, 0x3a3834);
+    pushBox(Q, -12, 6.02, -34.2, 4.0, 1.5,  3.0, 0x302e2c);
+    pushBox(Q, -14.5, 2.22, -30, 0.32, 2.2, 0.42, 0x5a5450);
+    pushBox(Q,  -9.5, 2.22, -30, 0.32, 2.2, 0.42, 0x5a5450);
+    pushBox(Q, -12,   4.52, -30, 2.84, 0.4, 0.42, 0x5a5450);
+    pushBox(Q, -12,   2.42, -31.2, 2.1, 2.2, 1.2, 0x100e0c);
+    pushBox(Q, -15.3, 3.5, -29.6, 0.18, 0.18, 0.18, 0xff9820);
+    pushBox(Q,  -8.7, 3.5, -29.6, 0.18, 0.18, 0.18, 0xff9820);
+
+    // ── Entrance arch (south, z=41) ───────────────────────────────────────
+    pushBox(Q, -5.4, 2.38, 41, 0.44, 2.38, 0.44, 0x686060);
+    pushBox(Q,  5.4, 2.38, 41, 0.44, 2.38, 0.44, 0x686060);
+    pushBox(Q,  0,   4.82, 41, 5.88, 0.44, 0.44, 0x504848);
+
+    // ── Torches along paths ───────────────────────────────────────────────
+    [[-5,26],[5,26],[-5,14],[5,14],[-5,0],[5,0],[-5,-18],[5,-18]].forEach(([lx,lz])=>{
+      pushBox(Q,lx,0.70,lz,0.09,0.70,0.09,0x5a3c18);
+      pushBox(Q,lx,1.45,lz,0.13,0.10,0.13,0x8b2000);
+      pushBox(Q,lx,1.62,lz,0.11,0.11,0.11,0xe05010);
+      pushBox(Q,lx,1.80,lz,0.08,0.10,0.08,0xff8c00);
+      pushBox(Q,lx,1.96,lz,0.05,0.08,0.05,0xffe060);
+    });
+
+    // ── "Coming Soon!" sign posts at each path exit ───────────────────────
+    // North (z=-43), South (z=43), East (x=35), West (x=-35)
+    const signCol=0xa07840, postCol=0x5a3c18;
+    // North
+    pushBox(Q, 0,0.80,-43,0.09,0.80,0.09,postCol); pushBox(Q,0,1.74,-43,0.80,0.30,0.07,signCol);
+    // South
+    pushBox(Q, 0,0.80, 43,0.09,0.80,0.09,postCol); pushBox(Q,0,1.74, 43,0.80,0.30,0.07,signCol);
+    // East
+    pushBox(Q, 35,0.80,0,0.09,0.80,0.09,postCol);  pushBox(Q,35,1.74,0,0.07,0.30,0.80,signCol);
+    // West
+    pushBox(Q,-35,0.80,0,0.09,0.80,0.09,postCol);  pushBox(Q,-35,1.74,0,0.07,0.30,0.80,signCol);
+
+    // ── Robot dog + satellite (same position as main village) ────────────
+    const RX=8,RZ=5, RM=0xb0bcc8, RD=0x8090a0, RC=0x20e8f0, fl=0.21;
+    pushBox(Q,RX,fl+0.58,RZ,       0.44,0.30,0.68,RM);
+    pushBox(Q,RX,fl+0.58,RZ+0.35,  0.26,0.18,0.04,RD);
+    pushBox(Q,RX,fl+0.58,RZ+0.35,  0.08,0.08,0.05,RC);
+    pushBox(Q,RX,fl+1.02,RZ+0.38,  0.30,0.28,0.28,RM);
+    pushBox(Q,RX+0.13,fl+1.06,RZ+0.64,0.07,0.07,0.04,RC);
+    pushBox(Q,RX-0.13,fl+1.06,RZ+0.64,0.07,0.07,0.04,RC);
+    pushBox(Q,RX+0.22,fl+1.38,RZ+0.38,0.05,0.22,0.05,RD);
+    pushBox(Q,RX+0.22,fl+1.60,RZ+0.38,0.09,0.05,0.09,RC);
+    pushBox(Q,RX-0.22,fl+1.38,RZ+0.38,0.05,0.22,0.05,RD);
+    pushBox(Q,RX-0.22,fl+1.60,RZ+0.38,0.09,0.05,0.09,RC);
+    pushBox(Q,RX,fl+0.90,RZ+0.64,  0.13,0.08,0.12,RD);
+    pushBox(Q,RX,fl+0.82,RZ-0.68,  0.07,0.07,0.18,RD,0.4);
+    [[0.26,0.38],[-0.26,0.38],[0.26,-0.38],[-0.26,-0.38]].forEach(([lx2,lz2])=>{
+      pushBox(Q,RX+lx2,fl+0.22,RZ+lz2,0.10,0.22,0.10,RD);
+      pushBox(Q,RX+lx2,fl+0.04,RZ+lz2,0.13,0.04,0.16,RM);
+    });
+    const SX=10.5, SZ=5;
+    pushBox(Q,SX,fl+0.10,SZ,   0.28,0.10,0.28,0x4a4a50);
+    pushBox(Q,SX,fl+0.70,SZ,   0.07,0.60,0.07,0x606870);
+    pushBox(Q,SX+0.28,fl+1.10,SZ,0.28,0.05,0.05,0x606870);
+    pushBox(Q,SX+0.55,fl+1.20,SZ,0.32,0.28,0.04,0x9ab0c0);
+    pushBox(Q,SX+0.55,fl+1.20,SZ,0.18,0.16,0.06,0x5090b0);
+    pushBox(Q,SX+0.55,fl+1.20,SZ,0.06,0.06,0.08,RC);
+
+    // ── Forest ring (two rings, same as main village) ─────────────────────
+    for (let i=0;i<64;i++){
+      const a=(i/64)*Math.PI*2, r=42+((i*7)%9)*1.3;
+      const tx=Math.cos(a)*r, tz=Math.sin(a)*r;
+      if(tz>37&&Math.abs(tx)<8) continue;
+      if(tz<-38&&Math.abs(tx)<5) continue;
+      addTree(tx,tz,0.72+((i*11)%7)*0.1,Q);
+    }
+    for (let i=0;i<44;i++){
+      const a=(i/44)*Math.PI*2+0.07, r=50+((i*5)%8)*1.2;
+      const tx=Math.cos(a)*r, tz=Math.sin(a)*r;
+      if(tz>44) continue;
+      if(tz<-44&&Math.abs(tx)<6) continue;
+      addTree(tx,tz,0.78+((i*9)%8)*0.1,Q);
+    }
+
+    // ── Forest river (north gap, same as main village) ────────────────────
+    const STREAM=0x2050b8, STREAM2=0x2860cc, MUDBANK=0x4a3820;
+    for (let rx=-9;rx<9;rx+=2){
+      Q.push({verts:[v3(rx,0.02,rx*0.08-39),v3(rx+2,0.02,rx*0.08-39),v3(rx+2,0.02,rx*0.08-41.5),v3(rx,0.02,rx*0.08-41.5)],color:MUDBANK,normal:v3(0,1,0),isGround:true});
+      Q.push({verts:[v3(rx,0.02,rx*0.08-48.5),v3(rx+2,0.02,rx*0.08-48.5),v3(rx+2,0.02,rx*0.08-51),v3(rx,0.02,rx*0.08-51)],color:MUDBANK,normal:v3(0,1,0),isGround:true});
+    }
+    for (let wx=-8;wx<8;wx+=2){
+      Q.push({verts:[v3(wx,0.04,-41.5),v3(wx+2,0.04,-41.5),v3(wx+2,0.04,-48.5),v3(wx,0.04,-48.5)],color:(wx%4===0)?STREAM:STREAM2,normal:v3(0,1,0),isGround:true});
+    }
+  }
 
     // ── Central grass plaza ───────────────────────────────────────────────
     for (let gx=-80; gx<80; gx+=8) {
@@ -19872,9 +20038,14 @@
     const moving = keys['ArrowUp'] || keys['ArrowDown'];
     if (keys['ArrowUp'])   { ods.x += sx*MOVE_SPEED*1.3; ods.z += sz*MOVE_SPEED*1.3; }
     if (keys['ArrowDown']) { ods.x -= sx*BACK_SPEED*1.3; ods.z -= sz*BACK_SPEED*1.3; }
-    // Bounds — world is ±220 units
-    ods.x = Math.max(-218, Math.min(218, ods.x));
-    ods.z = Math.max(-218, Math.min(218, ods.z));
+    // Bounds — world is ±54 units (Warbark village clone)
+    ods.x = Math.max(-53, Math.min(53, ods.x));
+    ods.z = Math.max(-53, Math.min(53, ods.z));
+    // Block path exits (Coming Soon!)
+    if (ods.z < -42 && Math.abs(ods.x) < 5) ods.z = -42;
+    if (ods.z >  40 && Math.abs(ods.x) < 8) ods.z = 40;
+    if (ods.x >  35 && Math.abs(ods.z) < 4) ods.x = 35;
+    if (ods.x < -35 && Math.abs(ods.z) < 4) ods.x = -35;
     // Jump
     if (keys['Space'] && ods.grounded) { ods.velY = JUMP_VEL; ods.grounded = false; }
     ods.velY += GRAVITY;
@@ -19903,7 +20074,7 @@
     // E = trade interaction near other players
     if (keysJustPressed.has('KeyE') && inOnlineVillage) {
       // Satellite dish (Unit-7) — exit to Warbark Village
-      const satDist = Math.hypot(ods.x - 12, ods.z - 12);
+      const satDist = Math.hypot(ods.x - 10.5, ods.z - 5);
       if (satDist < 4.5) {
         keysJustPressed.delete('KeyE');
         exitOnlineVillage();
@@ -19924,12 +20095,22 @@
     const canvas = document.getElementById('c');
     const W=canvas.width, H=canvas.height;
     // Unit-7 satellite dish hint
-    const satDistHint = Math.hypot(ods.x - 12, ods.z - 12);
+    const satDistHint = Math.hypot(ods.x - 10.5, ods.z - 5);
     if (satDistHint < 4.5) {
       ctx.save(); ctx.font='bold 13px Arial'; ctx.fillStyle='rgba(180,230,255,0.95)';
       ctx.textAlign='center'; ctx.textBaseline='middle';
       ctx.fillText('[E] Back to Warbark Village? 🌐', W/2, H-150);
       ctx.restore();
+    }
+    // Coming Soon! path exit hints
+    const csZones = [{x:0,z:-43},{x:0,z:43},{x:35,z:0},{x:-35,z:0}];
+    for (const cs of csZones) {
+      if (Math.hypot(ods.x-cs.x, ods.z-cs.z) < 6) {
+        ctx.save(); ctx.font='bold 15px Arial'; ctx.fillStyle='rgba(255,200,80,0.95)';
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText('🚧 Coming Soon!', W/2, H-170);
+        ctx.restore(); break;
+      }
     }
     // Nearby player trade hint
     let nearPlayer = null, nearDist = Infinity;
@@ -20106,38 +20287,34 @@
     ovCustomOpen = true;
     const p = document.getElementById('ov-custom-panel');
     p.classList.remove('hidden');
-    ovBuildSwatchRow('ov-cp-fur-colors',    OV_FUR_COLORS,    onlineDogProfile?.furIdx||0,    (i)=>{if(onlineDogProfile)onlineDogProfile.furIdx=i; ovSaveProfile(); document.querySelectorAll('#ov-cp-fur-colors .ov-swatch').forEach((s,j)=>s.classList.toggle('ov-selected',j===i)); ovBroadcastNow(); });
-    ovBuildSwatchRow('ov-cp-collar-colors', OV_COLLAR_COLORS, onlineDogProfile?.collarIdx||0, (i)=>{if(onlineDogProfile)onlineDogProfile.collarIdx=i; ovSaveProfile(); document.querySelectorAll('#ov-cp-collar-colors .ov-swatch').forEach((s,j)=>s.classList.toggle('ov-selected',j===i)); ovBroadcastNow(); });
-    ovBuildSwatchRow('ov-cp-spot-colors',   OV_SPOT_COLORS,   onlineDogProfile?.spotColIdx||1, (i)=>{if(onlineDogProfile)onlineDogProfile.spotColIdx=i; ovSaveProfile(); document.querySelectorAll('#ov-cp-spot-colors .ov-swatch').forEach((s,j)=>s.classList.toggle('ov-selected',j===i)); ovBroadcastNow(); });
-    const spEl = document.getElementById('ov-cp-spot-pattern');
-    if (spEl) {
-      spEl.innerHTML = '';
-      OV_SPOT_LABELS.forEach((lbl,i)=>{
-        const b=document.createElement('button'); b.className='ov-opt-btn'+(i===(onlineDogProfile?.spotPatIdx||0)?' ov-selected':''); b.textContent=lbl;
-        b.onclick=()=>{ if(onlineDogProfile)onlineDogProfile.spotPatIdx=i; ovSaveProfile(); spEl.querySelectorAll('.ov-opt-btn').forEach((x,j)=>x.classList.toggle('ov-selected',j===i)); ovBroadcastNow(); };
-        spEl.appendChild(b);
+    // Build color palette in custom panel
+    const pg = document.getElementById('ov-cp-palette');
+    if (pg) {
+      pg.innerHTML = '';
+      OVC_PALETTE.forEach(hex=>{
+        const sw=document.createElement('div');
+        sw.className='ov-pal-swatch'+(hex===ovcPaintColor?' ov-pal-active':'');
+        sw.style.background=hex; sw.dataset.color=hex;
+        sw.onclick=()=>ovcSelectColor(hex);
+        pg.appendChild(sw);
       });
     }
-    // Bind drag-to-rotate on preview canvas (once)
     const pc = document.getElementById('cp-preview');
-    if (pc && !pc._evBound) {
-      pc._evBound = true;
-      const startDrag = x => { cpPrevDrag=true; cpPrevDragX=x; cpPrevAutoRot=false; clearTimeout(cpPrevAutoTimer); };
-      const moveDrag  = x => { if(!cpPrevDrag)return; cpPrevYaw+=(x-cpPrevDragX)*-0.013; cpPrevDragX=x; };
-      const endDrag   = ()=>{ cpPrevDrag=false; cpPrevAutoTimer=setTimeout(()=>{ cpPrevAutoRot=true; },1800); };
-      pc.addEventListener('mousedown', e=>startDrag(e.clientX));
-      window.addEventListener('mousemove', e=>moveDrag(e.clientX));
-      window.addEventListener('mouseup', endDrag);
-      pc.addEventListener('touchstart', e=>{ e.preventDefault(); startDrag(e.touches[0].clientX); },{passive:false});
-      window.addEventListener('touchmove', e=>{ if(cpPrevDrag) moveDrag(e.touches[0].clientX); });
-      window.addEventListener('touchend', endDrag);
+    if (pc) {
+      pc.width = 260; pc.height = 180;
+      ovc3DBindDrag(pc);
+      if (!pc._ovc3DClickBound) {
+        pc._ovc3DClickBound = true;
+        pc.addEventListener('click', e=>ovc3DClickPaint(pc,e.clientX,e.clientY));
+        pc.addEventListener('touchend',e=>{e.preventDefault();const t=e.changedTouches[0];ovc3DClickPaint(pc,t.clientX,t.clientY);},{passive:false});
+      }
     }
-    if (!cpPrevRaf) ovTickPreview();
+    ovc3DStart('custom');
   }
   function ovCloseCustom() {
     ovCustomOpen = false;
     document.getElementById('ov-custom-panel').classList.add('hidden');
-    if (cpPrevRaf) { cancelAnimationFrame(cpPrevRaf); cpPrevRaf = 0; }
+    ovc3DStop();
     if (cpFromFactory) { cpFromFactory = false; ovConnectAndEnter(); }
   }
 
@@ -20245,19 +20422,15 @@
     <!-- Main: canvas + palette -->
     <div id="ov-dc-main">
       <div id="ov-dc-center">
-        <canvas id="ov-dc-canvas"></canvas>
-        <div id="ov-dc-rotate-row">
-          <button class="ov-rotate-btn" onclick="ovcRotate(-1)">◀ Rotate</button>
-          <span id="ov-dc-angle-label">Front</span>
-          <button class="ov-rotate-btn" onclick="ovcRotate(1)">Rotate ▶</button>
-        </div>
+        <canvas id="ov-dc-canvas" width="400" height="300" style="cursor:crosshair"></canvas>
+        <div id="ov-dc-part-label" style="font:bold 12px Arial;color:#7bf;text-align:center;height:18px;opacity:0;transition:opacity 0.3s;margin-top:4px"></div>
       </div>
       <!-- Right: color palette -->
       <div id="ov-dc-palette">
         <div class="ov-pal-section-title">Colors</div>
         <div class="ov-pal-grid" id="ov-pal-grid"></div>
         <button id="ov-pal-eraser" onclick="ovcSelectEraser()">&#9998; Eraser</button>
-        <button id="ov-pal-clear" onclick="ovcClearPaint()">&#x2715; Clear All</button>
+        <button id="ov-pal-clear" onclick="ovcClearPaint()">&#x2715; Reset</button>
       </div>
     </div>
     <!-- Bottom: name + done -->
@@ -20286,17 +20459,14 @@
   <!-- Customization panel (edit dog while in village) -->
   <div id="ov-custom-panel" class="hidden">
     <h3>✨ Customise Dog</h3>
-    <canvas id="cp-preview" width="260" height="180"></canvas>
-    <div class="cp-preview-hint">drag to rotate</div>
-    <div class="ov-custom-label">Fur Colour</div>
-    <div class="ov-swatch-row" id="ov-cp-fur-colors"></div>
-    <div class="ov-custom-label" style="margin-top:10px">Collar</div>
-    <div class="ov-swatch-row" id="ov-cp-collar-colors"></div>
-    <div class="ov-custom-label" style="margin-top:10px">Spot Pattern</div>
-    <div class="ov-btn-group" id="ov-cp-spot-pattern" style="margin-bottom:8px"></div>
-    <div class="ov-custom-label">Spot Colour</div>
-    <div class="ov-swatch-row" id="ov-cp-spot-colors"></div>
-    <button id="ov-custom-close" onclick="ovCloseCustom()" style="margin-top:14px">✔ Done</button>
+    <canvas id="cp-preview" width="260" height="180" style="cursor:crosshair"></canvas>
+    <div id="cp-part-label" style="font:bold 11px Arial;color:#7bf;text-align:center;height:16px;opacity:0;transition:opacity 0.3s;margin-top:2px"></div>
+    <div class="ov-pal-grid" id="ov-cp-palette" style="margin:8px 0"></div>
+    <div style="display:flex;gap:6px;margin-bottom:4px">
+      <button id="ov-pal-eraser" onclick="ovcSelectEraser()" style="flex:1">&#9998; Eraser</button>
+      <button onclick="ovcClearPaint()" style="flex:1">&#x2715; Reset</button>
+    </div>
+    <button id="ov-custom-close" onclick="ovCloseCustom()" style="margin-top:6px;width:100%">✔ Done</button>
   </div>
 
   <!-- Trade offer panel -->
