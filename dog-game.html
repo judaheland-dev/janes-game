@@ -6538,7 +6538,10 @@
           OV_SPOT_PATS[Math.min(p.spotPatIdx||0,OV_SPOT_PATS.length-1)],
           p.spotColIdx>0 ? OV_SPOT_COLORS[Math.min(p.spotColIdx||1,OV_SPOT_COLORS.length-1)].hex : null,
           OV_COLLAR_COLORS[Math.min(p.collarIdx||0,OV_COLLAR_COLORS.length-1)].hex,
-          Math.min(p.bodyIdx||0,OV_BODY_TYPES.length-1));
+          Math.min(p.bodyIdx||0,OV_BODY_TYPES.length-1),
+          p.partColors||null,
+          p.tailIdx||2,
+          ovDog.walkT);
       }
       const ovAll = [...ovVillageQuads, ...ovPlayerQuads, ...ovOwnQuads];
       const toRenderOV = ovAll.map(q => {
@@ -19206,14 +19209,22 @@
     body:'#d4a848', head:'#d4a848', ear:'#b87830', muzzle:'#e8d8b0',
     collar:'#2060c0', leg:'#d4a848', paw:'#2a1808', tail:'#d4a848', eye:'#111118',
   };
+  // ── Color resolver — looks up specific block ID, then base part, then default ──
+  function ovResolvePartColor(id, partColors, fallbackInt) {
+    if (partColors) {
+      if (partColors[id]) return hexStrToInt(partColors[id]);
+      // strip side suffix to get base group name
+      const base = id.replace(/_[LR]$/, '').replace(/_(FL|FR|BL|BR)$/, '').replace(/_\d+$/, '').replace(/^haunch$/, 'leg');
+      if (partColors[base]) return hexStrToInt(partColors[base]);
+    }
+    if (fallbackInt !== undefined) return fallbackInt;
+    const base2 = id.replace(/_[LR]$/, '').replace(/_(FL|FR|BL|BR)$/, '').replace(/_\d+$/, '').replace(/^haunch$/, 'leg');
+    return hexStrToInt(OVC_DEFAULT_PARTS[base2] || OVC_DEFAULT_PARTS.body);
+  }
+
   // ── 3D sitting-pose dog for customization preview ─────────────────────────
   function buildPartTaggedDog(list, wx, wz, s, partColors, facingYaw, earType, bodyIdx, tailIdx) {
-    const pc = Object.assign({}, OVC_DEFAULT_PARTS, partColors||{});
-    const bc  = hexStrToInt(pc.body),   hc  = hexStrToInt(pc.head);
-    const ec  = hexStrToInt(pc.ear),    mc  = hexStrToInt(pc.muzzle);
-    const cc  = hexStrToInt(pc.collar), lc  = hexStrToInt(pc.leg);
-    const pwc = hexStrToInt(pc.paw),    tc  = hexStrToInt(pc.tail);
-    const eyeC = hexStrToInt(pc.eye);
+    const rpc = (id, dflt) => ovResolvePartColor(id, partColors, dflt);
     const fl=0.21;
     let bw=0.46,bh=0.28,bd=0.72,legLat=0.28,legLon=0.40,legH=0.20;
     if(bodyIdx===1){bw=0.58;bh=0.34;}
@@ -19224,112 +19235,108 @@
     if(bodyIdx===6){bw=0.38;bh=0.24;bd=0.78;legLat=0.30;legH=0.26;}
     const rvx=Math.cos(facingYaw), rvz=-Math.sin(facingYaw);
 
-    // ── Body (sitting: lowered slightly so haunches read well) ───────────
-    pushBoxPart(list, wx, fl+0.50*s, wz, bw*s,bh*s,bd*s, bc,'body',facingYaw);
+    // ── Body ─────────────────────────────────────────────────────────────
+    pushBoxPart(list, wx, fl+0.50*s, wz, bw*s,bh*s,bd*s, rpc('body'),'body',facingYaw);
 
     // ── Head ─────────────────────────────────────────────────────────────
     const hx=wx+Math.sin(facingYaw)*0.78*s, hz=wz+Math.cos(facingYaw)*0.78*s;
     const hW=(bodyIdx===1||bodyIdx===5)?0.38:0.34;
-    pushBoxPart(list, hx, fl+0.90*s, hz, hW*s,0.32*s,0.32*s, hc,'head',facingYaw);
+    pushBoxPart(list, hx, fl+0.90*s, hz, hW*s,0.32*s,0.32*s, rpc('head'),'head',facingYaw);
 
-    // ── Eyes (on front face of head, with white border via 'eye' part) ──
+    // ── Eyes ─────────────────────────────────────────────────────────────
     const eyeFx = hx+Math.sin(facingYaw)*(hW+0.02)*s;
     const eyeFz = hz+Math.cos(facingYaw)*(hW+0.02)*s;
-    pushBoxPart(list, eyeFx+rvx*0.13*s, fl+0.96*s, eyeFz+rvz*0.13*s, 0.04*s,0.065*s,0.03*s, eyeC,'eye',facingYaw);
-    pushBoxPart(list, eyeFx-rvx*0.13*s, fl+0.96*s, eyeFz-rvz*0.13*s, 0.04*s,0.065*s,0.03*s, eyeC,'eye',facingYaw);
+    pushBoxPart(list, eyeFx+rvx*0.13*s, fl+0.96*s, eyeFz+rvz*0.13*s, 0.04*s,0.065*s,0.03*s, rpc('eye_L',rpc('eye')),'eye_L',facingYaw);
+    pushBoxPart(list, eyeFx-rvx*0.13*s, fl+0.96*s, eyeFz-rvz*0.13*s, 0.04*s,0.065*s,0.03*s, rpc('eye_R',rpc('eye')),'eye_R',facingYaw);
 
     // ── Muzzle ────────────────────────────────────────────────────────────
     const snx=wx+Math.sin(facingYaw)*1.14*s, snz=wz+Math.cos(facingYaw)*1.14*s;
-    pushBoxPart(list, snx,fl+0.78*s,snz, 0.15*s,0.10*s,0.14*s, mc,'muzzle',facingYaw);
-    // Nose tip (tagged 'nose' for white outline; maps to muzzle for painting)
+    pushBoxPart(list, snx,fl+0.78*s,snz, 0.15*s,0.10*s,0.14*s, rpc('muzzle'),'muzzle',facingYaw);
     pushBoxPart(list, wx+Math.sin(facingYaw)*1.27*s,fl+0.84*s,wz+Math.cos(facingYaw)*1.27*s, 0.055*s,0.046*s,0.04*s, 0x1a0a08,'nose',facingYaw);
 
     // ── Tail ─────────────────────────────────────────────────────────────
     const ti = (tailIdx!=null?tailIdx:2);
+    const tc = rpc('tail');
     const tlBx = wx-Math.sin(facingYaw)*0.65*s, tlBz = wz-Math.cos(facingYaw)*0.65*s;
     if(ti===0){
-      // Stub
-      pushBoxPart(list,tlBx,fl+0.72*s,tlBz,0.10*s,0.10*s,0.10*s,tc,'tail',facingYaw+0.3);
+      pushBoxPart(list,tlBx,fl+0.72*s,tlBz,0.10*s,0.10*s,0.10*s,rpc('tail_0',tc),'tail_0',facingYaw+0.3);
     } else if(ti===1){
-      // Short – one segment angling upward
-      pushBoxPart(list,tlBx,fl+0.68*s,tlBz,0.10*s,0.10*s,0.18*s,tc,'tail',facingYaw+0.55);
+      pushBoxPart(list,tlBx,fl+0.68*s,tlBz,0.10*s,0.10*s,0.18*s,rpc('tail_0',tc),'tail_0',facingYaw+0.55);
     } else if(ti===2){
-      // Medium – two segments
-      pushBoxPart(list,tlBx,fl+0.68*s,tlBz,0.10*s,0.10*s,0.18*s,tc,'tail',facingYaw+0.55);
+      pushBoxPart(list,tlBx,fl+0.68*s,tlBz,0.10*s,0.10*s,0.18*s,rpc('tail_0',tc),'tail_0',facingYaw+0.55);
       const t2x=tlBx-Math.sin(facingYaw)*0.10*s, t2z=tlBz-Math.cos(facingYaw)*0.10*s;
-      pushBoxPart(list,t2x,fl+0.90*s,t2z,0.08*s,0.08*s,0.14*s,tc,'tail',facingYaw+1.05);
+      pushBoxPart(list,t2x,fl+0.90*s,t2z,0.08*s,0.08*s,0.14*s,rpc('tail_1',tc),'tail_1',facingYaw+1.05);
     } else if(ti===3){
-      // Long – three segments going up and back
-      pushBoxPart(list,tlBx,fl+0.68*s,tlBz,0.10*s,0.10*s,0.18*s,tc,'tail',facingYaw+0.5);
+      pushBoxPart(list,tlBx,fl+0.68*s,tlBz,0.10*s,0.10*s,0.18*s,rpc('tail_0',tc),'tail_0',facingYaw+0.5);
       const t2x=tlBx-Math.sin(facingYaw)*0.11*s, t2z=tlBz-Math.cos(facingYaw)*0.11*s;
-      pushBoxPart(list,t2x,fl+0.90*s,t2z,0.08*s,0.08*s,0.16*s,tc,'tail',facingYaw+1.05);
+      pushBoxPart(list,t2x,fl+0.90*s,t2z,0.08*s,0.08*s,0.16*s,rpc('tail_1',tc),'tail_1',facingYaw+1.05);
       const t3x=t2x-Math.sin(facingYaw)*0.10*s, t3z=t2z-Math.cos(facingYaw)*0.10*s;
-      pushBoxPart(list,t3x,fl+1.10*s,t3z,0.06*s,0.06*s,0.14*s,tc,'tail',facingYaw+1.55);
+      pushBoxPart(list,t3x,fl+1.10*s,t3z,0.06*s,0.06*s,0.14*s,rpc('tail_2',tc),'tail_2',facingYaw+1.55);
     } else if(ti===4){
-      // Fluffy – bushy cluster
-      pushBoxPart(list,tlBx,fl+0.68*s,tlBz,0.16*s,0.16*s,0.20*s,tc,'tail',facingYaw+0.4);
-      pushBoxPart(list,tlBx+rvx*0.12*s,fl+0.86*s,tlBz+rvz*0.12*s,0.11*s,0.11*s,0.14*s,tc,'tail',facingYaw+0.3);
-      pushBoxPart(list,tlBx-rvx*0.12*s,fl+0.86*s,tlBz-rvz*0.12*s,0.11*s,0.11*s,0.14*s,tc,'tail',facingYaw+0.5);
-      pushBoxPart(list,tlBx,fl+1.02*s,tlBz,0.13*s,0.12*s,0.13*s,tc,'tail',facingYaw+0.7);
-      pushBoxPart(list,tlBx,fl+1.18*s,tlBz,0.09*s,0.08*s,0.09*s,ovLighten(tc,0.25),'tail',facingYaw+0.9);
+      pushBoxPart(list,tlBx,fl+0.68*s,tlBz,0.16*s,0.16*s,0.20*s,rpc('tail_0',tc),'tail_0',facingYaw+0.4);
+      pushBoxPart(list,tlBx+rvx*0.12*s,fl+0.86*s,tlBz+rvz*0.12*s,0.11*s,0.11*s,0.14*s,rpc('tail_1',tc),'tail_1',facingYaw+0.3);
+      pushBoxPart(list,tlBx-rvx*0.12*s,fl+0.86*s,tlBz-rvz*0.12*s,0.11*s,0.11*s,0.14*s,rpc('tail_2',tc),'tail_2',facingYaw+0.5);
+      pushBoxPart(list,tlBx,fl+1.02*s,tlBz,0.13*s,0.12*s,0.13*s,rpc('tail_3',tc),'tail_3',facingYaw+0.7);
+      pushBoxPart(list,tlBx,fl+1.18*s,tlBz,0.09*s,0.08*s,0.09*s,rpc('tail_4',ovLighten(tc,0.25)),'tail_4',facingYaw+0.9);
     } else {
-      // Curled – arc of four boxes curling up over the back
-      pushBoxPart(list,tlBx,fl+0.70*s,tlBz,0.10*s,0.10*s,0.16*s,tc,'tail',facingYaw+0.5);
+      // Curled
+      pushBoxPart(list,tlBx,fl+0.70*s,tlBz,0.10*s,0.10*s,0.16*s,rpc('tail_0',tc),'tail_0',facingYaw+0.5);
       const c2x=tlBx-Math.sin(facingYaw)*0.09*s, c2z=tlBz-Math.cos(facingYaw)*0.09*s;
-      pushBoxPart(list,c2x,fl+0.92*s,c2z,0.09*s,0.09*s,0.13*s,tc,'tail',facingYaw+1.2);
+      pushBoxPart(list,c2x,fl+0.92*s,c2z,0.09*s,0.09*s,0.13*s,rpc('tail_1',tc),'tail_1',facingYaw+1.2);
       const c3x=c2x-Math.sin(facingYaw)*0.05*s, c3z=c2z-Math.cos(facingYaw)*0.05*s;
-      pushBoxPart(list,c3x,fl+1.10*s,c3z,0.07*s,0.07*s,0.11*s,tc,'tail',facingYaw+2.1);
+      pushBoxPart(list,c3x,fl+1.10*s,c3z,0.07*s,0.07*s,0.11*s,rpc('tail_2',tc),'tail_2',facingYaw+2.1);
       const c4x=c3x+Math.sin(facingYaw)*0.08*s, c4z=c3z+Math.cos(facingYaw)*0.08*s;
-      pushBoxPart(list,c4x,fl+1.22*s,c4z,0.06*s,0.06*s,0.09*s,ovLighten(tc,0.15),'tail',facingYaw+2.9);
+      pushBoxPart(list,c4x,fl+1.22*s,c4z,0.06*s,0.06*s,0.09*s,rpc('tail_3',ovLighten(tc,0.15)),'tail_3',facingYaw+2.9);
     }
 
-    // ── Front legs – straight down (sitting) ─────────────────────────────
-    [[legLat,legLon],[-legLat,legLon]].forEach(([lat,lon])=>{
+    // ── Front legs ────────────────────────────────────────────────────────
+    const legIds = [['leg_FL','paw_FL'],['leg_FR','paw_FR']];
+    [[legLat,legLon],[-legLat,legLon]].forEach(([lat,lon],i)=>{
       const lx=wx+rvx*(lat*s)+Math.sin(facingYaw)*(lon*s);
       const lz=wz+rvz*(lat*s)+Math.cos(facingYaw)*(lon*s);
-      pushBoxPart(list,lx,fl+legH*s,lz,0.10*s,legH*s,0.10*s,lc,'leg',facingYaw);
-      pushBoxPart(list,lx,fl+0.04*s,lz,0.13*s,0.05*s,0.13*s,pwc,'paw',facingYaw);
+      pushBoxPart(list,lx,fl+legH*s,lz,0.10*s,legH*s,0.10*s,rpc(legIds[i][0]),legIds[i][0],facingYaw);
+      pushBoxPart(list,lx,fl+0.04*s,lz,0.13*s,0.05*s,0.13*s,rpc(legIds[i][1]),legIds[i][1],facingYaw);
     });
 
-    // ── Back haunches – sitting pose (spread sideways) ───────────────────
-    [1,-1].forEach(side=>{
+    // ── Back haunches (sitting) ───────────────────────────────────────────
+    [['haunch_L','paw_BL'],['haunch_R','paw_BR']].forEach(([hid,pid],i)=>{
+      const side = i===0?1:-1;
       const hx2=wx+rvx*(side*legLat*1.55*s)-Math.sin(facingYaw)*(legLon*0.28*s);
       const hz2=wz+rvz*(side*legLat*1.55*s)-Math.cos(facingYaw)*(legLon*0.28*s);
-      // Haunch – wide horizontal box
-      pushBoxPart(list,hx2,fl+0.24*s,hz2,0.20*s,0.14*s,0.24*s,lc,'leg',facingYaw);
-      // Back paw on the ground behind the haunch
+      pushBoxPart(list,hx2,fl+0.24*s,hz2,0.20*s,0.14*s,0.24*s,rpc(hid),hid,facingYaw);
       const px=hx2-Math.sin(facingYaw)*0.12*s, pz=hz2-Math.cos(facingYaw)*0.12*s;
-      pushBoxPart(list,px,fl+0.04*s,pz,0.14*s,0.05*s,0.14*s,pwc,'paw',facingYaw);
+      pushBoxPart(list,px,fl+0.04*s,pz,0.14*s,0.05*s,0.14*s,rpc(pid),pid,facingYaw);
     });
 
     // ── Collar ────────────────────────────────────────────────────────────
-    pushBoxPart(list,hx,fl+0.72*s,hz,0.36*s,0.06*s,0.36*s,cc,'collar',facingYaw);
+    pushBoxPart(list,hx,fl+0.72*s,hz,0.36*s,0.06*s,0.36*s,rpc('collar'),'collar',facingYaw);
 
     // ── Ears ──────────────────────────────────────────────────────────────
     const ex=Math.cos(facingYaw)*0.30*s, ez=-Math.sin(facingYaw)*0.30*s;
+    const ec = rpc('ear');
     if(earType==='floppy'){
-      pushBoxPart(list,hx+ex,fl+0.80*s,hz+ez,0.06*s,0.22*s,0.10*s,ec,'ear',facingYaw);
-      pushBoxPart(list,hx-ex,fl+0.80*s,hz-ez,0.06*s,0.22*s,0.10*s,ec,'ear',facingYaw);
+      pushBoxPart(list,hx+ex,fl+0.80*s,hz+ez,0.06*s,0.22*s,0.10*s,rpc('ear_L',ec),'ear_L',facingYaw);
+      pushBoxPart(list,hx-ex,fl+0.80*s,hz-ez,0.06*s,0.22*s,0.10*s,rpc('ear_R',ec),'ear_R',facingYaw);
     } else if(earType==='rounded'){
-      pushBoxPart(list,hx+ex,fl+1.06*s,hz+ez,0.13*s,0.14*s,0.10*s,ec,'ear',facingYaw);
-      pushBoxPart(list,hx-ex,fl+1.06*s,hz-ez,0.13*s,0.14*s,0.10*s,ec,'ear',facingYaw);
+      pushBoxPart(list,hx+ex,fl+1.06*s,hz+ez,0.13*s,0.14*s,0.10*s,rpc('ear_L',ec),'ear_L',facingYaw);
+      pushBoxPart(list,hx-ex,fl+1.06*s,hz-ez,0.13*s,0.14*s,0.10*s,rpc('ear_R',ec),'ear_R',facingYaw);
     } else if(earType==='bat'){
-      pushBoxPart(list,hx+ex*1.4,fl+1.10*s,hz+ez*1.4,0.17*s,0.22*s,0.06*s,ec,'ear',facingYaw);
-      pushBoxPart(list,hx-ex*1.4,fl+1.10*s,hz-ez*1.4,0.17*s,0.22*s,0.06*s,ec,'ear',facingYaw);
+      pushBoxPart(list,hx+ex*1.4,fl+1.10*s,hz+ez*1.4,0.17*s,0.22*s,0.06*s,rpc('ear_L',ec),'ear_L',facingYaw);
+      pushBoxPart(list,hx-ex*1.4,fl+1.10*s,hz-ez*1.4,0.17*s,0.22*s,0.06*s,rpc('ear_R',ec),'ear_R',facingYaw);
     } else if(earType==='tufted'){
-      pushBoxPart(list,hx+ex,fl+1.08*s,hz+ez,0.09*s,0.24*s,0.07*s,ec,'ear',facingYaw);
-      pushBoxPart(list,hx+ex,fl+1.34*s,hz+ez,0.07*s,0.06*s,0.07*s,ovLighten(ec,0.3),'ear',facingYaw);
-      pushBoxPart(list,hx-ex,fl+1.08*s,hz-ez,0.09*s,0.24*s,0.07*s,ec,'ear',facingYaw);
-      pushBoxPart(list,hx-ex,fl+1.34*s,hz-ez,0.07*s,0.06*s,0.07*s,ovLighten(ec,0.3),'ear',facingYaw);
+      pushBoxPart(list,hx+ex,fl+1.08*s,hz+ez,0.09*s,0.24*s,0.07*s,rpc('ear_L',ec),'ear_L',facingYaw);
+      pushBoxPart(list,hx+ex,fl+1.34*s,hz+ez,0.07*s,0.06*s,0.07*s,ovLighten(rpc('ear_L',ec),0.3),'ear_L',facingYaw);
+      pushBoxPart(list,hx-ex,fl+1.08*s,hz-ez,0.09*s,0.24*s,0.07*s,rpc('ear_R',ec),'ear_R',facingYaw);
+      pushBoxPart(list,hx-ex,fl+1.34*s,hz-ez,0.07*s,0.06*s,0.07*s,ovLighten(rpc('ear_R',ec),0.3),'ear_R',facingYaw);
     } else if(earType==='perky'){
-      pushBoxPart(list,hx+ex*0.8,fl+1.05*s,hz+ez*0.8,0.07*s,0.17*s,0.06*s,ec,'ear',facingYaw);
-      pushBoxPart(list,hx-ex*0.8,fl+1.05*s,hz-ez*0.8,0.07*s,0.17*s,0.06*s,ec,'ear',facingYaw);
+      pushBoxPart(list,hx+ex*0.8,fl+1.05*s,hz+ez*0.8,0.07*s,0.17*s,0.06*s,rpc('ear_L',ec),'ear_L',facingYaw);
+      pushBoxPart(list,hx-ex*0.8,fl+1.05*s,hz-ez*0.8,0.07*s,0.17*s,0.06*s,rpc('ear_R',ec),'ear_R',facingYaw);
     } else {
-      // triangle (default)
-      pushBoxPart(list,hx+ex,fl+1.08*s,hz+ez,0.09*s,0.24*s,0.07*s,ec,'ear',facingYaw);
-      pushBoxPart(list,hx-ex,fl+1.08*s,hz-ez,0.09*s,0.24*s,0.07*s,ec,'ear',facingYaw);
+      pushBoxPart(list,hx+ex,fl+1.08*s,hz+ez,0.09*s,0.24*s,0.07*s,rpc('ear_L',ec),'ear_L',facingYaw);
+      pushBoxPart(list,hx-ex,fl+1.08*s,hz-ez,0.09*s,0.24*s,0.07*s,rpc('ear_R',ec),'ear_R',facingYaw);
     }
   }
+
 
   // 2-D point-in-convex-polygon (winding sign test)
   function pointInPoly2D(mx, my, pts) {
@@ -19371,11 +19378,12 @@
 
   function ovc3DDraw(canvasEl, quads, PW, PH) {
     const ctx2 = canvasEl.getContext('2d');
-    ctx2.fillStyle = '#06080f'; ctx2.fillRect(0, 0, PW, PH);
-    const fg = ctx2.createRadialGradient(PW/2, PH*0.88, 0, PW/2, PH*0.88, PW*0.34);
+    ctx2.fillStyle = '#060a12'; ctx2.fillRect(0, 0, PW, PH);
+    // floor shadow
+    const fg = ctx2.createRadialGradient(PW/2, PH*0.86, 0, PW/2, PH*0.86, PW*0.32);
     fg.addColorStop(0, 'rgba(20,60,120,0.28)'); fg.addColorStop(1, 'rgba(0,0,0,0)');
     ctx2.fillStyle = fg;
-    ctx2.beginPath(); ctx2.ellipse(PW/2, PH*0.88, PW*0.34, PH*0.055, 0, 0, Math.PI*2); ctx2.fill();
+    ctx2.beginPath(); ctx2.ellipse(PW/2, PH*0.86, PW*0.32, PH*0.045, 0, 0, Math.PI*2); ctx2.fill();
     const projected = ovc3DProject(quads, PW, PH);
     const sun = norm(v3(0.5, 1.0, -0.7));
     for (const { pts, color, normal, part } of projected) {
@@ -19386,19 +19394,38 @@
       const g2 = Math.min(255, ((color>>8 )&0xff)*bright)|0;
       const b2 = Math.min(255, ((color    )&0xff)*bright)|0;
       ctx2.fillStyle = `rgb(${r2},${g2},${b2})`;
+      // Filled face
+      ctx2.beginPath();
+      ctx2.moveTo(pts[0].x, pts[0].y);
+      for (let i=1; i<pts.length; i++) ctx2.lineTo(pts[i].x, pts[i].y);
+      ctx2.closePath(); ctx2.fill();
+      // White border on every face
       if(part==='eye'||part==='nose'){
-        ctx2.strokeStyle='rgba(255,255,255,0.95)'; ctx2.lineWidth=1.3;
+        ctx2.strokeStyle='rgba(255,255,255,0.95)'; ctx2.lineWidth=1.5;
       } else {
-        ctx2.strokeStyle='rgba(255,255,255,0.26)'; ctx2.lineWidth=0.85;
+        ctx2.strokeStyle='rgba(255,255,255,0.55)'; ctx2.lineWidth=1.0;
       }
       ctx2.beginPath();
       ctx2.moveTo(pts[0].x, pts[0].y);
       for (let i=1; i<pts.length; i++) ctx2.lineTo(pts[i].x, pts[i].y);
-      ctx2.closePath(); ctx2.fill(); ctx2.stroke();
+      ctx2.closePath(); ctx2.stroke();
+      // Interior grid (4×4) — gives paint-by-square feel
+      if(part!=='eye'&&part!=='nose'){
+        const G=4;
+        ctx2.strokeStyle='rgba(255,255,255,0.18)'; ctx2.lineWidth=0.5;
+        ctx2.beginPath();
+        const bi=(s,t)=>({
+          x:(1-t)*((1-s)*pts[0].x+s*pts[1].x)+t*((1-s)*pts[3].x+s*pts[2].x),
+          y:(1-t)*((1-s)*pts[0].y+s*pts[1].y)+t*((1-s)*pts[3].y+s*pts[2].y),
+        });
+        for(let i=1;i<G;i++){const a=bi(i/G,0),b=bi(i/G,1); ctx2.moveTo(a.x,a.y); ctx2.lineTo(b.x,b.y);}
+        for(let j=1;j<G;j++){const a=bi(0,j/G),b=bi(1,j/G); ctx2.moveTo(a.x,a.y); ctx2.lineTo(b.x,b.y);}
+        ctx2.stroke();
+      }
     }
-    ctx2.save(); ctx2.font='bold 11px Arial'; ctx2.fillStyle='rgba(140,200,255,0.65)';
+    ctx2.save(); ctx2.font='bold 12px Arial'; ctx2.fillStyle='rgba(140,200,255,0.60)';
     ctx2.textAlign='center'; ctx2.textBaseline='bottom';
-    ctx2.fillText('Click a part to paint it', PW/2, PH-4); ctx2.restore();
+    ctx2.fillText('Click a part to paint it  •  drag to spin', PW/2, PH-6); ctx2.restore();
     return projected;
   }
 
@@ -19408,9 +19435,7 @@
     const mx = (clientX - rect.left)*sx, my = (clientY - rect.top)*sy;
     for (let i = projected.length-1; i >= 0; i--) {
       const q = projected[i];
-      if (q.part && pointInPoly2D(mx, my, q.pts)) {
-        return q.part === 'nose' ? 'muzzle' : q.part;
-      }
+      if (q.part && q.part !== 'nose' && pointInPoly2D(mx, my, q.pts)) return q.part;
     }
     return null;
   }
@@ -19423,7 +19448,15 @@
   let ovcAutoTimer3D = 0;
   let ovc3DLastProjected = [];
 
-  const OVC_PART_LABELS = { body:'Body', head:'Head', ear:'Ears', muzzle:'Snout', collar:'Collar', leg:'Legs', paw:'Paws', tail:'Tail', eye:'Eyes' };
+  const OVC_PART_LABELS = {
+    body:'Body', head:'Head',
+    ear_L:'Left Ear', ear_R:'Right Ear', ear:'Ears',
+    muzzle:'Snout', collar:'Collar',
+    leg_FL:'Front Leg', leg_FR:'Front Leg', haunch_L:'Haunch', haunch_R:'Haunch',
+    paw_FL:'Front Paw', paw_FR:'Front Paw', paw_BL:'Back Paw', paw_BR:'Back Paw',
+    tail:'Tail', tail_0:'Tail', tail_1:'Tail', tail_2:'Tail', tail_3:'Tail', tail_4:'Tail',
+    eye:'Eyes', eye_L:'Left Eye', eye_R:'Right Eye',
+  };
 
   function ovc3DDrawFrame() {
     if (!ovcActiveCanvas) { ovcRaf3D = 0; return; }
@@ -19877,12 +19910,21 @@
       const spotHex = (profile.spotColIdx>0) ? (OV_SPOT_COLORS[Math.min(profile.spotColIdx||1,OV_SPOT_COLORS.length-1)].hex) : null;
       const collar  = OV_COLLAR_COLORS[Math.min(profile.collarIdx||0, OV_COLLAR_COLORS.length-1)].hex;
       const bodyIdx = Math.min(profile.bodyIdx||0, OV_BODY_TYPES.length-1);
-      addOnlineCustomDog(ovPlayerQuads, p.x, p.z, size, fur, p.yaw||0, earType, spotPat, spotHex, collar, bodyIdx);
+      addOnlineCustomDog(ovPlayerQuads, p.x, p.z, size, fur, p.yaw||0, earType, spotPat, spotHex, collar, bodyIdx, profile.partColors||null, profile.tailIdx||2);
     });
   }
 
-  function addOnlineCustomDog(list, wx, wz, s, fur, facingYaw, earType, spotPat, spotHex, collarHex, bodyIdx) {
+  function addOnlineCustomDog(list, wx, wz, s, fur, facingYaw, earType, spotPat, spotHex, collarHex, bodyIdx, partColors, tailIdx, walkT=0) {
     const fl = 0.21;
+    // Resolve a part color: look up partColors[id], then fallback to fur int
+    const rpc = (id, fallback) => {
+      if (partColors) {
+        if (partColors[id]) return hexStrToInt(partColors[id]);
+        const base = id.replace(/_[LR]$/, '').replace(/_(FL|FR|BL|BR)$/, '').replace(/_\d+$/, '').replace(/^haunch$/, 'leg');
+        if (partColors[base]) return hexStrToInt(partColors[base]);
+      }
+      return (fallback !== undefined ? fallback : fur);
+    };
     // Body proportions by type
     let bw=0.46, bh=0.28, bd=0.72, legLat=0.28, legLon=0.40;
     if (bodyIdx===1) { bw=0.58; bh=0.34; bd=0.72; }  // chubby
@@ -19892,32 +19934,71 @@
     if (bodyIdx===5) { bw=0.52; bh=0.32; bd=0.76; }  // fluffy
     if (bodyIdx===6) { bw=0.38; bh=0.24; bd=0.78; legLat=0.30; } // athletic
     // Body
-    pushBox(list, wx, fl+0.54*s, wz, bw*s, bh*s, bd*s, fur, facingYaw);
+    pushBox(list, wx, fl+0.54*s, wz, bw*s, bh*s, bd*s, rpc('body'), facingYaw);
     // Head
     const hx=wx+Math.sin(facingYaw)*0.78*s, hz=wz+Math.cos(facingYaw)*0.78*s;
     const hW = (bodyIdx===1||bodyIdx===5) ? 0.38 : 0.34;
-    pushBox(list, hx, fl+0.96*s, hz, hW*s, 0.32*s, 0.32*s, fur, facingYaw);
+    pushBox(list, hx, fl+0.96*s, hz, hW*s, 0.32*s, 0.32*s, rpc('head'), facingYaw);
     // Muzzle
     const snx=wx+Math.sin(facingYaw)*1.22*s, snz=wz+Math.cos(facingYaw)*1.22*s;
-    pushBox(list, snx, fl+0.85*s, snz, 0.15*s, 0.09*s, 0.14*s, ovLighten(fur,0.2), facingYaw);
+    pushBox(list, snx, fl+0.85*s, snz, 0.15*s, 0.09*s, 0.14*s, rpc('muzzle', ovLighten(fur,0.2)), facingYaw);
     // Nose
     pushBox(list, wx+Math.sin(facingYaw)*1.35*s, fl+0.90*s, wz+Math.cos(facingYaw)*1.35*s, 0.05*s,0.04*s,0.04*s, 0x1a0a08, facingYaw);
-    // Tail
-    const tlx=wx-Math.sin(facingYaw)*0.72*s, tlz=wz-Math.cos(facingYaw)*0.72*s;
-    pushBox(list, tlx, fl+0.84*s, tlz, 0.08*s,0.08*s,0.20*s, fur, facingYaw+0.4);
-    // Legs
+    // Tail (animated wag)
+    const ti2 = (tailIdx!=null?tailIdx:2);
+    const tc2 = rpc('tail');
+    const wagOffset = Math.sin(walkT * 1.8) * 0.35;
+    const tlBx2=wx-Math.sin(facingYaw)*0.65*s, tlBz2=wz-Math.cos(facingYaw)*0.65*s;
+    const rvx2=Math.cos(facingYaw), rvz2=-Math.sin(facingYaw);
+    if(ti2===0){
+      pushBox(list,tlBx2,fl+0.72*s,tlBz2,0.10*s,0.10*s,0.10*s,rpc('tail_0',tc2),facingYaw+0.3+wagOffset);
+    } else if(ti2===1){
+      pushBox(list,tlBx2,fl+0.68*s,tlBz2,0.10*s,0.10*s,0.18*s,rpc('tail_0',tc2),facingYaw+0.55+wagOffset);
+    } else if(ti2===2){
+      pushBox(list,tlBx2,fl+0.68*s,tlBz2,0.10*s,0.10*s,0.18*s,rpc('tail_0',tc2),facingYaw+0.55+wagOffset);
+      const t2x=tlBx2-Math.sin(facingYaw)*0.10*s, t2z=tlBz2-Math.cos(facingYaw)*0.10*s;
+      pushBox(list,t2x,fl+0.90*s,t2z,0.08*s,0.08*s,0.14*s,rpc('tail_1',tc2),facingYaw+1.05+wagOffset);
+    } else if(ti2===3){
+      pushBox(list,tlBx2,fl+0.68*s,tlBz2,0.10*s,0.10*s,0.18*s,rpc('tail_0',tc2),facingYaw+0.5+wagOffset);
+      const t2x=tlBx2-Math.sin(facingYaw)*0.11*s, t2z=tlBz2-Math.cos(facingYaw)*0.11*s;
+      pushBox(list,t2x,fl+0.90*s,t2z,0.08*s,0.08*s,0.16*s,rpc('tail_1',tc2),facingYaw+1.05+wagOffset);
+      const t3x=t2x-Math.sin(facingYaw)*0.10*s, t3z=t2z-Math.cos(facingYaw)*0.10*s;
+      pushBox(list,t3x,fl+1.10*s,t3z,0.06*s,0.06*s,0.14*s,rpc('tail_2',tc2),facingYaw+1.55+wagOffset);
+    } else if(ti2===4){
+      pushBox(list,tlBx2,fl+0.68*s,tlBz2,0.16*s,0.16*s,0.20*s,rpc('tail_0',tc2),facingYaw+0.4+wagOffset);
+      pushBox(list,tlBx2+rvx2*0.12*s,fl+0.86*s,tlBz2+rvz2*0.12*s,0.11*s,0.11*s,0.14*s,rpc('tail_1',tc2),facingYaw+0.3+wagOffset);
+      pushBox(list,tlBx2-rvx2*0.12*s,fl+0.86*s,tlBz2-rvz2*0.12*s,0.11*s,0.11*s,0.14*s,rpc('tail_2',tc2),facingYaw+0.5+wagOffset);
+      pushBox(list,tlBx2,fl+1.02*s,tlBz2,0.13*s,0.12*s,0.13*s,rpc('tail_3',tc2),facingYaw+0.7+wagOffset);
+    } else {
+      pushBox(list,tlBx2,fl+0.70*s,tlBz2,0.10*s,0.10*s,0.16*s,rpc('tail_0',tc2),facingYaw+0.5+wagOffset);
+      const c2x=tlBx2-Math.sin(facingYaw)*0.09*s, c2z=tlBz2-Math.cos(facingYaw)*0.09*s;
+      pushBox(list,c2x,fl+0.92*s,c2z,0.09*s,0.09*s,0.13*s,rpc('tail_1',tc2),facingYaw+1.2+wagOffset);
+      const c3x=c2x-Math.sin(facingYaw)*0.05*s, c3z=c2z-Math.cos(facingYaw)*0.05*s;
+      pushBox(list,c3x,fl+1.10*s,c3z,0.07*s,0.07*s,0.11*s,rpc('tail_2',tc2),facingYaw+2.1+wagOffset);
+      const c4x=c3x+Math.sin(facingYaw)*0.08*s, c4z=c3z+Math.cos(facingYaw)*0.08*s;
+      pushBox(list,c4x,fl+1.22*s,c4z,0.06*s,0.06*s,0.09*s,rpc('tail_3',ovLighten(tc2,0.15)),facingYaw+2.9+wagOffset);
+    }
+    // Legs (animated trot — diagonal pairs swing opposite phases)
     const rvx=Math.cos(facingYaw), rvz=-Math.sin(facingYaw);
     const legH = (bodyIdx===3)?0.28:((bodyIdx===6)?0.26:0.20);
-    [[legLat*s,legLon*s],[-legLat*s,legLon*s],[legLat*s,-legLon*s],[-legLat*s,-legLon*s]].forEach(([lat,lon])=>{
-      const lx=wx+rvx*lat+Math.sin(facingYaw)*lon, lz=wz+rvz*lat+Math.cos(facingYaw)*lon;
-      pushBox(list, lx, fl+legH*s,  lz, 0.10*s, legH*s,   0.10*s, fur, facingYaw);
-      pushBox(list, lx, fl+0.04*s,  lz, 0.13*s, 0.05*s,   0.13*s, 0x2a1808, facingYaw);
+    const swingAmt = 0.18 * s;
+    // [lat, lon, diagonalSign]: FR=+1, FL=-1, BR=-1, BL=+1
+    const legDefs = [[legLat*s,legLon*s,+1],[-legLat*s,legLon*s,-1],[legLat*s,-legLon*s,-1],[-legLat*s,-legLon*s,+1]];
+    const legPos = legDefs.map(([lat,lon,sign]) => {
+      const sw = Math.sin(walkT) * sign * swingAmt;
+      const lx = wx + rvx*lat + Math.sin(facingYaw)*(lon + sw);
+      const lz = wz + rvz*lat + Math.cos(facingYaw)*(lon + sw);
+      const lift = Math.max(0, Math.sin(walkT) * sign) * 0.08 * s;
+      return { lx, lz, lift };
+    });
+    legPos.forEach(({lx, lz, lift}) => {
+      pushBox(list, lx, fl+legH*s+lift, lz, 0.10*s, legH*s, 0.10*s, rpc('leg'), facingYaw);
+      pushBox(list, lx, fl+0.04*s+lift, lz, 0.13*s, 0.05*s, 0.13*s, rpc('paw', 0x2a1808), facingYaw);
     });
     // Spot socks (different color on paws)
     if (spotPat==='socks' && spotHex) {
-      [[legLat*s,legLon*s],[-legLat*s,legLon*s],[legLat*s,-legLon*s],[-legLat*s,-legLon*s]].forEach(([lat,lon])=>{
-        const lx=wx+rvx*lat+Math.sin(facingYaw)*lon, lz=wz+rvz*lat+Math.cos(facingYaw)*lon;
-        pushBox(list, lx, fl+0.06*s, lz, 0.12*s, 0.07*s, 0.12*s, spotHex, facingYaw);
+      legPos.forEach(({lx, lz, lift}) => {
+        pushBox(list, lx, fl+0.06*s+lift, lz, 0.12*s, 0.07*s, 0.12*s, spotHex, facingYaw);
       });
     }
     // Spot back patches
@@ -19938,26 +20019,27 @@
     }
     // Ears
     const ex=Math.cos(facingYaw)*0.30*s, ez=-Math.sin(facingYaw)*0.30*s;
+    const earC = rpc('ear');
     if (earType==='floppy') {
-      pushBox(list, hx+ex, fl+0.88*s, hz+ez, 0.06*s,0.20*s,0.10*s, fur, facingYaw);
-      pushBox(list, hx-ex, fl+0.88*s, hz-ez, 0.06*s,0.20*s,0.10*s, fur, facingYaw);
+      pushBox(list, hx+ex, fl+0.88*s, hz+ez, 0.06*s,0.20*s,0.10*s, rpc('ear_L',earC), facingYaw);
+      pushBox(list, hx-ex, fl+0.88*s, hz-ez, 0.06*s,0.20*s,0.10*s, rpc('ear_R',earC), facingYaw);
     } else if (earType==='rounded') {
-      pushBox(list, hx+ex, fl+1.12*s, hz+ez, 0.12*s,0.14*s,0.10*s, fur, facingYaw);
-      pushBox(list, hx-ex, fl+1.12*s, hz-ez, 0.12*s,0.14*s,0.10*s, fur, facingYaw);
+      pushBox(list, hx+ex, fl+1.12*s, hz+ez, 0.12*s,0.14*s,0.10*s, rpc('ear_L',earC), facingYaw);
+      pushBox(list, hx-ex, fl+1.12*s, hz-ez, 0.12*s,0.14*s,0.10*s, rpc('ear_R',earC), facingYaw);
     } else if (earType==='bat') {
-      pushBox(list, hx+ex*1.4, fl+1.16*s, hz+ez*1.4, 0.16*s,0.20*s,0.06*s, fur, facingYaw);
-      pushBox(list, hx-ex*1.4, fl+1.16*s, hz-ez*1.4, 0.16*s,0.20*s,0.06*s, fur, facingYaw);
+      pushBox(list, hx+ex*1.4, fl+1.16*s, hz+ez*1.4, 0.16*s,0.20*s,0.06*s, rpc('ear_L',earC), facingYaw);
+      pushBox(list, hx-ex*1.4, fl+1.16*s, hz-ez*1.4, 0.16*s,0.20*s,0.06*s, rpc('ear_R',earC), facingYaw);
     } else if (earType==='tufted') {
-      pushBox(list, hx+ex, fl+1.14*s, hz+ez, 0.09*s,0.22*s,0.07*s, fur, facingYaw);
-      pushBox(list, hx+ex, fl+1.38*s, hz+ez, 0.07*s,0.06*s,0.07*s, ovLighten(fur,0.3), facingYaw);
-      pushBox(list, hx-ex, fl+1.14*s, hz-ez, 0.09*s,0.22*s,0.07*s, fur, facingYaw);
-      pushBox(list, hx-ex, fl+1.38*s, hz-ez, 0.07*s,0.06*s,0.07*s, ovLighten(fur,0.3), facingYaw);
+      pushBox(list, hx+ex, fl+1.14*s, hz+ez, 0.09*s,0.22*s,0.07*s, rpc('ear_L',earC), facingYaw);
+      pushBox(list, hx+ex, fl+1.38*s, hz+ez, 0.07*s,0.06*s,0.07*s, ovLighten(rpc('ear_L',earC),0.3), facingYaw);
+      pushBox(list, hx-ex, fl+1.14*s, hz-ez, 0.09*s,0.22*s,0.07*s, rpc('ear_R',earC), facingYaw);
+      pushBox(list, hx-ex, fl+1.38*s, hz-ez, 0.07*s,0.06*s,0.07*s, ovLighten(rpc('ear_R',earC),0.3), facingYaw);
     } else if (earType==='perky') {
-      pushBox(list, hx+ex*0.8, fl+1.10*s, hz+ez*0.8, 0.07*s,0.16*s,0.06*s, fur, facingYaw);
-      pushBox(list, hx-ex*0.8, fl+1.10*s, hz-ez*0.8, 0.07*s,0.16*s,0.06*s, fur, facingYaw);
+      pushBox(list, hx+ex*0.8, fl+1.10*s, hz+ez*0.8, 0.07*s,0.16*s,0.06*s, rpc('ear_L',earC), facingYaw);
+      pushBox(list, hx-ex*0.8, fl+1.10*s, hz-ez*0.8, 0.07*s,0.16*s,0.06*s, rpc('ear_R',earC), facingYaw);
     } else { // triangle (default)
-      pushBox(list, hx+ex, fl+1.14*s, hz+ez, 0.09*s,0.22*s,0.07*s, fur, facingYaw);
-      pushBox(list, hx-ex, fl+1.14*s, hz-ez, 0.09*s,0.22*s,0.07*s, fur, facingYaw);
+      pushBox(list, hx+ex, fl+1.14*s, hz+ez, 0.09*s,0.22*s,0.07*s, rpc('ear_L',earC), facingYaw);
+      pushBox(list, hx-ex, fl+1.14*s, hz-ez, 0.09*s,0.22*s,0.07*s, rpc('ear_R',earC), facingYaw);
     }
   }
 
@@ -20060,6 +20142,8 @@
     // Broadcast position
     ovBroadcastTimer--;
     if (ovBroadcastTimer <= 0) { ovBroadcastTimer = OV_BROADCAST; ovBroadcastNow(); }
+    // Update camera every frame so it follows the dog
+    ovUpdateCamera();
     // Proximity [E] hints
     const canvas = document.getElementById('c');
     const W=canvas.width, H=canvas.height;
