@@ -4464,11 +4464,17 @@
     wagT: 0,
     frontLegAngle: 0,
     backLegAngle:  0,
+    idleTimer: 0,    // frames since last movement
+    sitAmount: 0,    // 0=standing, 1=fully sitting (smooth blend)
   };
 
   function buildDog() {
     dogQuads = [];
-    const { x, y, z, yaw, walkT, wagT, frontLegAngle, backLegAngle } = dogState;
+    const { x, y, z, yaw, walkT, wagT, frontLegAngle, backLegAngle, sitAmount } = dogState;
+    // sit: lower the rear, tilt body back, fold back legs
+    const sitSink   = sitAmount * 0.18;  // rump hip drops when sitting
+    const sitBLeg   = sitAmount * 1.05;  // back legs fold forward when sitting
+    const _bla = (ang) => ang * (1 - sitAmount) + sitBLeg * sitAmount;
 
     // Growth scale: Obsidian slowly grows; Bark starts as a tiny newborn pup;
     // Cheeseball is a small pom; Scratch is a larger dog
@@ -4564,11 +4570,11 @@
       const legPairsW = [
         [ 0.30, 0.18,  0.44, frontLegAngle],
         [-0.30, 0.18,  0.44,-frontLegAngle],
-        [ 0.30, 0.18, -0.44,-backLegAngle],
-        [-0.30, 0.18, -0.44, backLegAngle],
+        [ 0.30, 0.18, -0.44, _bla(-backLegAngle)],
+        [-0.30, 0.18, -0.44, _bla(backLegAngle)],
       ];
       legPairsW.forEach(([lx,ly,lz,ang]) => {
-        const hipLocal  = v3(lx, 0.38, lz);
+        const hipLocal  = v3(lx, 0.38 - (lz < 0 ? sitSink : 0), lz);
         const hipWorld  = add(rotY(hipLocal, yaw), v3(x,y,z));
         const legOffset = rotY(rotX(v3(0,-0.21,0), ang), yaw);
         const legCentre = add(hipWorld, legOffset);
@@ -4655,11 +4661,11 @@
       const legPairsCB = [
         [ 0.28*_scCB, 0.18,  0.40*_scCB, frontLegAngle],
         [-0.28*_scCB, 0.18,  0.40*_scCB,-frontLegAngle],
-        [ 0.28*_scCB, 0.18, -0.40*_scCB,-backLegAngle],
-        [-0.28*_scCB, 0.18, -0.40*_scCB, backLegAngle],
+        [ 0.28*_scCB, 0.18, -0.40*_scCB, _bla(-backLegAngle)],
+        [-0.28*_scCB, 0.18, -0.40*_scCB, _bla(backLegAngle)],
       ];
       legPairsCB.forEach(([lx,ly,lz,ang]) => {
-        const hipLocal  = v3(lx, 0.36*_scCB, lz);
+        const hipLocal  = v3(lx, 0.36*_scCB - (lz < 0 ? sitSink : 0), lz);
         const hipWorld  = add(rotY(hipLocal, yaw), v3(x,y,z));
         const legOffset = rotY(rotX(v3(0,-0.19*_scCB,0), ang), yaw);
         const legCentre = add(hipWorld, legOffset);
@@ -4797,11 +4803,11 @@
       const legPairsObs = [
         [ 0.30*_ls2, 0.18,  0.44*_ls2, frontLegAngle],
         [-0.30*_ls2, 0.18,  0.44*_ls2,-frontLegAngle],
-        [ 0.30*_ls2, 0.18, -0.44*_ls2,-backLegAngle],
-        [-0.30*_ls2, 0.18, -0.44*_ls2, backLegAngle],
+        [ 0.30*_ls2, 0.18, -0.44*_ls2, _bla(-backLegAngle)],
+        [-0.30*_ls2, 0.18, -0.44*_ls2, _bla(backLegAngle)],
       ];
       legPairsObs.forEach(([lx,ly,lz,ang]) => {
-        const hipLocal  = v3(lx, 0.38*_ls2, lz);
+        const hipLocal  = v3(lx, 0.38*_ls2 - (lz < 0 ? sitSink : 0), lz);
         const hipWorld  = add(rotY(hipLocal, yaw), v3(x,y,z));
         const legOffset = rotY(rotX(v3(0,-0.21*_ls2,0), ang), yaw);
         const legCentre = add(hipWorld, legOffset);
@@ -4893,11 +4899,11 @@
       const legPairsR = [
         [ 0.30, 0.18,  0.44, frontLegAngle],
         [-0.30, 0.18,  0.44,-frontLegAngle],
-        [ 0.30, 0.18, -0.44,-backLegAngle],
-        [-0.30, 0.18, -0.44, backLegAngle],
+        [ 0.30, 0.18, -0.44, _bla(-backLegAngle)],
+        [-0.30, 0.18, -0.44, _bla(backLegAngle)],
       ];
       legPairsR.forEach(([lx,ly,lz,ang], i) => {
-        const hipLocal  = v3(lx, 0.38, lz);
+        const hipLocal  = v3(lx, 0.38 - (lz < 0 ? sitSink : 0), lz);
         const hipWorld  = add(rotY(hipLocal, yaw), v3(x,y,z));
         const legOffset = rotY(rotX(v3(0,-0.21,0), ang), yaw);
         const legCentre = add(hipWorld, legOffset);
@@ -4995,11 +5001,11 @@
       const bLegs = [
         [ 0.28, 0.18,  0.42, frontLegAngle],
         [-0.28, 0.18,  0.42,-frontLegAngle],
-        [ 0.28, 0.18, -0.42,-backLegAngle],
-        [-0.28, 0.18, -0.42, backLegAngle],
+        [ 0.28, 0.18, -0.42, _bla(-backLegAngle)],
+        [-0.28, 0.18, -0.42, _bla(backLegAngle)],
       ];
       bLegs.forEach(([lx,ly,lz,ang]) => {
-        const hipLocal = v3(lx*sc, 0.38*sc, lz*sc);
+        const hipLocal = v3(lx*sc, 0.38*sc - (lz < 0 ? sitSink : 0), lz*sc);
         const hipWorld = add(rotY(hipLocal, yaw), v3(x,y,z));
         const upOff = rotY(rotX(v3(0,-0.12*sc,0), ang), yaw);
         const upC   = add(hipWorld, upOff);
@@ -5133,12 +5139,12 @@
     const legPairs = [
       [ 0.30*_ls, 0.18,  0.44*_ls, frontLegAngle],
       [-0.30*_ls, 0.18,  0.44*_ls,-frontLegAngle],
-      [ 0.30*_ls, 0.18, -0.44*_ls,-backLegAngle],
-      [-0.30*_ls, 0.18, -0.44*_ls, backLegAngle],
+      [ 0.30*_ls, 0.18, -0.44*_ls, _bla(-backLegAngle)],
+      [-0.30*_ls, 0.18, -0.44*_ls, _bla(backLegAngle)],
     ];
     legPairs.forEach(([lx,ly,lz,ang]) => {
       // pivot at hip level; shift leg down by rotation (scaled)
-      const hipLocal  = v3(lx, 0.38*_ls, lz);
+      const hipLocal  = v3(lx, 0.38*_ls - (lz < 0 ? sitSink : 0), lz);
       const hipWorld  = add(rotY(hipLocal, yaw), v3(x,y,z));
       const legOffset = rotY(rotX(v3(0,-0.21*_ls,0), ang), yaw);
       const legCentre = add(hipWorld, legOffset);
@@ -6253,6 +6259,18 @@
     } else {
       ds.frontLegAngle *= 0.75;
       ds.backLegAngle  *= 0.75;
+    }
+
+    // idle sit — dog sits after ~4 seconds still on the ground, stands when moving
+    const SIT_DELAY = 240; // frames (~4 s at 60 fps)
+    if (moving || !ds.grounded) {
+      ds.idleTimer = 0;
+      ds.sitAmount = Math.max(0, ds.sitAmount - 0.06); // stand up quickly
+    } else {
+      ds.idleTimer++;
+      if (ds.idleTimer > SIT_DELAY) {
+        ds.sitAmount = Math.min(1, ds.sitAmount + 0.025); // ease into sit
+      }
     }
 
     // tail wag
@@ -19002,7 +19020,7 @@
   const OV_SIZES       = [0.72, 1.0, 1.3];
   const OV_SIZE_LABELS = ['🐾 Tiny','🐕 Medium','🐘 Large'];
   const OV_EYE_LABELS  = ['● Round','◉ Big','〜 Almond'];
-  const OV_TAIL_LABELS = ['Stub','Short','Medium','Long','Fluffy'];
+  const OV_TAIL_LABELS = ['Stub','Short','Medium','Long','Fluffy','Curled'];
   const OV_EYE_COLORS  = [
     { name:'Brown',    hex:0x6b3a2a }, { name:'Amber',    hex:0xd4720a },
     { name:'Green',    hex:0x2e8b57 }, { name:'Blue',     hex:0x3a7abf },
@@ -19107,14 +19125,16 @@
   // Falls back to a warm tan for any unset part.
   const OVC_DEFAULT_PARTS = {
     body:'#d4a848', head:'#d4a848', ear:'#b87830', muzzle:'#e8d8b0',
-    collar:'#2060c0', leg:'#d4a848', paw:'#2a1808', tail:'#d4a848',
+    collar:'#2060c0', leg:'#d4a848', paw:'#2a1808', tail:'#d4a848', eye:'#111118',
   };
-  function buildPartTaggedDog(list, wx, wz, s, partColors, facingYaw, earType, bodyIdx) {
+  // ── 3D sitting-pose dog for customization preview ─────────────────────────
+  function buildPartTaggedDog(list, wx, wz, s, partColors, facingYaw, earType, bodyIdx, tailIdx) {
     const pc = Object.assign({}, OVC_DEFAULT_PARTS, partColors||{});
     const bc  = hexStrToInt(pc.body),   hc  = hexStrToInt(pc.head);
     const ec  = hexStrToInt(pc.ear),    mc  = hexStrToInt(pc.muzzle);
     const cc  = hexStrToInt(pc.collar), lc  = hexStrToInt(pc.leg);
     const pwc = hexStrToInt(pc.paw),    tc  = hexStrToInt(pc.tail);
+    const eyeC = hexStrToInt(pc.eye);
     const fl=0.21;
     let bw=0.46,bh=0.28,bd=0.72,legLat=0.28,legLon=0.40,legH=0.20;
     if(bodyIdx===1){bw=0.58;bh=0.34;}
@@ -19123,52 +19143,112 @@
     if(bodyIdx===4){bw=0.36;bh=0.20;bd=0.55;}
     if(bodyIdx===5){bw=0.52;bh=0.32;bd=0.76;}
     if(bodyIdx===6){bw=0.38;bh=0.24;bd=0.78;legLat=0.30;legH=0.26;}
-    const sy=facingYaw, cy2=Math.cos(facingYaw);
     const rvx=Math.cos(facingYaw), rvz=-Math.sin(facingYaw);
-    // Body
-    pushBoxPart(list, wx, fl+0.54*s, wz, bw*s,bh*s,bd*s, bc,'body',facingYaw);
-    // Head
+
+    // ── Body (sitting: lowered slightly so haunches read well) ───────────
+    pushBoxPart(list, wx, fl+0.50*s, wz, bw*s,bh*s,bd*s, bc,'body',facingYaw);
+
+    // ── Head ─────────────────────────────────────────────────────────────
     const hx=wx+Math.sin(facingYaw)*0.78*s, hz=wz+Math.cos(facingYaw)*0.78*s;
     const hW=(bodyIdx===1||bodyIdx===5)?0.38:0.34;
-    pushBoxPart(list, hx, fl+0.96*s, hz, hW*s,0.32*s,0.32*s, hc,'head',facingYaw);
-    // Muzzle
-    const snx=wx+Math.sin(facingYaw)*1.22*s, snz=wz+Math.cos(facingYaw)*1.22*s;
-    pushBoxPart(list, snx,fl+0.85*s,snz, 0.15*s,0.09*s,0.14*s, mc,'muzzle',facingYaw);
-    // Nose (part of muzzle visually)
-    pushBoxPart(list, wx+Math.sin(facingYaw)*1.35*s,fl+0.90*s,wz+Math.cos(facingYaw)*1.35*s, 0.05*s,0.04*s,0.04*s, 0x1a0a08,'muzzle',facingYaw);
-    // Tail
-    const tlx=wx-Math.sin(facingYaw)*0.72*s, tlz=wz-Math.cos(facingYaw)*0.72*s;
-    pushBoxPart(list, tlx,fl+0.84*s,tlz, 0.08*s,0.08*s,0.20*s, tc,'tail',facingYaw+0.4);
-    // Legs + paws
-    [[legLat*s,legLon*s],[-legLat*s,legLon*s],[legLat*s,-legLon*s],[-legLat*s,-legLon*s]].forEach(([lat,lon])=>{
-      const lx=wx+rvx*lat+Math.sin(facingYaw)*lon, lz=wz+rvz*lat+Math.cos(facingYaw)*lon;
-      pushBoxPart(list, lx,fl+legH*s, lz, 0.10*s,legH*s,0.10*s, lc,'leg',facingYaw);
-      pushBoxPart(list, lx,fl+0.04*s, lz, 0.13*s,0.05*s,0.13*s, pwc,'paw',facingYaw);
+    pushBoxPart(list, hx, fl+0.90*s, hz, hW*s,0.32*s,0.32*s, hc,'head',facingYaw);
+
+    // ── Eyes (on front face of head, with white border via 'eye' part) ──
+    const eyeFx = hx+Math.sin(facingYaw)*(hW+0.02)*s;
+    const eyeFz = hz+Math.cos(facingYaw)*(hW+0.02)*s;
+    pushBoxPart(list, eyeFx+rvx*0.13*s, fl+0.96*s, eyeFz+rvz*0.13*s, 0.04*s,0.065*s,0.03*s, eyeC,'eye',facingYaw);
+    pushBoxPart(list, eyeFx-rvx*0.13*s, fl+0.96*s, eyeFz-rvz*0.13*s, 0.04*s,0.065*s,0.03*s, eyeC,'eye',facingYaw);
+
+    // ── Muzzle ────────────────────────────────────────────────────────────
+    const snx=wx+Math.sin(facingYaw)*1.14*s, snz=wz+Math.cos(facingYaw)*1.14*s;
+    pushBoxPart(list, snx,fl+0.78*s,snz, 0.15*s,0.10*s,0.14*s, mc,'muzzle',facingYaw);
+    // Nose tip (tagged 'nose' for white outline; maps to muzzle for painting)
+    pushBoxPart(list, wx+Math.sin(facingYaw)*1.27*s,fl+0.84*s,wz+Math.cos(facingYaw)*1.27*s, 0.055*s,0.046*s,0.04*s, 0x1a0a08,'nose',facingYaw);
+
+    // ── Tail ─────────────────────────────────────────────────────────────
+    const ti = (tailIdx!=null?tailIdx:2);
+    const tlBx = wx-Math.sin(facingYaw)*0.65*s, tlBz = wz-Math.cos(facingYaw)*0.65*s;
+    if(ti===0){
+      // Stub
+      pushBoxPart(list,tlBx,fl+0.72*s,tlBz,0.10*s,0.10*s,0.10*s,tc,'tail',facingYaw+0.3);
+    } else if(ti===1){
+      // Short – one segment angling upward
+      pushBoxPart(list,tlBx,fl+0.68*s,tlBz,0.10*s,0.10*s,0.18*s,tc,'tail',facingYaw+0.55);
+    } else if(ti===2){
+      // Medium – two segments
+      pushBoxPart(list,tlBx,fl+0.68*s,tlBz,0.10*s,0.10*s,0.18*s,tc,'tail',facingYaw+0.55);
+      const t2x=tlBx-Math.sin(facingYaw)*0.10*s, t2z=tlBz-Math.cos(facingYaw)*0.10*s;
+      pushBoxPart(list,t2x,fl+0.90*s,t2z,0.08*s,0.08*s,0.14*s,tc,'tail',facingYaw+1.05);
+    } else if(ti===3){
+      // Long – three segments going up and back
+      pushBoxPart(list,tlBx,fl+0.68*s,tlBz,0.10*s,0.10*s,0.18*s,tc,'tail',facingYaw+0.5);
+      const t2x=tlBx-Math.sin(facingYaw)*0.11*s, t2z=tlBz-Math.cos(facingYaw)*0.11*s;
+      pushBoxPart(list,t2x,fl+0.90*s,t2z,0.08*s,0.08*s,0.16*s,tc,'tail',facingYaw+1.05);
+      const t3x=t2x-Math.sin(facingYaw)*0.10*s, t3z=t2z-Math.cos(facingYaw)*0.10*s;
+      pushBoxPart(list,t3x,fl+1.10*s,t3z,0.06*s,0.06*s,0.14*s,tc,'tail',facingYaw+1.55);
+    } else if(ti===4){
+      // Fluffy – bushy cluster
+      pushBoxPart(list,tlBx,fl+0.68*s,tlBz,0.16*s,0.16*s,0.20*s,tc,'tail',facingYaw+0.4);
+      pushBoxPart(list,tlBx+rvx*0.12*s,fl+0.86*s,tlBz+rvz*0.12*s,0.11*s,0.11*s,0.14*s,tc,'tail',facingYaw+0.3);
+      pushBoxPart(list,tlBx-rvx*0.12*s,fl+0.86*s,tlBz-rvz*0.12*s,0.11*s,0.11*s,0.14*s,tc,'tail',facingYaw+0.5);
+      pushBoxPart(list,tlBx,fl+1.02*s,tlBz,0.13*s,0.12*s,0.13*s,tc,'tail',facingYaw+0.7);
+      pushBoxPart(list,tlBx,fl+1.18*s,tlBz,0.09*s,0.08*s,0.09*s,ovLighten(tc,0.25),'tail',facingYaw+0.9);
+    } else {
+      // Curled – arc of four boxes curling up over the back
+      pushBoxPart(list,tlBx,fl+0.70*s,tlBz,0.10*s,0.10*s,0.16*s,tc,'tail',facingYaw+0.5);
+      const c2x=tlBx-Math.sin(facingYaw)*0.09*s, c2z=tlBz-Math.cos(facingYaw)*0.09*s;
+      pushBoxPart(list,c2x,fl+0.92*s,c2z,0.09*s,0.09*s,0.13*s,tc,'tail',facingYaw+1.2);
+      const c3x=c2x-Math.sin(facingYaw)*0.05*s, c3z=c2z-Math.cos(facingYaw)*0.05*s;
+      pushBoxPart(list,c3x,fl+1.10*s,c3z,0.07*s,0.07*s,0.11*s,tc,'tail',facingYaw+2.1);
+      const c4x=c3x+Math.sin(facingYaw)*0.08*s, c4z=c3z+Math.cos(facingYaw)*0.08*s;
+      pushBoxPart(list,c4x,fl+1.22*s,c4z,0.06*s,0.06*s,0.09*s,ovLighten(tc,0.15),'tail',facingYaw+2.9);
+    }
+
+    // ── Front legs – straight down (sitting) ─────────────────────────────
+    [[legLat,legLon],[-legLat,legLon]].forEach(([lat,lon])=>{
+      const lx=wx+rvx*(lat*s)+Math.sin(facingYaw)*(lon*s);
+      const lz=wz+rvz*(lat*s)+Math.cos(facingYaw)*(lon*s);
+      pushBoxPart(list,lx,fl+legH*s,lz,0.10*s,legH*s,0.10*s,lc,'leg',facingYaw);
+      pushBoxPart(list,lx,fl+0.04*s,lz,0.13*s,0.05*s,0.13*s,pwc,'paw',facingYaw);
     });
-    // Collar
-    pushBoxPart(list, hx,fl+0.78*s,hz, 0.36*s,0.06*s,0.36*s, cc,'collar',facingYaw);
-    // Ears
+
+    // ── Back haunches – sitting pose (spread sideways) ───────────────────
+    [1,-1].forEach(side=>{
+      const hx2=wx+rvx*(side*legLat*1.55*s)-Math.sin(facingYaw)*(legLon*0.28*s);
+      const hz2=wz+rvz*(side*legLat*1.55*s)-Math.cos(facingYaw)*(legLon*0.28*s);
+      // Haunch – wide horizontal box
+      pushBoxPart(list,hx2,fl+0.24*s,hz2,0.20*s,0.14*s,0.24*s,lc,'leg',facingYaw);
+      // Back paw on the ground behind the haunch
+      const px=hx2-Math.sin(facingYaw)*0.12*s, pz=hz2-Math.cos(facingYaw)*0.12*s;
+      pushBoxPart(list,px,fl+0.04*s,pz,0.14*s,0.05*s,0.14*s,pwc,'paw',facingYaw);
+    });
+
+    // ── Collar ────────────────────────────────────────────────────────────
+    pushBoxPart(list,hx,fl+0.72*s,hz,0.36*s,0.06*s,0.36*s,cc,'collar',facingYaw);
+
+    // ── Ears ──────────────────────────────────────────────────────────────
     const ex=Math.cos(facingYaw)*0.30*s, ez=-Math.sin(facingYaw)*0.30*s;
     if(earType==='floppy'){
-      pushBoxPart(list,hx+ex,fl+0.88*s,hz+ez,0.06*s,0.20*s,0.10*s,ec,'ear',facingYaw);
-      pushBoxPart(list,hx-ex,fl+0.88*s,hz-ez,0.06*s,0.20*s,0.10*s,ec,'ear',facingYaw);
+      pushBoxPart(list,hx+ex,fl+0.80*s,hz+ez,0.06*s,0.22*s,0.10*s,ec,'ear',facingYaw);
+      pushBoxPart(list,hx-ex,fl+0.80*s,hz-ez,0.06*s,0.22*s,0.10*s,ec,'ear',facingYaw);
     } else if(earType==='rounded'){
-      pushBoxPart(list,hx+ex,fl+1.12*s,hz+ez,0.12*s,0.14*s,0.10*s,ec,'ear',facingYaw);
-      pushBoxPart(list,hx-ex,fl+1.12*s,hz-ez,0.12*s,0.14*s,0.10*s,ec,'ear',facingYaw);
+      pushBoxPart(list,hx+ex,fl+1.06*s,hz+ez,0.13*s,0.14*s,0.10*s,ec,'ear',facingYaw);
+      pushBoxPart(list,hx-ex,fl+1.06*s,hz-ez,0.13*s,0.14*s,0.10*s,ec,'ear',facingYaw);
     } else if(earType==='bat'){
-      pushBoxPart(list,hx+ex*1.4,fl+1.16*s,hz+ez*1.4,0.16*s,0.20*s,0.06*s,ec,'ear',facingYaw);
-      pushBoxPart(list,hx-ex*1.4,fl+1.16*s,hz-ez*1.4,0.16*s,0.20*s,0.06*s,ec,'ear',facingYaw);
+      pushBoxPart(list,hx+ex*1.4,fl+1.10*s,hz+ez*1.4,0.17*s,0.22*s,0.06*s,ec,'ear',facingYaw);
+      pushBoxPart(list,hx-ex*1.4,fl+1.10*s,hz-ez*1.4,0.17*s,0.22*s,0.06*s,ec,'ear',facingYaw);
     } else if(earType==='tufted'){
-      pushBoxPart(list,hx+ex,fl+1.14*s,hz+ez,0.09*s,0.22*s,0.07*s,ec,'ear',facingYaw);
-      pushBoxPart(list,hx+ex,fl+1.38*s,hz+ez,0.07*s,0.06*s,0.07*s,ovLighten(ec,0.3),'ear',facingYaw);
-      pushBoxPart(list,hx-ex,fl+1.14*s,hz-ez,0.09*s,0.22*s,0.07*s,ec,'ear',facingYaw);
-      pushBoxPart(list,hx-ex,fl+1.38*s,hz-ez,0.07*s,0.06*s,0.07*s,ovLighten(ec,0.3),'ear',facingYaw);
+      pushBoxPart(list,hx+ex,fl+1.08*s,hz+ez,0.09*s,0.24*s,0.07*s,ec,'ear',facingYaw);
+      pushBoxPart(list,hx+ex,fl+1.34*s,hz+ez,0.07*s,0.06*s,0.07*s,ovLighten(ec,0.3),'ear',facingYaw);
+      pushBoxPart(list,hx-ex,fl+1.08*s,hz-ez,0.09*s,0.24*s,0.07*s,ec,'ear',facingYaw);
+      pushBoxPart(list,hx-ex,fl+1.34*s,hz-ez,0.07*s,0.06*s,0.07*s,ovLighten(ec,0.3),'ear',facingYaw);
     } else if(earType==='perky'){
-      pushBoxPart(list,hx+ex*0.8,fl+1.10*s,hz+ez*0.8,0.07*s,0.16*s,0.06*s,ec,'ear',facingYaw);
-      pushBoxPart(list,hx-ex*0.8,fl+1.10*s,hz-ez*0.8,0.07*s,0.16*s,0.06*s,ec,'ear',facingYaw);
+      pushBoxPart(list,hx+ex*0.8,fl+1.05*s,hz+ez*0.8,0.07*s,0.17*s,0.06*s,ec,'ear',facingYaw);
+      pushBoxPart(list,hx-ex*0.8,fl+1.05*s,hz-ez*0.8,0.07*s,0.17*s,0.06*s,ec,'ear',facingYaw);
     } else {
-      pushBoxPart(list,hx+ex,fl+1.14*s,hz+ez,0.09*s,0.22*s,0.07*s,ec,'ear',facingYaw);
-      pushBoxPart(list,hx-ex,fl+1.14*s,hz-ez,0.09*s,0.22*s,0.07*s,ec,'ear',facingYaw);
+      // triangle (default)
+      pushBoxPart(list,hx+ex,fl+1.08*s,hz+ez,0.09*s,0.24*s,0.07*s,ec,'ear',facingYaw);
+      pushBoxPart(list,hx-ex,fl+1.08*s,hz-ez,0.09*s,0.24*s,0.07*s,ec,'ear',facingYaw);
     }
   }
 
@@ -19213,27 +19293,31 @@
   function ovc3DDraw(canvasEl, quads, PW, PH) {
     const ctx2 = canvasEl.getContext('2d');
     ctx2.fillStyle = '#06080f'; ctx2.fillRect(0, 0, PW, PH);
-    const fg = ctx2.createRadialGradient(PW/2, PH*0.9, 0, PW/2, PH*0.9, PW*0.38);
-    fg.addColorStop(0, 'rgba(20,60,120,0.30)'); fg.addColorStop(1, 'rgba(0,0,0,0)');
+    const fg = ctx2.createRadialGradient(PW/2, PH*0.88, 0, PW/2, PH*0.88, PW*0.34);
+    fg.addColorStop(0, 'rgba(20,60,120,0.28)'); fg.addColorStop(1, 'rgba(0,0,0,0)');
     ctx2.fillStyle = fg;
-    ctx2.beginPath(); ctx2.ellipse(PW/2, PH*0.9, PW*0.38, PH*0.06, 0, 0, Math.PI*2); ctx2.fill();
+    ctx2.beginPath(); ctx2.ellipse(PW/2, PH*0.88, PW*0.34, PH*0.055, 0, 0, Math.PI*2); ctx2.fill();
     const projected = ovc3DProject(quads, PW, PH);
-    const sun = normalise(v3(0.5, 1.0, -0.7));
-    for (const { pts, color, normal } of projected) {
-      const nw = normalise(normal||v3(0,1,0));
+    const sun = norm(v3(0.5, 1.0, -0.7));
+    for (const { pts, color, normal, part } of projected) {
+      const nw = norm(normal||v3(0,1,0));
       const diff = Math.max(0, nw.x*sun.x+nw.y*sun.y+nw.z*sun.z);
       const bright = 0.38 + 0.62*diff;
       const r2 = Math.min(255, ((color>>16)&0xff)*bright)|0;
       const g2 = Math.min(255, ((color>>8 )&0xff)*bright)|0;
       const b2 = Math.min(255, ((color    )&0xff)*bright)|0;
       ctx2.fillStyle = `rgb(${r2},${g2},${b2})`;
-      ctx2.strokeStyle = 'rgba(0,0,0,0.18)'; ctx2.lineWidth = 0.5;
+      if(part==='eye'||part==='nose'){
+        ctx2.strokeStyle='rgba(255,255,255,0.95)'; ctx2.lineWidth=1.3;
+      } else {
+        ctx2.strokeStyle='rgba(255,255,255,0.26)'; ctx2.lineWidth=0.85;
+      }
       ctx2.beginPath();
       ctx2.moveTo(pts[0].x, pts[0].y);
       for (let i=1; i<pts.length; i++) ctx2.lineTo(pts[i].x, pts[i].y);
       ctx2.closePath(); ctx2.fill(); ctx2.stroke();
     }
-    ctx2.save(); ctx2.font='bold 11px Arial'; ctx2.fillStyle='rgba(140,200,255,0.70)';
+    ctx2.save(); ctx2.font='bold 11px Arial'; ctx2.fillStyle='rgba(140,200,255,0.65)';
     ctx2.textAlign='center'; ctx2.textBaseline='bottom';
     ctx2.fillText('Click a part to paint it', PW/2, PH-4); ctx2.restore();
     return projected;
@@ -19245,7 +19329,9 @@
     const mx = (clientX - rect.left)*sx, my = (clientY - rect.top)*sy;
     for (let i = projected.length-1; i >= 0; i--) {
       const q = projected[i];
-      if (q.part && pointInPoly2D(mx, my, q.pts)) return q.part;
+      if (q.part && pointInPoly2D(mx, my, q.pts)) {
+        return q.part === 'nose' ? 'muzzle' : q.part;
+      }
     }
     return null;
   }
@@ -19258,7 +19344,7 @@
   let ovcAutoTimer3D = 0;
   let ovc3DLastProjected = [];
 
-  const OVC_PART_LABELS = { body:'Body', head:'Head', ear:'Ears', muzzle:'Snout', collar:'Collar', leg:'Legs', paw:'Paws', tail:'Tail' };
+  const OVC_PART_LABELS = { body:'Body', head:'Head', ear:'Ears', muzzle:'Snout', collar:'Collar', leg:'Legs', paw:'Paws', tail:'Tail', eye:'Eyes' };
 
   function ovc3DDrawFrame() {
     if (!ovcActiveCanvas) { ovcRaf3D = 0; return; }
@@ -19687,210 +19773,6 @@
     for (let wx=-8;wx<8;wx+=2){
       Q.push({verts:[v3(wx,0.04,-41.5),v3(wx+2,0.04,-41.5),v3(wx+2,0.04,-48.5),v3(wx,0.04,-48.5)],color:(wx%4===0)?STREAM:STREAM2,normal:v3(0,1,0),isGround:true});
     }
-  }
-
-    // ── Central grass plaza ───────────────────────────────────────────────
-    for (let gx=-80; gx<80; gx+=8) {
-      for (let gz=-110; gz<130; gz+=8) {
-        const c = ((Math.floor(gx/8)+Math.floor(gz/8))&1) ? 0x3c6c1a:0x2c5412;
-        Q.push({ verts:[v3(gx,0.01,gz),v3(gx+8,0.01,gz),v3(gx+8,0.01,gz+8),v3(gx,0.01,gz+8)], color:c, normal:v3(0,1,0), isGround:true });
-      }
-    }
-
-    // ── Main N-S road ─────────────────────────────────────────────────────
-    for (let gz=-220; gz<220; gz+=6) {
-      Q.push({ verts:[v3(-8,0.018,gz),v3(8,0.018,gz),v3(8,0.018,gz+6),v3(-8,0.018,gz+6)],
-        color:(Math.floor(gz/6)&1)?0x786040:0x685030, normal:v3(0,1,0), isGround:true });
-    }
-    // ── E-W road ──────────────────────────────────────────────────────────
-    for (let gx=-220; gx<220; gx+=6) {
-      if (Math.abs(gx+3)<=8) continue;
-      Q.push({ verts:[v3(gx,0.018,-8),v3(gx+6,0.018,-8),v3(gx+6,0.018,8),v3(gx,0.018,8)],
-        color:(Math.floor(gx/6)&1)?0x786040:0x685030, normal:v3(0,1,0), isGround:true });
-    }
-    // ── Diagonal NW-SE road ───────────────────────────────────────────────
-    for (let i=-28; i<28; i++) {
-      const ox=i*7, oz=i*7;
-      Q.push({ verts:[v3(-80+ox,0.016,-80+oz),v3(-74+ox,0.016,-80+oz),v3(-74+ox,0.016,-74+oz),v3(-80+ox,0.016,-74+oz)],
-        color:(i&1)?0x706048:0x604838, normal:v3(0,1,0), isGround:true });
-    }
-
-    // ── Helper: house ─────────────────────────────────────────────────────
-    function ovHouse(cx,cz,ww,wh,wd,wall,roof) {
-      pushBox(Q, cx, wh,     cz, ww,      wh,   wd,      wall);
-      pushBox(Q, cx, wh*2+0.8, cz, ww+0.6, 0.8, wd+0.6, roof);
-      pushBox(Q, cx, wh*0.55, cz+(cz<0?wd:-wd)+0.1, 0.7, wh*0.55, 0.12, 0x100c08);
-    }
-
-    // ── Town hall (north end) ─────────────────────────────────────────────
-    pushBox(Q, 0, 9,  -155, 18, 9, 14, 0x9a8c7c);
-    pushBox(Q, 0, 19.8,-155, 19, 1.8,15, 0x7a3828);
-    pushBox(Q, 0, 5.5, -169, 3,  5.5, 0.3, 0x100c08);
-    for (let cx=-12; cx<=12; cx+=6) pushBox(Q, cx, 5.5, -169, 0.5, 5.5, 0.5, 0xb8a898);
-    // Town hall banner poles
-    pushBox(Q, -16, 7, -155, 0.2, 7, 0.2, 0x808090);
-    pushBox(Q,  16, 7, -155, 0.2, 7, 0.2, 0x808090);
-    pushBox(Q, -18.5,14,-155, 2.5, 0.15, 0.15, 0xc03030);
-    pushBox(Q,  18.5,14,-155, 2.5, 0.15, 0.15, 0xc03030);
-
-    // ── North residential (6 houses on each side) ─────────────────────────
-    const hWall  = [0x9a7860,0x6a8070,0x7068a0,0x90a068,0xa07858,0x886888];
-    const hRoof  = [0x8a3020,0x306848,0x5030a0,0x608030,0xa04828,0x603878];
-    for (let i=0; i<6; i++) {
-      ovHouse(-38,  -170+i*24, 8, 5, 6.5, hWall[i], hRoof[i]);
-      ovHouse( 38,  -170+i*24, 8, 5, 6.5, hWall[(i+2)%6], hRoof[(i+3)%6]);
-    }
-
-    // ── Market row (west, N of crossroads) ────────────────────────────────
-    for (let i=0; i<7; i++) {
-      const mx=-28, mz=-90+i*22;
-      pushBox(Q, mx, 3,   mz, 3.5, 3,   3.5, 0x8a7060);
-      pushBox(Q, mx, 7.2, mz, 4.2, 1.2, 4.2, (i%3===0)?0xcc2828:(i%3===1)?0x2258c0:0x30a040);
-      pushBox(Q, mx, 1,   mz, 2.8, 1,   2.2, 0x6a5040);
-    }
-
-    // ── East district (workshop row) ──────────────────────────────────────
-    const wkWall = [0x706880,0x887060,0x608870,0x908080,0x707898];
-    const wkRoof = [0x403060,0x604830,0x305840,0x604040,0x405060];
-    for (let i=0; i<5; i++) {
-      ovHouse(55, -80+i*30, 9, 5.5, 7, wkWall[i], wkRoof[i]);
-    }
-    // Chimneys
-    for (let i=0; i<5; i++) {
-      pushBox(Q, 60, 12, -75+i*30, 0.8, 3.5, 0.8, 0x505060);
-    }
-
-    // ── South district: bakery, forge, stables ────────────────────────────
-    // Bakery
-    pushBox(Q,-50, 5, 60, 10, 5, 8, 0xe0c088);
-    pushBox(Q,-50,11.2,60, 10.6,1.2,8.6, 0xb84830);
-    pushBox(Q,-50, 2.5,52,  2,  2.5, 0.3, 0x100c08);
-    // Sign
-    pushBox(Q,-50, 8.5,52, 3, 0.4, 0.08, 0x8a5c20);
-    // Forge
-    pushBox(Q, 50, 5, 55, 9, 5, 9, 0x6a6060);
-    pushBox(Q, 50,11, 55, 9.6,1, 9.6, 0x484040);
-    pushBox(Q, 50, 8,46,  1.2, 8, 1.2, 0x505060);  // chimney
-    pushBox(Q, 50, 2.5,46, 2,  2.5, 0.3, 0x100c08);
-    // Stables
-    pushBox(Q, 0, 4, 100, 14, 4, 10, 0xa08060);
-    pushBox(Q, 0, 9.2,100, 14.6,1.2,10.6, 0x7a4820);
-    pushBox(Q,-10, 2,90,   2,  2, 0.3, 0x100c08);
-    pushBox(Q, 10, 2,90,   2,  2, 0.3, 0x100c08);
-    // Stable fence
-    for (let fx=-14; fx<=14; fx+=3.5) {
-      pushBox(Q, fx, 1.2, 110, 0.18, 1.2, 0.18, 0x7a5828);
-    }
-    pushBox(Q, 0, 0.6, 110, 14, 0.1, 0.12, 0x7a5828);
-
-    // ── West district: library + art garden ──────────────────────────────
-    // Library
-    pushBox(Q,-60, 6, -50, 11, 6, 9, 0x808090);
-    pushBox(Q,-60,13.2,-50, 11.6,1.0,9.6, 0x203868);
-    pushBox(Q,-60, 3, -59,  2,  3, 0.3, 0x100c08);
-    for (let cx=-68; cx<=-52; cx+=5) pushBox(Q, cx, 3.5,-59, 0.4, 3.5, 0.4, 0xa09898);
-    // Art garden (stone circle)
-    for (let a=0; a<6; a++) {
-      const ax = -90+Math.cos(a*Math.PI/3)*16, az = 30+Math.sin(a*Math.PI/3)*16;
-      pushBox(Q, ax, 1.5, az, 0.8, 1.5, 0.8, 0x8090a0);
-    }
-    pushBox(Q,-90, 0.4, 30, 3, 0.4, 3, 0x7898b0);
-    // Sculpture
-    pushBox(Q,-90, 2.5, 30, 0.5, 2.5, 0.5, 0x90a8b8);
-    pushBox(Q,-90, 5.8, 30, 1.2, 0.6, 1.2, 0xa0b8c8);
-
-    // ── Central fountain ─────────────────────────────────────────────────
-    pushBox(Q, 0, 0.8, -30, 6, 0.8, 6, 0x7a7268);
-    pushBox(Q, 0, 1.9, -30, 4.5, 0.5, 4.5, 0x6c6460);
-    Q.push({ verts:[v3(-3.5,2.1,-33.5),v3(3.5,2.1,-33.5),v3(3.5,2.1,-26.5),v3(-3.5,2.1,-26.5)], color:0x0c2860, normal:v3(0,1,0), isGround:true });
-    pushBox(Q, -4.5, 4.2,-30, 0.25, 2.5, 0.25, 0x6a4820);
-    pushBox(Q,  4.5, 4.2,-30, 0.25, 2.5, 0.25, 0x6a4820);
-    pushBox(Q,  0,   6.8,-30, 4.75, 0.12, 0.12, 0x5a3c18);
-    pushBox(Q,  0,   5.0,-30, 0.1,  1.8,  0.1,  0x483828);
-
-    // ── East fountain plaza (paved) ───────────────────────────────────────
-    for (let gx=80; gx<130; gx+=10) {
-      for (let gz=-30; gz<30; gz+=10) {
-        Q.push({ verts:[v3(gx,0.02,gz),v3(gx+10,0.02,gz),v3(gx+10,0.02,gz+10),v3(gx,0.02,gz+10)], color:((Math.floor(gx/10)+Math.floor(gz/10))&1)?0x706858:0x645c50, normal:v3(0,1,0), isGround:true });
-      }
-    }
-    pushBox(Q,105, 1.2,  0, 6, 1.2, 6, 0x8880a0);
-    pushBox(Q,105, 2.8,  0, 4.5,0.3,4.5, 0x7878a0);
-    Q.push({ verts:[v3(101.5,3,-3.5),v3(108.5,3,-3.5),v3(108.5,3,3.5),v3(101.5,3,3.5)], color:0x2858b8, normal:v3(0,1,0), isGround:true });
-    pushBox(Q,105, 6,    0, 0.4, 3.5, 0.4, 0x9090b0);
-
-    // ── Park (north-east) ─────────────────────────────────────────────────
-    for (let gx=90; gx<170; gx+=8) {
-      for (let gz=-150; gz<-80; gz+=8) {
-        const c=((Math.floor(gx/8)+Math.floor(gz/8))&1)?0x3a6c1c:0x2e5a12;
-        Q.push({ verts:[v3(gx,0.01,gz),v3(gx+8,0.01,gz),v3(gx+8,0.01,gz+8),v3(gx,0.01,gz+8)], color:c, normal:v3(0,1,0), isGround:true });
-      }
-    }
-    [[96,-144],[106,-130],[118,-144],[128,-132],[140,-144],[150,-130],
-     [96,-112],[112,-118],[128,-112],[144,-118],[160,-112]].forEach(([tx,tz])=>{
-      addTree(tx, tz, 2.2, Q);
-    });
-    [[98,-138],[122,-128],[146,-138],[170,-128]].forEach(([bx,bz])=>{
-      pushBox(Q, bx, 0.9, bz, 3.2, 0.12, 0.8, 0x7a5830);
-      pushBox(Q, bx, 1.3, bz, 3.2, 0.12, 0.1, 0x7a5830);
-      [[-2.6],[2.6]].forEach(([ox])=> pushBox(Q, bx+ox, 0.45, bz, 0.14, 0.45, 0.75, 0x604820));
-    });
-
-    // ── SW forest grove ───────────────────────────────────────────────────
-    [[-100,80],[-115,65],[-130,80],[-145,65],[-160,80],[-175,95],
-     [-105,100],[-120,115],[-140,100],[-155,115],[-170,100]].forEach(([tx,tz])=>{
-      addTree(tx, tz, 2.0, Q);
-    });
-    // Mossy stones
-    [[-110,85],[-130,95],[-150,85],[-140,110]].forEach(([sx,sz])=>{
-      pushBox(Q, sx, 1, sz, 2.5, 1, 1.8, 0x5a7050);
-    });
-
-    // ── Tall trees lining the main roads ─────────────────────────────────
-    [[-20,-180],[-20,-160],[-20,-140],[-20,-120],[-20,-100],[-20,-80],[-20,-60],
-      [20,-180],[ 20,-160],[ 20,-140],[ 20,-120],[ 20,-100],[ 20,-80],[ 20,-60],
-      [-20, 40], [-20, 60], [-20, 80], [-20,100], [-20,120],
-       [20, 40],  [20, 60],  [20, 80],  [20,100],  [20,120],
-      [-140,-20],[-140,0],[-140,20],[-140,40],[-140,60],
-       [140,-20], [140,0], [140,20], [140,40], [140,60]].forEach(([tx,tz])=>{
-      addTree(tx, tz, 1.6, Q);
-    });
-
-    // ── Lampposts along main road (every 20 units) ────────────────────────
-    for (let lz=-180; lz<=180; lz+=20) {
-      [[-11],[11]].forEach(([lx])=>{
-        pushBox(Q, lx, 4,   lz, 0.18, 4,    0.18, 0x404858);
-        pushBox(Q, lx, 8.4, lz, 0.8,  0.18, 0.18, 0x404858);
-        Q.push({ verts:[v3(lx-0.4,8.2,lz-0.4),v3(lx+0.4,8.2,lz-0.4),v3(lx+0.4,8.2,lz+0.4),v3(lx-0.4,8.2,lz+0.4)], color:0xffee88, normal:v3(0,1,0), isGround:true });
-      });
-    }
-    // Lampposts along E-W road
-    for (let lx=-180; lx<=180; lx+=20) {
-      if (Math.abs(lx)<12) continue;
-      [[-11],[11]].forEach(([lz])=>{
-        pushBox(Q, lx, 4,   lz, 0.18, 4,    0.18, 0x404858);
-        pushBox(Q, lx, 8.4, lz, 0.18, 0.18, 0.8,  0x404858);
-        Q.push({ verts:[v3(lx-0.4,8.2,lz-0.4),v3(lx+0.4,8.2,lz-0.4),v3(lx+0.4,8.2,lz+0.4),v3(lx-0.4,8.2,lz+0.4)], color:0xffee88, normal:v3(0,1,0), isGround:true });
-      });
-    }
-
-    // ── Portal arch (south exit, leads back to Warbark) ───────────────────
-    pushBox(Q, -8, 6, 220, 0.8, 6, 0.8, 0x6060a0);
-    pushBox(Q,  8, 6, 220, 0.8, 6, 0.8, 0x6060a0);
-    pushBox(Q,  0, 12.8, 220, 8.8, 0.8, 0.8, 0x6060a0);
-    Q.push({ verts:[v3(-7.5,0.05,219),v3(7.5,0.05,219),v3(7.5,0.05,221),v3(-7.5,0.05,221)], color:0x3050c0, normal:v3(0,1,0), isGround:true });
-    // Portal arch (north)
-    pushBox(Q, -8, 6,-220, 0.8, 6, 0.8, 0x6060a0);
-    pushBox(Q,  8, 6,-220, 0.8, 6, 0.8, 0x6060a0);
-    pushBox(Q,  0,12.8,-220, 8.8,0.8, 0.8, 0x6060a0);
-    Q.push({ verts:[v3(-7.5,0.05,-221),v3(7.5,0.05,-221),v3(7.5,0.05,-219),v3(-7.5,0.05,-219)], color:0x3050c0, normal:v3(0,1,0), isGround:true });
-
-    // ── Satellite dish / Unit-7 (near centre, so player spawns near it) ───
-    pushBox(Q, 12, 0.5, 12, 0.7, 0.5, 0.7, 0x505868);
-    pushBox(Q, 12, 2.0, 12, 0.12, 1.5, 0.12, 0x606878);
-    pushBox(Q, 13.2, 3.4, 12, 1.5, 0.12, 1.5, 0x5890c0, 0.4);
-
-    toastMsg = '';
   }
 
   // ── Online player rendering ──────────────────────────────────────────────
