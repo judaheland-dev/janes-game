@@ -14979,6 +14979,26 @@
   let missionFieldCrossroads = []; // [{x,z,labels,revealed,failText,failTimer}] — New Moon ability
   let _mfTrapFlashTimer = 0; // frames for trap-triggered red flash
 
+  // ── New mission variety state ──────────────────────────────────────────────
+  // collect_items: pick up scattered items; advance when all collected
+  let _mfCollectItems = []; // [{id,x,z,icon,label,collected}]
+  // sequence_puzzle: step on plates in order
+  let _mfPuzzlePlates  = []; // [{id,x,z,icon,order,hit}]
+  let _mfPuzzleTarget  = 0;  // next plate index to hit
+  let _mfPuzzleFlash   = 0;  // frames for success/fail flash
+  let _mfPuzzleOk      = false; // true when sequence complete
+  // timed_catch: chase moving items before timer runs out
+  let _mfCatchItems    = []; // [{id,x,z,vx,vz,icon,caught}]
+  let _mfCatchTimer    = 0;  // frames remaining (60 fps; 0 = fail)
+  let _mfCatchNeeded   = 0;  // total items to catch
+  let _mfCatchDone     = false;
+  // scent_trail: follow glowing dots in sequence
+  let _mfScentDots     = []; // [{id,x,z,icon,visible,found}]
+  let _mfScentNext     = 0;  // index of next dot to reveal
+  // shared
+  let _mfVarietyFlash  = 0;  // frames for variety-type HUD flash
+  let _mfVarietyMsg    = '';  // message text
+
   // Seeded LCG RNG tied to mission key so each mission always generates the same map
   function mfRng(seed) {
     let s = seed >>> 0;
@@ -15011,6 +15031,11 @@
     missionFieldTraps.length  = 0;
     missionFieldCrossroads.length = 0;
     _mfTrapFlashTimer = 0;
+    _mfCollectItems.length = 0;
+    _mfPuzzlePlates.length = 0;  _mfPuzzleTarget = 0; _mfPuzzleFlash = 0; _mfPuzzleOk = false;
+    _mfCatchItems.length   = 0;  _mfCatchTimer   = 0; _mfCatchNeeded = 0; _mfCatchDone = false;
+    _mfScentDots.length    = 0;  _mfScentNext    = 0;
+    _mfVarietyFlash = 0; _mfVarietyMsg = '';
     missionFieldObjectiveReady = false;
     missionFieldDetected = false;
     if (!activeMission) return;
@@ -16704,14 +16729,43 @@
     if (!stages || idx >= stages.length) return;
     missionFieldStage = idx;
     missionFieldItems.length = 0;
+    // Reset variety state for this stage
+    _mfCollectItems.length = 0;
+    _mfPuzzlePlates.length = 0; _mfPuzzleTarget = 0; _mfPuzzleFlash = 0; _mfPuzzleOk = false;
+    _mfCatchItems.length   = 0; _mfCatchTimer   = 0; _mfCatchNeeded = 0; _mfCatchDone = false;
+    _mfScentDots.length    = 0; _mfScentNext    = 0;
+    _mfVarietyFlash = 0; _mfVarietyMsg = '';
     const stage = stages[idx];
     if (stage.type === 'reach') {
       missionFieldItems.push({ id:0, x:stage.x, z:stage.z, type:'reach', label:stage.label, icon:stage.icon, collected:false });
     } else if (stage.type === 'riddle_door') {
-      // Nav marker points to the guard
       missionFieldItems.push({ id:0, x:stage.guardX, z:stage.guardZ, type:'door_nav', label:stage.label, icon:'🚪', collected:false });
     } else if (stage.type === 'objective') {
       missionFieldItems.push({ id:0, x:stage.x, z:stage.z, type:'objective', label:stage.label, icon:stage.icon, collected:false });
+    } else if (stage.type === 'collect_items') {
+      // Place scatter items; a nav marker points to the cluster zone
+      stage.items.forEach((it, i) => {
+        _mfCollectItems.push({ id:i, x:it.x, z:it.z, icon:it.icon || stage.icon, label:it.label || stage.label, collected:false });
+      });
+      // Invisible completion sentinel in missionFieldItems so the HUD stage counter works
+      missionFieldItems.push({ id:0, x:stage.items[0].x, z:stage.items[0].z, type:'collect_items_done', label:stage.label, icon:stage.icon, collected:false });
+    } else if (stage.type === 'sequence_puzzle') {
+      stage.plates.forEach((pl, i) => {
+        _mfPuzzlePlates.push({ id:i, x:pl.x, z:pl.z, icon:pl.icon || '🔵', order:i, hit:false });
+      });
+      missionFieldItems.push({ id:0, x:stage.plates[0].x, z:stage.plates[0].z, type:'sequence_puzzle_done', label:stage.label, icon:stage.icon, collected:false });
+    } else if (stage.type === 'timed_catch') {
+      _mfCatchNeeded = stage.items.length;
+      _mfCatchTimer  = (stage.timeSeconds || 30) * 60;
+      stage.items.forEach((it, i) => {
+        _mfCatchItems.push({ id:i, x:it.x, z:it.z, vx:(Math.random()-0.5)*0.08, vz:(Math.random()-0.5)*0.08, icon:it.icon || stage.icon, caught:false });
+      });
+      missionFieldItems.push({ id:0, x:stage.items[0].x, z:stage.items[0].z, type:'timed_catch_done', label:stage.label, icon:stage.icon, collected:false });
+    } else if (stage.type === 'scent_trail') {
+      stage.dots.forEach((d, i) => {
+        _mfScentDots.push({ id:i, x:d.x, z:d.z, icon:d.icon || '🟡', visible: i === 0, found:false });
+      });
+      missionFieldItems.push({ id:0, x:stage.dots[0].x, z:stage.dots[0].z, type:'scent_trail_done', label:stage.label, icon:stage.icon, collected:false });
     }
   }
 
@@ -17028,6 +17082,121 @@
           advanceMissionStage();
           return;
         }
+      } else if (activeItem.type === 'collect_items_done') {
+        // All scatter items collected? advance stage
+        if (_mfCollectItems.length > 0 && _mfCollectItems.every(it => it.collected)) {
+          activeItem.collected = true;
+          advanceMissionStage();
+          return;
+        }
+        // Individual item collection (E or just proximity)
+        for (const ci of _mfCollectItems) {
+          if (ci.collected) continue;
+          const cd = Math.hypot(ds.x - ci.x, ds.z - ci.z);
+          if (cd < 2.8 && keysJustPressed.has('KeyE')) {
+            keysJustPressed.delete('KeyE');
+            ci.collected = true;
+            const left = _mfCollectItems.filter(i => !i.collected).length;
+            _mfVarietyMsg = left > 0 ? `${ci.icon} Grabbed! ${left} left` : `${ci.icon} All collected!`;
+            _mfVarietyFlash = 90;
+            break;
+          }
+        }
+      } else if (activeItem.type === 'sequence_puzzle_done') {
+        if (_mfPuzzleOk) {
+          activeItem.collected = true;
+          advanceMissionStage();
+          return;
+        }
+        // Step on correct plate (proximity auto-trigger)
+        for (const pl of _mfPuzzlePlates) {
+          if (pl.hit) continue;
+          const pd = Math.hypot(ds.x - pl.x, ds.z - pl.z);
+          if (pd < 2.2) {
+            if (pl.order === _mfPuzzleTarget) {
+              pl.hit = true;
+              _mfPuzzleTarget++;
+              _mfVarietyMsg = `✅ ${pl.icon} Step ${_mfPuzzleTarget} of ${_mfPuzzlePlates.length}`;
+              _mfVarietyFlash = 80;
+              if (_mfPuzzleTarget >= _mfPuzzlePlates.length) {
+                _mfPuzzleOk = true;
+                _mfVarietyMsg = '✅ Sequence complete!';
+                _mfVarietyFlash = 120;
+              }
+            } else {
+              // Wrong order — reset
+              _mfPuzzlePlates.forEach(p => { p.hit = false; });
+              _mfPuzzleTarget = 0;
+              _mfVarietyMsg = '❌ Wrong order — reset!';
+              _mfVarietyFlash = 90;
+            }
+            break;
+          }
+        }
+      } else if (activeItem.type === 'timed_catch_done') {
+        // Update moving items
+        const bounds = 30;
+        for (const ci of _mfCatchItems) {
+          if (ci.caught) continue;
+          ci.x += ci.vx; ci.z += ci.vz;
+          // Bounce off edges
+          if (ci.x > bounds || ci.x < -bounds) ci.vx = -ci.vx;
+          if (ci.z > -10 || ci.z < -110) ci.vz = -ci.vz;
+          // Randomly veer
+          if (Math.random() < 0.02) { ci.vx += (Math.random()-0.5)*0.04; ci.vz += (Math.random()-0.5)*0.04; }
+          ci.vx = Math.max(-0.12, Math.min(0.12, ci.vx));
+          ci.vz = Math.max(-0.12, Math.min(0.12, ci.vz));
+          // Catch on proximity
+          const cd = Math.hypot(ds.x - ci.x, ds.z - ci.z);
+          if (cd < 2.0) {
+            ci.caught = true;
+            const left = _mfCatchItems.filter(c => !c.caught).length;
+            _mfVarietyMsg = left > 0 ? `${ci.icon} Caught! ${left} to go` : `${ci.icon} All caught!`;
+            _mfVarietyFlash = 90;
+          }
+        }
+        // Countdown timer
+        if (!_mfCatchDone) {
+          _mfCatchTimer--;
+          if (_mfCatchItems.filter(c => !c.caught).length === 0) {
+            _mfCatchDone = true;
+            activeItem.collected = true;
+            advanceMissionStage();
+            return;
+          }
+          if (_mfCatchTimer <= 0) {
+            // Time up — reset player to entry
+            _mfVarietyMsg = '⏰ Time\'s up! Try again!';
+            _mfVarietyFlash = 120;
+            // Reset items and timer
+            _mfCatchItems.forEach(c => { c.caught = false; c.x = c._ox || c.x; c.z = c._oz || c.z; });
+            const stages2 = MISSION_STAGES[activeMission.profIdx * 3 + activeMission.mIdx];
+            _mfCatchTimer = ((stages2[missionFieldStage].timeSeconds) || 30) * 60;
+            ds.x = 0; ds.z = 6;
+          }
+        }
+      } else if (activeItem.type === 'scent_trail_done') {
+        // Reveal next dot when current is found
+        for (let si = 0; si < _mfScentDots.length; si++) {
+          const dot = _mfScentDots[si];
+          if (!dot.visible || dot.found) continue;
+          const dd = Math.hypot(ds.x - dot.x, ds.z - dot.z);
+          if (dd < 2.5) {
+            dot.found = true;
+            const nextDot = _mfScentDots[si + 1];
+            if (nextDot) { nextDot.visible = true; }
+            _mfScentNext = si + 1;
+            _mfVarietyMsg = nextDot ? `${dot.icon} Trail found — follow it!` : `${dot.icon} End of the trail!`;
+            _mfVarietyFlash = 90;
+            if (!nextDot) {
+              // All dots found
+              activeItem.collected = true;
+              advanceMissionStage();
+              return;
+            }
+          }
+          break; // only process the first visible unfound dot
+        }
       }
     }
 
@@ -17324,9 +17493,104 @@
         } else if (activeItem2.type === 'objective') {
           ctx.fillStyle = missionFieldObjectiveReady ? '#60ff80' : '#ffdd60';
           ctx.fillText(`${activeItem2.icon} ${missionFieldObjectiveReady ? 'E · Complete' : 'Objective'}`, sp.x, sp.y-3);
+        } else if (activeItem2.type === 'collect_items_done') {
+          const left = _mfCollectItems.filter(c => !c.collected).length;
+          ctx.fillStyle = '#ffbb44';
+          ctx.fillText(`${activeItem2.icon} Collect items: ${left} remaining`, sp.x, sp.y-3);
+        } else if (activeItem2.type === 'sequence_puzzle_done') {
+          const next = _mfPuzzlePlates[_mfPuzzleTarget];
+          ctx.fillStyle = _mfPuzzleOk ? '#60ff80' : '#cc88ff';
+          ctx.fillText(_mfPuzzleOk ? '✅ Sequence done! Keep moving!' : (next ? `${next.icon} Step on plate #${_mfPuzzleTarget+1}` : '🔵 Find the plates'), sp.x, sp.y-3);
+        } else if (activeItem2.type === 'timed_catch_done') {
+          const secLeft = Math.ceil(_mfCatchTimer / 60);
+          const left = _mfCatchItems.filter(c => !c.caught).length;
+          ctx.fillStyle = secLeft <= 10 ? '#ff5050' : '#ffbb44';
+          ctx.fillText(`${activeItem2.icon} Catch ${left} more — ${secLeft}s`, sp.x, sp.y-3);
+        } else if (activeItem2.type === 'scent_trail_done') {
+          const nextDot = _mfScentDots.find(d => d.visible && !d.found);
+          ctx.fillStyle = '#a8ff80';
+          ctx.fillText(nextDot ? `${nextDot.icon} Follow the scent trail` : '🟡 Find the trail start', sp.x, sp.y-3);
         }
         ctx.globalAlpha = 1;
       }
+    }
+
+    // Scatter collect items
+    for (const ci of _mfCollectItems) {
+      if (ci.collected) continue;
+      const sp = project(v3(ci.x, DOG_FLOOR+1.8, ci.z), cam);
+      if (!sp) continue;
+      const near = Math.hypot(dogState.x - ci.x, dogState.z - ci.z) < 2.8;
+      ctx.globalAlpha = 0.9; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+      ctx.font = near ? 'bold 18px Arial' : 'bold 14px Arial';
+      ctx.fillStyle = near ? '#ffe060' : '#ffcc44';
+      ctx.fillText(ci.icon, sp.x, sp.y);
+      if (near) { ctx.font = 'bold 10px Arial'; ctx.fillStyle = '#ffe060'; ctx.fillText('[E] Grab', sp.x, sp.y+10); }
+      ctx.globalAlpha = 1;
+    }
+
+    // Sequence puzzle plates
+    for (const pl of _mfPuzzlePlates) {
+      const sp = project(v3(pl.x, DOG_FLOOR+0.5, pl.z), cam);
+      if (!sp) continue;
+      const near = Math.hypot(dogState.x - pl.x, dogState.z - pl.z) < 2.5;
+      ctx.globalAlpha = 0.9; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+      ctx.font = near ? 'bold 20px Arial' : 'bold 15px Arial';
+      ctx.fillStyle = pl.hit ? '#60ff80' : (near ? '#ffe060' : '#8888ff');
+      ctx.fillText(pl.hit ? '✅' : pl.icon, sp.x, sp.y);
+      if (!pl.hit) {
+        ctx.font = 'bold 10px Arial'; ctx.fillStyle = '#aaaaff';
+        ctx.fillText(`#${pl.order+1}`, sp.x, sp.y+11);
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    // Timed catch items
+    for (const ci of _mfCatchItems) {
+      if (ci.caught) continue;
+      const sp = project(v3(ci.x, DOG_FLOOR+1.2, ci.z), cam);
+      if (!sp) continue;
+      const near = Math.hypot(dogState.x - ci.x, dogState.z - ci.z) < 2.0;
+      ctx.globalAlpha = 0.88; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+      ctx.font = near ? 'bold 20px Arial' : 'bold 14px Arial';
+      ctx.fillStyle = near ? '#ffee44' : '#ffcc44';
+      ctx.fillText(ci.icon, sp.x, sp.y);
+      ctx.globalAlpha = 1;
+    }
+    // Timed catch: timer bar at top
+    if (missionFieldItems.find(it => !it.collected && it.type === 'timed_catch_done')) {
+      const stages3 = MISSION_STAGES[activeMission.profIdx * 3 + activeMission.mIdx];
+      const totalSec = (stages3[missionFieldStage]?.timeSeconds || 30) * 60;
+      const pct = Math.max(0, _mfCatchTimer / totalSec);
+      ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(W/2-80, 50, 160, 12);
+      ctx.fillStyle = pct > 0.4 ? '#60dd60' : pct > 0.2 ? '#ffcc30' : '#ff4040';
+      ctx.fillRect(W/2-80, 50, 160 * pct, 12);
+      ctx.strokeStyle = 'rgba(200,200,200,0.4)'; ctx.lineWidth = 1; ctx.strokeRect(W/2-80, 50, 160, 12);
+      ctx.textAlign = 'center'; ctx.font = '9px Arial'; ctx.fillStyle = '#fff';
+      ctx.fillText(`⏱ ${Math.ceil(_mfCatchTimer/60)}s`, W/2, 61);
+    }
+
+    // Scent trail dots
+    for (const dot of _mfScentDots) {
+      if (!dot.visible) continue;
+      const sp = project(v3(dot.x, DOG_FLOOR + (dot.found ? 0.1 : 1.0), dot.z), cam);
+      if (!sp) continue;
+      ctx.globalAlpha = dot.found ? 0.3 : 0.9;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+      ctx.font = dot.found ? '12px Arial' : 'bold 18px Arial';
+      ctx.fillStyle = dot.found ? '#808060' : '#a8ff80';
+      ctx.fillText(dot.icon, sp.x, sp.y);
+      ctx.globalAlpha = 1;
+    }
+
+    // Variety flash message
+    if (_mfVarietyFlash > 0) {
+      _mfVarietyFlash--;
+      ctx.globalAlpha = Math.min(1, _mfVarietyFlash / 20);
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = 'bold 22px Arial'; ctx.fillStyle = 'rgba(200,255,160,0.95)';
+      ctx.fillText(_mfVarietyMsg, W/2, H * 0.20);
+      ctx.globalAlpha = 1;
     }
 
     // Door guard labels
@@ -19285,43 +19549,51 @@
     let haunchW=0.20,haunchH=0.14,haunchD=0.24,haunchY=0.24;
     // Tail scale & root offset
     let tailSc=1.0,tailBkOff=0.65;
+    // Muzzle & ear scale factors
+    let muzzleSc=1.0,earSc=1.0;
 
     if(bodyIdx===1){// Chubby
       bw=0.58;bh=0.34;
       hW=0.42;hH=0.37;hD=0.37;headY=0.97;headFwd=0.84;
       legW=0.13;pawW=0.16;legH=0.19;
       haunchW=0.26;haunchH=0.17;haunchD=0.29;haunchY=0.26;
-      tailSc=1.3;tailBkOff=0.70;}
+      tailSc=1.3;tailBkOff=0.70;
+      muzzleSc=1.25;earSc=1.20;}
     if(bodyIdx===2){// Slim
       bw=0.36;bh=0.22;
       hW=0.30;hH=0.27;hD=0.27;headY=0.83;headFwd=0.72;
       legW=0.08;pawW=0.10;
       haunchW=0.16;haunchH=0.12;haunchD=0.20;haunchY=0.22;
-      tailSc=0.8;tailBkOff=0.60;}
+      tailSc=0.8;tailBkOff=0.60;
+      muzzleSc=0.82;earSc=0.85;}
     if(bodyIdx===3){// Tall
       bw=0.42;bh=0.22;legLon=0.50;legH=0.28;
       hW=0.34;hH=0.30;hD=0.30;headY=0.96;headFwd=0.78;
       legW=0.09;pawW=0.11;
       haunchW=0.18;haunchH=0.18;haunchD=0.26;haunchY=0.28;
-      tailSc=1.15;tailBkOff=0.65;}
+      tailSc=1.15;tailBkOff=0.65;
+      muzzleSc=0.95;earSc=1.05;}
     if(bodyIdx===4){// Tiny
       bw=0.36;bh=0.20;bd=0.55;
       hW=0.28;hH=0.25;hD=0.25;headY=0.79;headFwd=0.64;
       legW=0.08;pawW=0.10;legH=0.16;
       haunchW=0.15;haunchH=0.11;haunchD=0.18;haunchY=0.20;
-      tailSc=0.72;tailBkOff=0.55;}
+      tailSc=0.72;tailBkOff=0.55;
+      muzzleSc=0.72;earSc=0.78;}
     if(bodyIdx===5){// Fluffy
       bw=0.52;bh=0.32;bd=0.76;
       hW=0.44;hH=0.40;hD=0.40;headY=1.00;headFwd=0.86;
       legW=0.14;pawW=0.17;legH=0.21;
       haunchW=0.28;haunchH=0.19;haunchD=0.32;haunchY=0.27;
-      tailSc=1.45;tailBkOff=0.72;}
+      tailSc=1.45;tailBkOff=0.72;
+      muzzleSc=1.35;earSc=1.40;}
     if(bodyIdx===6){// Athletic
       bw=0.38;bh=0.24;bd=0.78;legLat=0.30;legH=0.26;
       hW=0.33;hH=0.30;hD=0.30;headY=0.90;headFwd=0.76;
       legW=0.11;pawW=0.12;
       haunchW=0.22;haunchH=0.16;haunchD=0.26;haunchY=0.25;
-      tailSc=1.1;tailBkOff=0.66;}
+      tailSc=1.1;tailBkOff=0.66;
+      muzzleSc=0.90;earSc=0.92;}
     const rvx=Math.cos(facingYaw), rvz=-Math.sin(facingYaw);
 
     // ── Body ─────────────────────────────────────────────────────────────
@@ -19341,17 +19613,21 @@
 
     // ── Muzzle (noseIdx: 0=Normal,1=Big,2=Button,3=Long,4=Wide,5=Flat) ──
     const ni = noseIdx||0;
-    const headYDelta = headY - 0.90; // shift muzzle Y with head
-    let mnW=0.15,mnH=0.10,mnD=0.14, noseFwd=1.14, noseY=0.78+headYDelta;
-    if(ni===1){mnW=0.20;mnH=0.14;mnD=0.18;noseFwd=1.16;noseY=0.76+headYDelta;}  // Big
-    if(ni===2){mnW=0.10;mnH=0.07;mnD=0.10;noseFwd=1.10;noseY=0.80+headYDelta;}  // Button
-    if(ni===3){mnW=0.14;mnH=0.09;mnD=0.22;noseFwd=1.20;noseY=0.78+headYDelta;}  // Long
-    if(ni===4){mnW=0.22;mnH=0.09;mnD=0.13;noseFwd=1.13;noseY=0.78+headYDelta;}  // Wide
-    if(ni===5){mnW=0.20;mnH=0.06;mnD=0.14;noseFwd=1.12;noseY=0.82+headYDelta;}  // Flat
+    // noseFwd is derived from head so muzzle stays flush across all body types
+    const noseFwdBase = headFwd + hW + 0.02;
+    let mnW=0.15*muzzleSc, mnH=0.10*muzzleSc, mnD=0.14*muzzleSc;
+    let noseFwdDelta=0, noseYDelta=0;
+    if(ni===1){mnW=0.20*muzzleSc;mnH=0.14*muzzleSc;mnD=0.18*muzzleSc;noseFwdDelta=0.02;noseYDelta=-0.02;}  // Big
+    if(ni===2){mnW=0.10*muzzleSc;mnH=0.07*muzzleSc;mnD=0.10*muzzleSc;noseFwdDelta=-0.04;noseYDelta=0.02;}  // Button
+    if(ni===3){mnW=0.14*muzzleSc;mnH=0.09*muzzleSc;mnD=0.22*muzzleSc;noseFwdDelta=0.06;}                   // Long
+    if(ni===4){mnW=0.22*muzzleSc;mnH=0.09*muzzleSc;mnD=0.13*muzzleSc;noseFwdDelta=-0.01;}                  // Wide
+    if(ni===5){mnW=0.20*muzzleSc;mnH=0.06*muzzleSc;mnD=0.14*muzzleSc;noseFwdDelta=-0.02;noseYDelta=0.04;}  // Flat
+    const noseFwd = noseFwdBase + noseFwdDelta;
+    const noseY = headY - 0.12 + noseYDelta;
     const snx=wx+Math.sin(facingYaw)*noseFwd*s, snz=wz+Math.cos(facingYaw)*noseFwd*s;
     pbp(list, snx,fl+noseY*s,snz, mnW*s,mnH*s,mnD*s, rpc('muzzle'),'muzzle',facingYaw);
     const noseTip = noseFwd + mnD*0.5 + 0.03;
-    pbp(list, wx+Math.sin(facingYaw)*noseTip*s,fl+(noseY+mnH*0.6)*s,wz+Math.cos(facingYaw)*noseTip*s, 0.055*s,0.046*s,0.04*s, 0x1a0a08,'nose',facingYaw);
+    pbp(list, wx+Math.sin(facingYaw)*noseTip*s,fl+(noseY+mnH*0.6)*s,wz+Math.cos(facingYaw)*noseTip*s, 0.055*muzzleSc*s,0.046*muzzleSc*s,0.04*s, 0x1a0a08,'nose',facingYaw);
 
     // ── Tail ─────────────────────────────────────────────────────────────
     const ti = (tailIdx!=null?tailIdx:2);
@@ -19417,26 +19693,27 @@
     const ex=Math.cos(facingYaw)*earSpread*s, ez=-Math.sin(facingYaw)*earSpread*s;
     const earTopY = headY + hH * 0.5; // base of ear starts at top of head
     const ec = rpc('ear');
+    const es = earSc; // shorthand
     if(earType==='floppy'){
-      pbp(list,hx+ex,fl+(earTopY-0.18)*s,hz+ez,0.06*s,0.22*s,0.10*s,rpc('ear_L',ec),'ear_L',facingYaw);
-      pbp(list,hx-ex,fl+(earTopY-0.18)*s,hz-ez,0.06*s,0.22*s,0.10*s,rpc('ear_R',ec),'ear_R',facingYaw);
+      pbp(list,hx+ex,fl+(earTopY-0.18)*s,hz+ez,0.06*es*s,0.22*es*s,0.10*es*s,rpc('ear_L',ec),'ear_L',facingYaw);
+      pbp(list,hx-ex,fl+(earTopY-0.18)*s,hz-ez,0.06*es*s,0.22*es*s,0.10*es*s,rpc('ear_R',ec),'ear_R',facingYaw);
     } else if(earType==='rounded'){
-      pbp(list,hx+ex,fl+(earTopY+0.14)*s,hz+ez,0.13*s,0.14*s,0.10*s,rpc('ear_L',ec),'ear_L',facingYaw);
-      pbp(list,hx-ex,fl+(earTopY+0.14)*s,hz-ez,0.13*s,0.14*s,0.10*s,rpc('ear_R',ec),'ear_R',facingYaw);
+      pbp(list,hx+ex,fl+(earTopY+0.14)*s,hz+ez,0.13*es*s,0.14*es*s,0.10*es*s,rpc('ear_L',ec),'ear_L',facingYaw);
+      pbp(list,hx-ex,fl+(earTopY+0.14)*s,hz-ez,0.13*es*s,0.14*es*s,0.10*es*s,rpc('ear_R',ec),'ear_R',facingYaw);
     } else if(earType==='bat'){
-      pbp(list,hx+ex*1.4,fl+(earTopY+0.18)*s,hz+ez*1.4,0.17*s,0.22*s,0.06*s,rpc('ear_L',ec),'ear_L',facingYaw);
-      pbp(list,hx-ex*1.4,fl+(earTopY+0.18)*s,hz-ez*1.4,0.17*s,0.22*s,0.06*s,rpc('ear_R',ec),'ear_R',facingYaw);
+      pbp(list,hx+ex*1.4,fl+(earTopY+0.18)*s,hz+ez*1.4,0.17*es*s,0.22*es*s,0.06*es*s,rpc('ear_L',ec),'ear_L',facingYaw);
+      pbp(list,hx-ex*1.4,fl+(earTopY+0.18)*s,hz-ez*1.4,0.17*es*s,0.22*es*s,0.06*es*s,rpc('ear_R',ec),'ear_R',facingYaw);
     } else if(earType==='tufted'){
-      pbp(list,hx+ex,fl+(earTopY+0.16)*s,hz+ez,0.09*s,0.24*s,0.07*s,rpc('ear_L',ec),'ear_L',facingYaw);
-      pbp(list,hx+ex,fl+(earTopY+0.42)*s,hz+ez,0.07*s,0.06*s,0.07*s,ovLighten(rpc('ear_L',ec),0.3),'ear_L',facingYaw);
-      pbp(list,hx-ex,fl+(earTopY+0.16)*s,hz-ez,0.09*s,0.24*s,0.07*s,rpc('ear_R',ec),'ear_R',facingYaw);
-      pbp(list,hx-ex,fl+(earTopY+0.42)*s,hz-ez,0.07*s,0.06*s,0.07*s,ovLighten(rpc('ear_R',ec),0.3),'ear_R',facingYaw);
+      pbp(list,hx+ex,fl+(earTopY+0.16)*s,hz+ez,0.09*es*s,0.24*es*s,0.07*es*s,rpc('ear_L',ec),'ear_L',facingYaw);
+      pbp(list,hx+ex,fl+(earTopY+0.16+0.24*es+0.02)*s,hz+ez,0.07*es*s,0.06*es*s,0.07*es*s,ovLighten(rpc('ear_L',ec),0.3),'ear_L',facingYaw);
+      pbp(list,hx-ex,fl+(earTopY+0.16)*s,hz-ez,0.09*es*s,0.24*es*s,0.07*es*s,rpc('ear_R',ec),'ear_R',facingYaw);
+      pbp(list,hx-ex,fl+(earTopY+0.16+0.24*es+0.02)*s,hz-ez,0.07*es*s,0.06*es*s,0.07*es*s,ovLighten(rpc('ear_R',ec),0.3),'ear_R',facingYaw);
     } else if(earType==='perky'){
-      pbp(list,hx+ex*0.8,fl+(earTopY+0.13)*s,hz+ez*0.8,0.07*s,0.17*s,0.06*s,rpc('ear_L',ec),'ear_L',facingYaw);
-      pbp(list,hx-ex*0.8,fl+(earTopY+0.13)*s,hz-ez*0.8,0.07*s,0.17*s,0.06*s,rpc('ear_R',ec),'ear_R',facingYaw);
+      pbp(list,hx+ex*0.8,fl+(earTopY+0.13)*s,hz+ez*0.8,0.07*es*s,0.17*es*s,0.06*es*s,rpc('ear_L',ec),'ear_L',facingYaw);
+      pbp(list,hx-ex*0.8,fl+(earTopY+0.13)*s,hz-ez*0.8,0.07*es*s,0.17*es*s,0.06*es*s,rpc('ear_R',ec),'ear_R',facingYaw);
     } else {
-      pbp(list,hx+ex,fl+(earTopY+0.16)*s,hz+ez,0.09*s,0.24*s,0.07*s,rpc('ear_L',ec),'ear_L',facingYaw);
-      pbp(list,hx-ex,fl+(earTopY+0.16)*s,hz-ez,0.09*s,0.24*s,0.07*s,rpc('ear_R',ec),'ear_R',facingYaw);
+      pbp(list,hx+ex,fl+(earTopY+0.16)*s,hz+ez,0.09*es*s,0.24*es*s,0.07*es*s,rpc('ear_L',ec),'ear_L',facingYaw);
+      pbp(list,hx-ex,fl+(earTopY+0.16)*s,hz-ez,0.09*es*s,0.24*es*s,0.07*es*s,rpc('ear_R',ec),'ear_R',facingYaw);
     }
   }
 
@@ -19491,7 +19768,7 @@
     const projected = ovc3DProject(quads, PW, PH);
     const sun = norm(v3(0.5, 1.0, -0.7));
     const pColors = (onlineDogProfile && onlineDogProfile.partColors) || {};
-    const G = 4;
+    const partGridSize = p => (p==='body'||p==='head') ? 8 : 4;
     const cellHits = [];
     for (const { pts, color, normal, part } of projected) {
       const nw = norm(normal||v3(0,1,0));
@@ -19508,6 +19785,7 @@
       ctx2.closePath(); ctx2.fill();
       // Per-cell paint + grid for paintable parts
       if (part && part !== 'eye' && part !== 'nose') {
+        const G = partGridSize(part);
         const bi = (s,t) => ({
           x:(1-t)*((1-s)*pts[0].x+s*pts[1].x)+t*((1-s)*pts[3].x+s*pts[2].x),
           y:(1-t)*((1-s)*pts[0].y+s*pts[1].y)+t*((1-s)*pts[3].y+s*pts[2].y),
