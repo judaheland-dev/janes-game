@@ -13139,6 +13139,7 @@
         ovSaveProfile();
       }
       hideFactoryMenu();
+      cpFromFactory = true;
       ovOpenCustom();
     } else {
       hideFactoryMenu();
@@ -19890,6 +19891,7 @@
     // U = open customization
     if (keysJustPressed.has('KeyU') && inOnlineVillage) {
       keysJustPressed.delete('KeyU');
+      cpFromFactory = false;
       if (!ovCustomOpen) ovOpenCustom();
     }
     // Escape = exit online village
@@ -20038,6 +20040,7 @@
   let cpPrevYaw = Math.PI * 0.85;
   let cpPrevDrag = false, cpPrevDragX = 0;
   let cpPrevRaf = 0, cpPrevAutoTimer = 0, cpPrevAutoRot = true;
+  let cpFromFactory = false;
 
   function ovTickPreview() {
     const pc = document.getElementById('cp-preview');
@@ -20131,7 +20134,12 @@
     }
     if (!cpPrevRaf) ovTickPreview();
   }
-  function ovCloseCustom() { ovCustomOpen=false; document.getElementById('ov-custom-panel').classList.add('hidden'); if(cpPrevRaf){cancelAnimationFrame(cpPrevRaf);cpPrevRaf=0;} }
+  function ovCloseCustom() {
+    ovCustomOpen = false;
+    document.getElementById('ov-custom-panel').classList.add('hidden');
+    if (cpPrevRaf) { cancelAnimationFrame(cpPrevRaf); cpPrevRaf = 0; }
+    if (cpFromFactory) { cpFromFactory = false; ovConnectAndEnter(); }
+  }
 
   // ── Trading ──────────────────────────────────────────────────────────────
   function ovOpenTrade(uid) {
