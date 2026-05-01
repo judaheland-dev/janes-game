@@ -1033,19 +1033,43 @@
     }
     #ov-chat-toggle.hidden { display: none; }
     #ov-custom-panel {
-      position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
-      background: rgba(4,14,30,0.96); border: 1.5px solid #2060a0;
-      border-radius: 18px; padding: 24px 28px; z-index: 200;
-      min-width: 300px; color: #c0e0f8; font: 14px Arial;
-      display: flex; flex-direction: column; gap: 14px;
+      position: fixed; inset: 0; z-index: 300;
+      background: #06080f;
+      display: flex; flex-direction: column;
+      user-select: none; color: #c0e0f8; font: 14px Arial;
     }
     #ov-custom-panel.hidden { display: none; }
-    #ov-custom-panel h3 { color: #90d0f0; font-size: 18px; text-align: center; }
-    #cp-preview { width: 100%; height: 200px; border-radius: 10px; background: #07111e; cursor: grab; display: block; border: 1px solid #1a3a5a; }
-    #cp-preview:active { cursor: grabbing; }
-    .cp-preview-hint { font: 10px Arial; color: #3a6080; text-align: center; margin-top: -8px; }
+    /* Top type-selector bar */
+    #cp-topbar {
+      display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+      padding: 8px 14px; background: rgba(8,14,28,0.96);
+      border-bottom: 1px solid #1a3050; flex-shrink: 0;
+    }
+    #cp-topbar-title { color: #70b8d8; font: bold 13px Arial; letter-spacing: 2px; white-space: nowrap; }
+    /* Main area: canvas + palette */
+    #cp-main { flex: 1; display: flex; overflow: hidden; }
+    #cp-center { flex: 1; position: relative; overflow: hidden; }
+    #cp-preview {
+      position: absolute; inset: 0;
+      cursor: crosshair; display: block;
+      width: 100%; height: 100%; background: #06080f;
+    }
+    #cp-part-label {
+      position: absolute; bottom: 44px; left: 50%; transform: translateX(-50%);
+      pointer-events: none; z-index: 2;
+      font: bold 13px Arial; color: #7be; background: rgba(0,0,0,0.55);
+      padding: 2px 10px; border-radius: 8px;
+    }
+    /* Bottom bar */
+    #cp-bottombar {
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+      padding: 8px 14px; background: rgba(8,14,28,0.96);
+      border-top: 1px solid #1a3050; flex-shrink: 0;
+    }
+    #ov-custom-close { padding: 8px 28px; background: #1a5080; border: 1.5px solid #3090d0; border-radius: 8px; color: #a0e0ff; font: bold 13px Arial; cursor: pointer; }
+    #ov-custom-close:hover { background: #2068a0; color: #d0f0ff; }
     .ov-custom-label { color: #80aac8; font: 12px Arial; margin-bottom: 2px; }
-    #ov-custom-close { align-self: center; padding: 8px 28px; background: #1a6090; border: none; border-radius: 10px; color: #d0f0ff; font: bold 13px Arial; cursor: pointer; }
+    .cp-preview-hint { font: 10px Arial; color: #3a6080; text-align: center; }
     #ov-trade-panel {
       position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
       background: rgba(4,14,30,0.97); border: 1.5px solid #30a060;
@@ -6541,7 +6565,9 @@
           Math.min(p.bodyIdx||0,OV_BODY_TYPES.length-1),
           p.partColors||null,
           p.tailIdx||2,
-          ovDog.walkT);
+          ovDog.walkT,
+          p.noseIdx||0,
+          ovDog.wagT);
       }
       const ovAll = [...ovVillageQuads, ...ovPlayerQuads, ...ovOwnQuads];
       const toRenderOV = ovAll.map(q => {
@@ -15057,8 +15083,7 @@
         const v=Math.floor(rng()*4), sd=rng()<.5?-1:1;
 
         if(v===0){
-          // Layout A: patrol yard — cross-fence with gate gap, dens on one flank
-          wal(sd*13,zM+4,10,.4);
+          // Layout A: patrol yard — dens on one flank
           den(sd*14,zM-2);den(sd*9,zM-16);
           for(let ci=0;ci<5;ci++)cov(-sd*(5+rng()*14),zS-rng()*zStep);
           fire(sd*11,zM+8);fire(-sd*8,zM-5);
@@ -15069,8 +15094,6 @@
         }else if(v===1){
           // Layout B: palisade compound off one side, watchtower at corner
           const cW=13,cD=Math.min(zStep*.72,22),cX=sd*19;
-          wal(cX,zM-cD*.5,cW,.4);wal(cX,zM+cD*.5,cW,.4);wal(cX-cW,zM,.4,cD*.5);wal(cX+cW,zM,.4,cD*.5);
-          pushBox(missionFieldQuads,cX+sd*cW*.6,4,zM-cD*.4,1,4,1,0x3a2810);addWall(cX+sd*cW*.6,zM-cD*.4,1.2,1.2);
           den(cX+sd*2,zM-3);den(cX-sd*3,zM+cD*.3);
           for(let ci=0;ci<7;ci++)cov(cX+(rng()-.5)*(cW-4),zM+(rng()-.5)*(cD-1));
           fire(cX,zM);
@@ -15087,8 +15110,7 @@
           missionFieldPatrols.push({x:9,z:zM-4,startX:9,startZ:zM-4,dx:0,dz:1,t:rng()*Math.PI*2+1,range:zStep*.32,tSpeed:.012,fur:0x706060,ears:'triangle',isHuman:false,spotted:false});
 
         }else{
-          // Layout D: ambush zone — cross-fences + dense cover + interior trees
-          wal(-20,zM+2,14,.4);wal(20,zM+2,14,.4);
+          // Layout D: ambush zone — dense cover + interior trees
           for(let ci=0;ci<18;ci++)cov((rng()-.5)*66,zS-rng()*zStep);
           for(let ti=0;ti<10;ti++)addTree((rng()<.5?-1:1)*(5+rng()*24),zS-rng()*zStep,.4+rng()*.45,missionFieldQuads);
           missionFieldPatrols.push({x:-16,z:zM,startX:-16,startZ:zM,dx:1,dz:0,t:rng()*Math.PI*2,range:12,tSpeed:.015,fur:0x706060,ears:'triangle',isHuman:false,spotted:false});
@@ -16882,6 +16904,17 @@
       p.t += p.tSpeed || 0.013;
       p.x = p.startX + Math.sin(p.t) * p.range * p.dx;
       p.z = p.startZ + Math.sin(p.t) * p.range * p.dz;
+      // Push patrol out of any solid wall it overlaps
+      const PPAD = 0.5;
+      for (const w of missionFieldWalls) {
+        const wcx=(w.x1+w.x2)/2, wcz=(w.z1+w.z2)/2;
+        const whw=(w.x2-w.x1)/2+PPAD, whd=(w.z2-w.z1)/2+PPAD;
+        const ox=Math.abs(p.x-wcx)-whw, oz=Math.abs(p.z-wcz)-whd;
+        if (ox<0&&oz<0) {
+          if(ox>oz) p.x+=Math.sign(p.x-wcx)*(-ox);
+          else      p.z+=Math.sign(p.z-wcz)*(-oz);
+        }
+      }
       // Patrol facing direction
       const pFacing = p.dx !== 0 ? (Math.sin(p.t) >= 0 ? Math.PI/2 : -Math.PI/2) : (Math.sin(p.t) >= 0 ? 0 : Math.PI);
       const tdx = ds.x - p.x, tdz = ds.z - p.z;
@@ -16893,12 +16926,27 @@
         const angle = Math.atan2(tdx, tdz);
         const diff  = ((angle - pFacing) + Math.PI*3) % (Math.PI*2) - Math.PI;
         if (Math.abs(diff) < vAngle) {
-          // Cheeseball: 50% chance patrol pauses and passes by instead of spotting
-          if (activeCharacter === 'cheeseball' && Math.random() < 0.5) {
-            _mfPatrolPausedIdx.set(pi, 110 + Math.floor(Math.random() * 60)); // ~2–3 s pause
-            _mfCheesePauseFlash = 60; // show feedback flash
-          } else {
-            missionFieldDetected = true;
+          // Wall occlusion check — don't spot through solid walls
+          let blocked = false;
+          for (const w of missionFieldWalls) {
+            // Liang-Barsky segment vs AABB (p.x,p.z) → (ds.x,ds.z)
+            const x1=p.x, z1=p.z, x2=ds.x, z2=ds.z;
+            const dx2=x2-x1, dz2=z2-z1;
+            const wxMin=w.x1, wxMax=w.x2, wzMin=w.z1, wzMax=w.z2;
+            let tMin=0, tMax=1;
+            const ps=[-dx2, dx2, -dz2, dz2], qs=[x1-wxMin, wxMax-x1, z1-wzMin, wzMax-z1];
+            let ok=true;
+            for(let k=0;k<4;k++){if(ps[k]===0){if(qs[k]<0){ok=false;break;}}else{const r=qs[k]/ps[k];if(ps[k]<0){if(r>tMax){ok=false;break;}if(r>tMin)tMin=r;}else{if(r<tMin){ok=false;break;}if(r<tMax)tMax=r;}}}
+            if(ok && tMin < tMax && tMin > 0.05 && tMax < 0.95) { blocked=true; break; }
+          }
+          if (!blocked) {
+            // Cheeseball: 50% chance patrol pauses and passes by instead of spotting
+            if (activeCharacter === 'cheeseball' && Math.random() < 0.5) {
+              _mfPatrolPausedIdx.set(pi, 110 + Math.floor(Math.random() * 60)); // ~2–3 s pause
+              _mfCheesePauseFlash = 60; // show feedback flash
+            } else {
+              missionFieldDetected = true;
+            }
           }
         }
       }
@@ -16959,7 +17007,7 @@
         // Find the corresponding door
         const door = missionFieldDoors.find(d => !d.unlocked && d.stageIdx === missionFieldStage);
         if (door) {
-          missionFieldObjectiveReady = dist < 3.8;
+          missionFieldObjectiveReady = dist < 5.5;
           if (missionFieldObjectiveReady && keysJustPressed.has('KeyE')) {
             keysJustPressed.delete('KeyE');
             keysJustPressed.clear();
@@ -16987,7 +17035,7 @@
     for (const n of missionFieldNpcs) {
       if (!n.hint) continue;
       const nd = Math.hypot(ds.x - n.x, ds.z - n.z);
-      if (nd < 3.0 && keysJustPressed.has('KeyE')) {
+      if (nd < 4.5 && keysJustPressed.has('KeyE')) {
         keysJustPressed.delete('KeyE');
         toastMsg = `${n.label}: "${n.hint}"`;
         toastTimer = 300;
@@ -17114,11 +17162,6 @@
     missionFieldDoors.forEach(d => {
       if (d.unlocked) return;
       addNpcDog(doorGuardQ, d.guardX, d.guardZ, 1.0, d.guardFur, d.guardFacing, d.guardEars || 'triangle');
-      // Door bar visual — two vertical beams spanning the width
-      pushBox(doorGuardQ, d.guardX-14, 1.8, d.guardZ+4, 0.18, 1.8, 0.18, 0x804020);
-      pushBox(doorGuardQ, d.guardX+14, 1.8, d.guardZ+4, 0.18, 1.8, 0.18, 0x804020);
-      pushBox(doorGuardQ, d.guardX,    1.0, d.guardZ+4, 28,   0.14, 0.14, 0xa06030);
-      pushBox(doorGuardQ, d.guardX,    2.4, d.guardZ+4, 28,   0.14, 0.14, 0xa06030);
     });
 
     const allQ = [...missionFieldQuads, ...patrolQ, ...npcQ, ...doorGuardQ, ...dogQuads];
@@ -19081,6 +19124,8 @@
   const OV_EAR_LABELS = ['▲ Triangle','🐰 Floppy','⭕ Rounded','🦇 Bat','✨ Tufted','⬆ Perky'];
   const OV_BODY_TYPES  = ['normal','chubby','slim','tall','tiny','fluffy','athletic'];
   const OV_BODY_LABELS = ['Normal','Chubby','Slim','Tall','Tiny','Fluffy','Athletic'];
+  const OV_NOSE_TYPES  = ['normal','big','button','long','wide','flat'];
+  const OV_NOSE_LABELS = ['Normal','Big','Button','Long','Wide','Flat'];
   const OV_SPOT_PATS   = ['none','spots','patches','stripe','socks'];
   const OV_SPOT_LABELS = ['None','● Spots','🎨 Patches','〰 Stripe','🧦 Socks'];
   const OV_SIZES       = [0.72, 1.0, 1.3];
@@ -19116,11 +19161,12 @@
   let ovIncomingTrade  = null;
   let ovCustomOpen     = false;
   // Online dog movement state (separate from per-character dogState)
-  let ovDog  = { x:0, y:0.21, z:-6, yaw:0, velY:0, grounded:true, walkT:0 };
+  let ovDog  = { x:0, y:0.21, z:-6, yaw:0, velY:0, grounded:true, walkT:0, wagT:0 };
   // Creator UI state
   let ovcFurIdx = 0, ovcSpotPatIdx = 0, ovcSpotColIdx = 1;
   let ovcEarIdx = 0, ovcBodyIdx = 0, ovcSizeIdx = 1, ovcCollarIdx = 0;
   let ovcEyeIdx = 0, ovcEyeColIdx = 0;
+  let ovcNoseIdx = 0; // 0=Normal,1=Big,2=Button,3=Long,4=Wide,5=Flat
   let ovcTailIdx = 2; // 0=Stub,1=Short,2=Medium,3=Long,4=Fluffy
 
   // ── Persistence ─────────────────────────────────────────────────────────
@@ -19178,7 +19224,7 @@
 
   // ── pushBoxPart: like pushBox but tags every face with a part name ────────
   // (Uses world coords directly — no _pbXZ scaling — for dog preview rendering)
-  function pushBoxPart(list, cx, cy, cz, w, h, d, color, part, yaw=0, rx=0) {
+  function pushBoxPart(list, cx, cy, cz, w, h, d, color, part, yaw=0, rx=0, overrideColors=null) {
     const corners = [
       v3(-w,-h,-d), v3( w,-h,-d), v3( w, h,-d), v3(-w, h,-d),
       v3(-w,-h, d), v3( w,-h, d), v3( w, h, d), v3(-w, h, d),
@@ -19193,11 +19239,13 @@
       [5,1,2,6,v3(1,0,0)],[0,4,7,3,v3(-1,0,0)],
       [7,6,2,3,v3(0,1,0)],[0,1,5,4,v3(0,-1,0)],
     ];
-    faces.forEach(([a,b,c,d2,n])=>{
+    faces.forEach(([a,b,c,d2,n], fi)=>{
       let nw=n;
       if(rx)  nw=rotX(nw,rx);
       if(yaw) nw=rotY(nw,yaw);
-      list.push({verts:[corners[a],corners[b],corners[c],corners[d2]],color,normal:nw,part});
+      const faceId = part + '_' + fi;
+      const fc = (overrideColors && overrideColors[faceId]) ? hexStrToInt(overrideColors[faceId]) : color;
+      list.push({verts:[corners[a],corners[b],corners[c],corners[d2]],color:fc,normal:nw,part:faceId});
     });
   }
 
@@ -19223,8 +19271,9 @@
   }
 
   // ── 3D sitting-pose dog for customization preview ─────────────────────────
-  function buildPartTaggedDog(list, wx, wz, s, partColors, facingYaw, earType, bodyIdx, tailIdx) {
+  function buildPartTaggedDog(list, wx, wz, s, partColors, facingYaw, earType, bodyIdx, tailIdx, noseIdx) {
     const rpc = (id, dflt) => ovResolvePartColor(id, partColors, dflt);
+    const pbp = (l,cx,cy,cz,w,h,d,col,pt,yw=0,rx=0) => pushBoxPart(l,cx,cy,cz,w,h,d,col,pt,yw,rx,partColors);
     const fl=0.21;
     let bw=0.46,bh=0.28,bd=0.72,legLat=0.28,legLon=0.40,legH=0.20;
     if(bodyIdx===1){bw=0.58;bh=0.34;}
@@ -19236,57 +19285,65 @@
     const rvx=Math.cos(facingYaw), rvz=-Math.sin(facingYaw);
 
     // ── Body ─────────────────────────────────────────────────────────────
-    pushBoxPart(list, wx, fl+0.50*s, wz, bw*s,bh*s,bd*s, rpc('body'),'body',facingYaw);
+    pbp(list, wx, fl+0.50*s, wz, bw*s,bh*s,bd*s, rpc('body'),'body',facingYaw);
 
     // ── Head ─────────────────────────────────────────────────────────────
     const hx=wx+Math.sin(facingYaw)*0.78*s, hz=wz+Math.cos(facingYaw)*0.78*s;
     const hW=(bodyIdx===1||bodyIdx===5)?0.38:0.34;
-    pushBoxPart(list, hx, fl+0.90*s, hz, hW*s,0.32*s,0.32*s, rpc('head'),'head',facingYaw);
+    pbp(list, hx, fl+0.90*s, hz, hW*s,0.32*s,0.32*s, rpc('head'),'head',facingYaw);
 
     // ── Eyes ─────────────────────────────────────────────────────────────
     const eyeFx = hx+Math.sin(facingYaw)*(hW+0.02)*s;
     const eyeFz = hz+Math.cos(facingYaw)*(hW+0.02)*s;
-    pushBoxPart(list, eyeFx+rvx*0.13*s, fl+0.96*s, eyeFz+rvz*0.13*s, 0.04*s,0.065*s,0.03*s, rpc('eye_L',rpc('eye')),'eye_L',facingYaw);
-    pushBoxPart(list, eyeFx-rvx*0.13*s, fl+0.96*s, eyeFz-rvz*0.13*s, 0.04*s,0.065*s,0.03*s, rpc('eye_R',rpc('eye')),'eye_R',facingYaw);
+    pbp(list, eyeFx+rvx*0.13*s, fl+0.96*s, eyeFz+rvz*0.13*s, 0.04*s,0.065*s,0.03*s, rpc('eye_L',rpc('eye')),'eye_L',facingYaw);
+    pbp(list, eyeFx-rvx*0.13*s, fl+0.96*s, eyeFz-rvz*0.13*s, 0.04*s,0.065*s,0.03*s, rpc('eye_R',rpc('eye')),'eye_R',facingYaw);
 
-    // ── Muzzle ────────────────────────────────────────────────────────────
-    const snx=wx+Math.sin(facingYaw)*1.14*s, snz=wz+Math.cos(facingYaw)*1.14*s;
-    pushBoxPart(list, snx,fl+0.78*s,snz, 0.15*s,0.10*s,0.14*s, rpc('muzzle'),'muzzle',facingYaw);
-    pushBoxPart(list, wx+Math.sin(facingYaw)*1.27*s,fl+0.84*s,wz+Math.cos(facingYaw)*1.27*s, 0.055*s,0.046*s,0.04*s, 0x1a0a08,'nose',facingYaw);
+    // ── Muzzle (noseIdx: 0=Normal,1=Big,2=Button,3=Long,4=Wide,5=Flat) ──
+    const ni = noseIdx||0;
+    let mnW=0.15,mnH=0.10,mnD=0.14, noseFwd=1.14, noseY=0.78;
+    if(ni===1){mnW=0.20;mnH=0.14;mnD=0.18;noseFwd=1.16;noseY=0.76;}  // Big
+    if(ni===2){mnW=0.10;mnH=0.07;mnD=0.10;noseFwd=1.10;noseY=0.80;}  // Button
+    if(ni===3){mnW=0.14;mnH=0.09;mnD=0.22;noseFwd=1.20;noseY=0.78;}  // Long
+    if(ni===4){mnW=0.22;mnH=0.09;mnD=0.13;noseFwd=1.13;noseY=0.78;}  // Wide
+    if(ni===5){mnW=0.20;mnH=0.06;mnD=0.14;noseFwd=1.12;noseY=0.82;}  // Flat
+    const snx=wx+Math.sin(facingYaw)*noseFwd*s, snz=wz+Math.cos(facingYaw)*noseFwd*s;
+    pbp(list, snx,fl+noseY*s,snz, mnW*s,mnH*s,mnD*s, rpc('muzzle'),'muzzle',facingYaw);
+    const noseTip = noseFwd + mnD*0.5 + 0.03;
+    pbp(list, wx+Math.sin(facingYaw)*noseTip*s,fl+(noseY+mnH*0.6)*s,wz+Math.cos(facingYaw)*noseTip*s, 0.055*s,0.046*s,0.04*s, 0x1a0a08,'nose',facingYaw);
 
     // ── Tail ─────────────────────────────────────────────────────────────
     const ti = (tailIdx!=null?tailIdx:2);
     const tc = rpc('tail');
     const tlBx = wx-Math.sin(facingYaw)*0.65*s, tlBz = wz-Math.cos(facingYaw)*0.65*s;
     if(ti===0){
-      pushBoxPart(list,tlBx,fl+0.72*s,tlBz,0.10*s,0.10*s,0.10*s,rpc('tail_0',tc),'tail_0',facingYaw+0.3);
+      pbp(list,tlBx,fl+0.72*s,tlBz,0.10*s,0.10*s,0.10*s,rpc('tail_0',tc),'tail_0',facingYaw+0.3);
     } else if(ti===1){
-      pushBoxPart(list,tlBx,fl+0.68*s,tlBz,0.10*s,0.10*s,0.18*s,rpc('tail_0',tc),'tail_0',facingYaw+0.55);
+      pbp(list,tlBx,fl+0.68*s,tlBz,0.10*s,0.10*s,0.18*s,rpc('tail_0',tc),'tail_0',facingYaw+0.55);
     } else if(ti===2){
-      pushBoxPart(list,tlBx,fl+0.68*s,tlBz,0.10*s,0.10*s,0.18*s,rpc('tail_0',tc),'tail_0',facingYaw+0.55);
+      pbp(list,tlBx,fl+0.68*s,tlBz,0.10*s,0.10*s,0.18*s,rpc('tail_0',tc),'tail_0',facingYaw+0.55);
       const t2x=tlBx-Math.sin(facingYaw)*0.10*s, t2z=tlBz-Math.cos(facingYaw)*0.10*s;
-      pushBoxPart(list,t2x,fl+0.90*s,t2z,0.08*s,0.08*s,0.14*s,rpc('tail_1',tc),'tail_1',facingYaw+1.05);
+      pbp(list,t2x,fl+0.90*s,t2z,0.08*s,0.08*s,0.14*s,rpc('tail_1',tc),'tail_1',facingYaw+1.05);
     } else if(ti===3){
-      pushBoxPart(list,tlBx,fl+0.68*s,tlBz,0.10*s,0.10*s,0.18*s,rpc('tail_0',tc),'tail_0',facingYaw+0.5);
+      pbp(list,tlBx,fl+0.68*s,tlBz,0.10*s,0.10*s,0.18*s,rpc('tail_0',tc),'tail_0',facingYaw+0.5);
       const t2x=tlBx-Math.sin(facingYaw)*0.11*s, t2z=tlBz-Math.cos(facingYaw)*0.11*s;
-      pushBoxPart(list,t2x,fl+0.90*s,t2z,0.08*s,0.08*s,0.16*s,rpc('tail_1',tc),'tail_1',facingYaw+1.05);
+      pbp(list,t2x,fl+0.90*s,t2z,0.08*s,0.08*s,0.16*s,rpc('tail_1',tc),'tail_1',facingYaw+1.05);
       const t3x=t2x-Math.sin(facingYaw)*0.10*s, t3z=t2z-Math.cos(facingYaw)*0.10*s;
-      pushBoxPart(list,t3x,fl+1.10*s,t3z,0.06*s,0.06*s,0.14*s,rpc('tail_2',tc),'tail_2',facingYaw+1.55);
+      pbp(list,t3x,fl+1.10*s,t3z,0.06*s,0.06*s,0.14*s,rpc('tail_2',tc),'tail_2',facingYaw+1.55);
     } else if(ti===4){
-      pushBoxPart(list,tlBx,fl+0.68*s,tlBz,0.16*s,0.16*s,0.20*s,rpc('tail_0',tc),'tail_0',facingYaw+0.4);
-      pushBoxPart(list,tlBx+rvx*0.12*s,fl+0.86*s,tlBz+rvz*0.12*s,0.11*s,0.11*s,0.14*s,rpc('tail_1',tc),'tail_1',facingYaw+0.3);
-      pushBoxPart(list,tlBx-rvx*0.12*s,fl+0.86*s,tlBz-rvz*0.12*s,0.11*s,0.11*s,0.14*s,rpc('tail_2',tc),'tail_2',facingYaw+0.5);
-      pushBoxPart(list,tlBx,fl+1.02*s,tlBz,0.13*s,0.12*s,0.13*s,rpc('tail_3',tc),'tail_3',facingYaw+0.7);
-      pushBoxPart(list,tlBx,fl+1.18*s,tlBz,0.09*s,0.08*s,0.09*s,rpc('tail_4',ovLighten(tc,0.25)),'tail_4',facingYaw+0.9);
+      pbp(list,tlBx,fl+0.68*s,tlBz,0.16*s,0.16*s,0.20*s,rpc('tail_0',tc),'tail_0',facingYaw+0.4);
+      pbp(list,tlBx+rvx*0.12*s,fl+0.86*s,tlBz+rvz*0.12*s,0.11*s,0.11*s,0.14*s,rpc('tail_1',tc),'tail_1',facingYaw+0.3);
+      pbp(list,tlBx-rvx*0.12*s,fl+0.86*s,tlBz-rvz*0.12*s,0.11*s,0.11*s,0.14*s,rpc('tail_2',tc),'tail_2',facingYaw+0.5);
+      pbp(list,tlBx,fl+1.02*s,tlBz,0.13*s,0.12*s,0.13*s,rpc('tail_3',tc),'tail_3',facingYaw+0.7);
+      pbp(list,tlBx,fl+1.18*s,tlBz,0.09*s,0.08*s,0.09*s,rpc('tail_4',ovLighten(tc,0.25)),'tail_4',facingYaw+0.9);
     } else {
       // Curled
-      pushBoxPart(list,tlBx,fl+0.70*s,tlBz,0.10*s,0.10*s,0.16*s,rpc('tail_0',tc),'tail_0',facingYaw+0.5);
+      pbp(list,tlBx,fl+0.70*s,tlBz,0.10*s,0.10*s,0.16*s,rpc('tail_0',tc),'tail_0',facingYaw+0.5);
       const c2x=tlBx-Math.sin(facingYaw)*0.09*s, c2z=tlBz-Math.cos(facingYaw)*0.09*s;
-      pushBoxPart(list,c2x,fl+0.92*s,c2z,0.09*s,0.09*s,0.13*s,rpc('tail_1',tc),'tail_1',facingYaw+1.2);
+      pbp(list,c2x,fl+0.92*s,c2z,0.09*s,0.09*s,0.13*s,rpc('tail_1',tc),'tail_1',facingYaw+1.2);
       const c3x=c2x-Math.sin(facingYaw)*0.05*s, c3z=c2z-Math.cos(facingYaw)*0.05*s;
-      pushBoxPart(list,c3x,fl+1.10*s,c3z,0.07*s,0.07*s,0.11*s,rpc('tail_2',tc),'tail_2',facingYaw+2.1);
+      pbp(list,c3x,fl+1.10*s,c3z,0.07*s,0.07*s,0.11*s,rpc('tail_2',tc),'tail_2',facingYaw+2.1);
       const c4x=c3x+Math.sin(facingYaw)*0.08*s, c4z=c3z+Math.cos(facingYaw)*0.08*s;
-      pushBoxPart(list,c4x,fl+1.22*s,c4z,0.06*s,0.06*s,0.09*s,rpc('tail_3',ovLighten(tc,0.15)),'tail_3',facingYaw+2.9);
+      pbp(list,c4x,fl+1.22*s,c4z,0.06*s,0.06*s,0.09*s,rpc('tail_3',ovLighten(tc,0.15)),'tail_3',facingYaw+2.9);
     }
 
     // ── Front legs ────────────────────────────────────────────────────────
@@ -19294,8 +19351,8 @@
     [[legLat,legLon],[-legLat,legLon]].forEach(([lat,lon],i)=>{
       const lx=wx+rvx*(lat*s)+Math.sin(facingYaw)*(lon*s);
       const lz=wz+rvz*(lat*s)+Math.cos(facingYaw)*(lon*s);
-      pushBoxPart(list,lx,fl+legH*s,lz,0.10*s,legH*s,0.10*s,rpc(legIds[i][0]),legIds[i][0],facingYaw);
-      pushBoxPart(list,lx,fl+0.04*s,lz,0.13*s,0.05*s,0.13*s,rpc(legIds[i][1]),legIds[i][1],facingYaw);
+      pbp(list,lx,fl+legH*s,lz,0.10*s,legH*s,0.10*s,rpc(legIds[i][0]),legIds[i][0],facingYaw);
+      pbp(list,lx,fl+0.04*s,lz,0.13*s,0.05*s,0.13*s,rpc(legIds[i][1]),legIds[i][1],facingYaw);
     });
 
     // ── Back haunches (sitting) ───────────────────────────────────────────
@@ -19303,37 +19360,37 @@
       const side = i===0?1:-1;
       const hx2=wx+rvx*(side*legLat*1.55*s)-Math.sin(facingYaw)*(legLon*0.28*s);
       const hz2=wz+rvz*(side*legLat*1.55*s)-Math.cos(facingYaw)*(legLon*0.28*s);
-      pushBoxPart(list,hx2,fl+0.24*s,hz2,0.20*s,0.14*s,0.24*s,rpc(hid),hid,facingYaw);
+      pbp(list,hx2,fl+0.24*s,hz2,0.20*s,0.14*s,0.24*s,rpc(hid),hid,facingYaw);
       const px=hx2-Math.sin(facingYaw)*0.12*s, pz=hz2-Math.cos(facingYaw)*0.12*s;
-      pushBoxPart(list,px,fl+0.04*s,pz,0.14*s,0.05*s,0.14*s,rpc(pid),pid,facingYaw);
+      pbp(list,px,fl+0.04*s,pz,0.14*s,0.05*s,0.14*s,rpc(pid),pid,facingYaw);
     });
 
     // ── Collar ────────────────────────────────────────────────────────────
-    pushBoxPart(list,hx,fl+0.72*s,hz,0.36*s,0.06*s,0.36*s,rpc('collar'),'collar',facingYaw);
+    pbp(list,hx,fl+0.72*s,hz,0.36*s,0.06*s,0.36*s,rpc('collar'),'collar',facingYaw);
 
     // ── Ears ──────────────────────────────────────────────────────────────
     const ex=Math.cos(facingYaw)*0.30*s, ez=-Math.sin(facingYaw)*0.30*s;
     const ec = rpc('ear');
     if(earType==='floppy'){
-      pushBoxPart(list,hx+ex,fl+0.80*s,hz+ez,0.06*s,0.22*s,0.10*s,rpc('ear_L',ec),'ear_L',facingYaw);
-      pushBoxPart(list,hx-ex,fl+0.80*s,hz-ez,0.06*s,0.22*s,0.10*s,rpc('ear_R',ec),'ear_R',facingYaw);
+      pbp(list,hx+ex,fl+0.80*s,hz+ez,0.06*s,0.22*s,0.10*s,rpc('ear_L',ec),'ear_L',facingYaw);
+      pbp(list,hx-ex,fl+0.80*s,hz-ez,0.06*s,0.22*s,0.10*s,rpc('ear_R',ec),'ear_R',facingYaw);
     } else if(earType==='rounded'){
-      pushBoxPart(list,hx+ex,fl+1.06*s,hz+ez,0.13*s,0.14*s,0.10*s,rpc('ear_L',ec),'ear_L',facingYaw);
-      pushBoxPart(list,hx-ex,fl+1.06*s,hz-ez,0.13*s,0.14*s,0.10*s,rpc('ear_R',ec),'ear_R',facingYaw);
+      pbp(list,hx+ex,fl+1.06*s,hz+ez,0.13*s,0.14*s,0.10*s,rpc('ear_L',ec),'ear_L',facingYaw);
+      pbp(list,hx-ex,fl+1.06*s,hz-ez,0.13*s,0.14*s,0.10*s,rpc('ear_R',ec),'ear_R',facingYaw);
     } else if(earType==='bat'){
-      pushBoxPart(list,hx+ex*1.4,fl+1.10*s,hz+ez*1.4,0.17*s,0.22*s,0.06*s,rpc('ear_L',ec),'ear_L',facingYaw);
-      pushBoxPart(list,hx-ex*1.4,fl+1.10*s,hz-ez*1.4,0.17*s,0.22*s,0.06*s,rpc('ear_R',ec),'ear_R',facingYaw);
+      pbp(list,hx+ex*1.4,fl+1.10*s,hz+ez*1.4,0.17*s,0.22*s,0.06*s,rpc('ear_L',ec),'ear_L',facingYaw);
+      pbp(list,hx-ex*1.4,fl+1.10*s,hz-ez*1.4,0.17*s,0.22*s,0.06*s,rpc('ear_R',ec),'ear_R',facingYaw);
     } else if(earType==='tufted'){
-      pushBoxPart(list,hx+ex,fl+1.08*s,hz+ez,0.09*s,0.24*s,0.07*s,rpc('ear_L',ec),'ear_L',facingYaw);
-      pushBoxPart(list,hx+ex,fl+1.34*s,hz+ez,0.07*s,0.06*s,0.07*s,ovLighten(rpc('ear_L',ec),0.3),'ear_L',facingYaw);
-      pushBoxPart(list,hx-ex,fl+1.08*s,hz-ez,0.09*s,0.24*s,0.07*s,rpc('ear_R',ec),'ear_R',facingYaw);
-      pushBoxPart(list,hx-ex,fl+1.34*s,hz-ez,0.07*s,0.06*s,0.07*s,ovLighten(rpc('ear_R',ec),0.3),'ear_R',facingYaw);
+      pbp(list,hx+ex,fl+1.08*s,hz+ez,0.09*s,0.24*s,0.07*s,rpc('ear_L',ec),'ear_L',facingYaw);
+      pbp(list,hx+ex,fl+1.34*s,hz+ez,0.07*s,0.06*s,0.07*s,ovLighten(rpc('ear_L',ec),0.3),'ear_L',facingYaw);
+      pbp(list,hx-ex,fl+1.08*s,hz-ez,0.09*s,0.24*s,0.07*s,rpc('ear_R',ec),'ear_R',facingYaw);
+      pbp(list,hx-ex,fl+1.34*s,hz-ez,0.07*s,0.06*s,0.07*s,ovLighten(rpc('ear_R',ec),0.3),'ear_R',facingYaw);
     } else if(earType==='perky'){
-      pushBoxPart(list,hx+ex*0.8,fl+1.05*s,hz+ez*0.8,0.07*s,0.17*s,0.06*s,rpc('ear_L',ec),'ear_L',facingYaw);
-      pushBoxPart(list,hx-ex*0.8,fl+1.05*s,hz-ez*0.8,0.07*s,0.17*s,0.06*s,rpc('ear_R',ec),'ear_R',facingYaw);
+      pbp(list,hx+ex*0.8,fl+1.05*s,hz+ez*0.8,0.07*s,0.17*s,0.06*s,rpc('ear_L',ec),'ear_L',facingYaw);
+      pbp(list,hx-ex*0.8,fl+1.05*s,hz-ez*0.8,0.07*s,0.17*s,0.06*s,rpc('ear_R',ec),'ear_R',facingYaw);
     } else {
-      pushBoxPart(list,hx+ex,fl+1.08*s,hz+ez,0.09*s,0.24*s,0.07*s,rpc('ear_L',ec),'ear_L',facingYaw);
-      pushBoxPart(list,hx-ex,fl+1.08*s,hz-ez,0.09*s,0.24*s,0.07*s,rpc('ear_R',ec),'ear_R',facingYaw);
+      pbp(list,hx+ex,fl+1.08*s,hz+ez,0.09*s,0.24*s,0.07*s,rpc('ear_L',ec),'ear_L',facingYaw);
+      pbp(list,hx-ex,fl+1.08*s,hz-ez,0.09*s,0.24*s,0.07*s,rpc('ear_R',ec),'ear_R',facingYaw);
     }
   }
 
@@ -19358,12 +19415,13 @@
   const OVC_CAM_PITCH = 0.22;
 
   function ovc3DProject(quads, PW, PH) {
-    const pF = (PH * 0.55) / 0.40;
+    const camZ = OVC_CAM_POS.z / ovcZoom;
+    const pF = (PH * 0.55) / 0.40 * ovcZoom;
     const result = [];
     for (const q of quads) {
       let ok = true;
       const pts = q.verts.map(pt => {
-        let v = sub(pt, v3(OVC_CAM_POS.x, OVC_CAM_POS.y, OVC_CAM_POS.z));
+        let v = sub(pt, v3(OVC_CAM_POS.x, OVC_CAM_POS.y, camZ));
         v = rotX(v, -OVC_CAM_PITCH);
         if (v.z <= 0.05) { ok = false; return null; }
         return { x: PW/2 + (v.x/v.z)*pF, y: PH/2 - (v.y/v.z)*pF, z: v.z };
@@ -19443,6 +19501,7 @@
   let ovcRaf3D = 0;
   let ovcActiveCanvas = null;
   let ovcYaw3D = Math.PI * 0.75;
+  let ovcZoom = 1.0;
   let ovcDrag3D = false, ovcDragX3D = 0;
   let ovcAutoRot3D = true;
   let ovcAutoTimer3D = 0;
@@ -19473,8 +19532,9 @@
     const partColors = p.partColors || {};
     const ti = ovcActiveCanvas === 'creator' ? ovcTailIdx : (p.tailIdx||2);
     const bIdx = ovcActiveCanvas === 'creator' ? (ovcBodyIdx||0) : (p.bodyIdx||0);
+    const nIdx = ovcActiveCanvas === 'creator' ? (ovcNoseIdx||0) : (p.noseIdx||0);
     const quads = [];
-    buildPartTaggedDog(quads, 0, 0, s, partColors, ovcYaw3D, earType, bIdx, ti);
+    buildPartTaggedDog(quads, 0, 0, s, partColors, ovcYaw3D, earType, bIdx, ti, nIdx);
     const PW = canvasEl.width, PH = canvasEl.height;
     ovc3DLastProjected = ovc3DDraw(canvasEl, quads, PW, PH);
     ovcRaf3D = requestAnimationFrame(ovc3DDrawFrame);
@@ -19510,7 +19570,8 @@
     else onlineDogProfile.partColors[part] = ovcPaintColor;
     ovSaveProfile();
     const lbl = document.getElementById('ov-dc-part-label') || document.getElementById('cp-part-label');
-    if (lbl) { lbl.textContent=(ovcEraserMode?'Reset: ':'Painted: ')+(OVC_PART_LABELS[part]||part); lbl.style.opacity='1'; clearTimeout(lbl._t); lbl._t=setTimeout(()=>{lbl.style.opacity='0';},1200); }
+    const partBase = part.replace(/_\d+$/, '');
+    if (lbl) { lbl.textContent=(ovcEraserMode?'Reset: ':'Painted: ')+(OVC_PART_LABELS[part]||OVC_PART_LABELS[partBase]||partBase); lbl.style.opacity='1'; clearTimeout(lbl._t); lbl._t=setTimeout(()=>{lbl.style.opacity='0';},1200); }
   }
 
   function ovcSelectColor(hexStr) {
@@ -19545,6 +19606,7 @@
       ovcBodyIdx = onlineDogProfile.bodyIdx || 0;
       ovcEarIdx  = onlineDogProfile.earIdx  || 0;
       ovcEyeIdx  = onlineDogProfile.eyeIdx  || 0;
+      ovcNoseIdx = onlineDogProfile.noseIdx || 0;
       ovcTailIdx = onlineDogProfile.tailIdx !== undefined ? onlineDogProfile.tailIdx : 2;
       document.getElementById('ov-dc-name').value=onlineDogProfile.name||'';
     }
@@ -19585,7 +19647,6 @@
     buildBtns('ov-dc-ear-btns', OV_EAR_LABELS, ovcEarIdx, i=>{ovcEarIdx =i;ovCreatorRefreshShape('ear');});
     buildBtns('ov-dc-eye-btns', OV_EYE_LABELS, ovcEyeIdx, i=>{ovcEyeIdx =i;ovCreatorRefreshShape('eye');});
     buildBtns('ov-dc-tail-btns',OV_TAIL_LABELS,ovcTailIdx,i=>{ovcTailIdx=i;ovCreatorRefreshShape('tail');});
-    // Build palette
     const pg=document.getElementById('ov-pal-grid');
     if(pg) {
       pg.innerHTML='';
@@ -19642,7 +19703,7 @@
     if (!nameVal) { document.getElementById('ov-dc-name').focus(); return; }
     onlineDogProfile = Object.assign(onlineDogProfile || {}, {
       name: nameVal,
-      bodyIdx: ovcBodyIdx, earIdx: ovcEarIdx, eyeIdx: ovcEyeIdx, tailIdx: ovcTailIdx,
+      bodyIdx: ovcBodyIdx, earIdx: ovcEarIdx, eyeIdx: ovcEyeIdx, noseIdx: ovcNoseIdx, tailIdx: ovcTailIdx,
       partColors: (onlineDogProfile && onlineDogProfile.partColors) || {},
       furIdx: ovcFurIdx, sizeIdx: ovcSizeIdx || 1,
       spotPatIdx: 0, spotColIdx: 0, collarIdx: 0,
@@ -19910,11 +19971,11 @@
       const spotHex = (profile.spotColIdx>0) ? (OV_SPOT_COLORS[Math.min(profile.spotColIdx||1,OV_SPOT_COLORS.length-1)].hex) : null;
       const collar  = OV_COLLAR_COLORS[Math.min(profile.collarIdx||0, OV_COLLAR_COLORS.length-1)].hex;
       const bodyIdx = Math.min(profile.bodyIdx||0, OV_BODY_TYPES.length-1);
-      addOnlineCustomDog(ovPlayerQuads, p.x, p.z, size, fur, p.yaw||0, earType, spotPat, spotHex, collar, bodyIdx, profile.partColors||null, profile.tailIdx||2);
+      addOnlineCustomDog(ovPlayerQuads, p.x, p.z, size, fur, p.yaw||0, earType, spotPat, spotHex, collar, bodyIdx, profile.partColors||null, profile.tailIdx||2, p.walkT||0, profile.noseIdx||0);
     });
   }
 
-  function addOnlineCustomDog(list, wx, wz, s, fur, facingYaw, earType, spotPat, spotHex, collarHex, bodyIdx, partColors, tailIdx, walkT=0) {
+  function addOnlineCustomDog(list, wx, wz, s, fur, facingYaw, earType, spotPat, spotHex, collarHex, bodyIdx, partColors, tailIdx, walkT=0, noseIdx=0, wagT=walkT) {
     const fl = 0.21;
     // Resolve a part color: look up partColors[id], then fallback to fur int
     const rpc = (id, fallback) => {
@@ -19926,79 +19987,92 @@
       return (fallback !== undefined ? fallback : fur);
     };
     // Body proportions by type
+    // bw/bh/bd = body dims | legLat/legLon = hip offset | legH = leg length
+    // legW/pawW = leg/paw thickness | hipY = hip attach height | ts = tail scale
     let bw=0.46, bh=0.28, bd=0.72, legLat=0.28, legLon=0.40;
-    if (bodyIdx===1) { bw=0.58; bh=0.34; bd=0.72; }  // chubby
-    if (bodyIdx===2) { bw=0.36; bh=0.22; bd=0.70; }  // slim
-    if (bodyIdx===3) { bw=0.42; bh=0.22; bd=0.72; legLon=0.50; } // tall
-    if (bodyIdx===4) { bw=0.36; bh=0.20; bd=0.55; }  // tiny
-    if (bodyIdx===5) { bw=0.52; bh=0.32; bd=0.76; }  // fluffy
-    if (bodyIdx===6) { bw=0.38; bh=0.24; bd=0.78; legLat=0.30; } // athletic
+    let legH=0.20, legW=0.10, pawW=0.13, hipY=0.38, ts=1.0;
+    if (bodyIdx===1) { bw=0.58; bh=0.34; bd=0.72; legH=0.16; legW=0.14; pawW=0.17; hipY=0.36; ts=1.25; }  // chubby
+    if (bodyIdx===2) { bw=0.36; bh=0.22; bd=0.70; legH=0.22; legW=0.08; pawW=0.10; hipY=0.40; ts=0.80; }  // slim
+    if (bodyIdx===3) { bw=0.42; bh=0.22; bd=0.72; legLon=0.50; legH=0.28; legW=0.09; pawW=0.12; hipY=0.44; ts=1.05; } // tall
+    if (bodyIdx===4) { bw=0.36; bh=0.20; bd=0.55; legH=0.13; legW=0.08; pawW=0.10; hipY=0.32; ts=0.70; }  // tiny
+    if (bodyIdx===5) { bw=0.52; bh=0.32; bd=0.76; legH=0.18; legW=0.13; pawW=0.16; hipY=0.36; ts=1.35; }  // fluffy
+    if (bodyIdx===6) { bw=0.38; bh=0.24; bd=0.78; legLat=0.30; legH=0.26; legW=0.09; pawW=0.12; hipY=0.42; ts=0.90; } // athletic
     // Body
     pushBox(list, wx, fl+0.54*s, wz, bw*s, bh*s, bd*s, rpc('body'), facingYaw);
     // Head
     const hx=wx+Math.sin(facingYaw)*0.78*s, hz=wz+Math.cos(facingYaw)*0.78*s;
     const hW = (bodyIdx===1||bodyIdx===5) ? 0.38 : 0.34;
     pushBox(list, hx, fl+0.96*s, hz, hW*s, 0.32*s, 0.32*s, rpc('head'), facingYaw);
-    // Muzzle
-    const snx=wx+Math.sin(facingYaw)*1.22*s, snz=wz+Math.cos(facingYaw)*1.22*s;
-    pushBox(list, snx, fl+0.85*s, snz, 0.15*s, 0.09*s, 0.14*s, rpc('muzzle', ovLighten(fur,0.2)), facingYaw);
+    // Muzzle (noseIdx shape)
+    let mnW=0.15,mnH=0.09,mnD=0.14,noseFwd=1.22,noseY=0.85;
+    if(noseIdx===1){mnW=0.20;mnH=0.14;mnD=0.18;noseFwd=1.24;noseY=0.82;}
+    if(noseIdx===2){mnW=0.10;mnH=0.07;mnD=0.10;noseFwd=1.18;noseY=0.86;}
+    if(noseIdx===3){mnW=0.14;mnH=0.09;mnD=0.22;noseFwd=1.28;noseY=0.85;}
+    if(noseIdx===4){mnW=0.22;mnH=0.09;mnD=0.13;noseFwd=1.21;noseY=0.85;}
+    if(noseIdx===5){mnW=0.20;mnH=0.06;mnD=0.14;noseFwd=1.20;noseY=0.89;}
+    const snx=wx+Math.sin(facingYaw)*noseFwd*s, snz=wz+Math.cos(facingYaw)*noseFwd*s;
+    pushBox(list, snx, fl+noseY*s, snz, mnW*s, mnH*s, mnD*s, rpc('muzzle', ovLighten(fur,0.2)), facingYaw);
     // Nose
-    pushBox(list, wx+Math.sin(facingYaw)*1.35*s, fl+0.90*s, wz+Math.cos(facingYaw)*1.35*s, 0.05*s,0.04*s,0.04*s, 0x1a0a08, facingYaw);
-    // Tail (animated wag)
+    const noseTip2 = noseFwd + mnD*0.5 + 0.03;
+    pushBox(list, wx+Math.sin(facingYaw)*noseTip2*s, fl+(noseY+mnH*0.6)*s, wz+Math.cos(facingYaw)*noseTip2*s, 0.05*s,0.04*s,0.04*s, 0x1a0a08, facingYaw);
+    // Tail (animated wag) — sized by ts (tail scale varies with body type)
     const ti2 = (tailIdx!=null?tailIdx:2);
     const tc2 = rpc('tail');
-    const wagOffset = Math.sin(walkT * 1.8) * 0.35;
+    const wagOffset = Math.sin(wagT * 1.8) * 0.35;
     const tlBx2=wx-Math.sin(facingYaw)*0.65*s, tlBz2=wz-Math.cos(facingYaw)*0.65*s;
     const rvx2=Math.cos(facingYaw), rvz2=-Math.sin(facingYaw);
     if(ti2===0){
-      pushBox(list,tlBx2,fl+0.72*s,tlBz2,0.10*s,0.10*s,0.10*s,rpc('tail_0',tc2),facingYaw+0.3+wagOffset);
+      pushBox(list,tlBx2,fl+0.72*s,tlBz2,0.10*ts*s,0.10*ts*s,0.10*ts*s,rpc('tail_0',tc2),facingYaw+0.3+wagOffset);
     } else if(ti2===1){
-      pushBox(list,tlBx2,fl+0.68*s,tlBz2,0.10*s,0.10*s,0.18*s,rpc('tail_0',tc2),facingYaw+0.55+wagOffset);
+      pushBox(list,tlBx2,fl+0.68*s,tlBz2,0.10*ts*s,0.10*ts*s,0.18*ts*s,rpc('tail_0',tc2),facingYaw+0.55+wagOffset);
     } else if(ti2===2){
-      pushBox(list,tlBx2,fl+0.68*s,tlBz2,0.10*s,0.10*s,0.18*s,rpc('tail_0',tc2),facingYaw+0.55+wagOffset);
-      const t2x=tlBx2-Math.sin(facingYaw)*0.10*s, t2z=tlBz2-Math.cos(facingYaw)*0.10*s;
-      pushBox(list,t2x,fl+0.90*s,t2z,0.08*s,0.08*s,0.14*s,rpc('tail_1',tc2),facingYaw+1.05+wagOffset);
+      pushBox(list,tlBx2,fl+0.68*s,tlBz2,0.10*ts*s,0.10*ts*s,0.18*ts*s,rpc('tail_0',tc2),facingYaw+0.55+wagOffset);
+      const t2x=tlBx2-Math.sin(facingYaw)*0.10*ts*s, t2z=tlBz2-Math.cos(facingYaw)*0.10*ts*s;
+      pushBox(list,t2x,fl+0.90*s,t2z,0.08*ts*s,0.08*ts*s,0.14*ts*s,rpc('tail_1',tc2),facingYaw+1.05+wagOffset);
     } else if(ti2===3){
-      pushBox(list,tlBx2,fl+0.68*s,tlBz2,0.10*s,0.10*s,0.18*s,rpc('tail_0',tc2),facingYaw+0.5+wagOffset);
-      const t2x=tlBx2-Math.sin(facingYaw)*0.11*s, t2z=tlBz2-Math.cos(facingYaw)*0.11*s;
-      pushBox(list,t2x,fl+0.90*s,t2z,0.08*s,0.08*s,0.16*s,rpc('tail_1',tc2),facingYaw+1.05+wagOffset);
-      const t3x=t2x-Math.sin(facingYaw)*0.10*s, t3z=t2z-Math.cos(facingYaw)*0.10*s;
-      pushBox(list,t3x,fl+1.10*s,t3z,0.06*s,0.06*s,0.14*s,rpc('tail_2',tc2),facingYaw+1.55+wagOffset);
+      pushBox(list,tlBx2,fl+0.68*s,tlBz2,0.10*ts*s,0.10*ts*s,0.18*ts*s,rpc('tail_0',tc2),facingYaw+0.5+wagOffset);
+      const t2x=tlBx2-Math.sin(facingYaw)*0.11*ts*s, t2z=tlBz2-Math.cos(facingYaw)*0.11*ts*s;
+      pushBox(list,t2x,fl+0.90*s,t2z,0.08*ts*s,0.08*ts*s,0.16*ts*s,rpc('tail_1',tc2),facingYaw+1.05+wagOffset);
+      const t3x=t2x-Math.sin(facingYaw)*0.10*ts*s, t3z=t2z-Math.cos(facingYaw)*0.10*ts*s;
+      pushBox(list,t3x,fl+1.10*s,t3z,0.06*ts*s,0.06*ts*s,0.14*ts*s,rpc('tail_2',tc2),facingYaw+1.55+wagOffset);
     } else if(ti2===4){
-      pushBox(list,tlBx2,fl+0.68*s,tlBz2,0.16*s,0.16*s,0.20*s,rpc('tail_0',tc2),facingYaw+0.4+wagOffset);
-      pushBox(list,tlBx2+rvx2*0.12*s,fl+0.86*s,tlBz2+rvz2*0.12*s,0.11*s,0.11*s,0.14*s,rpc('tail_1',tc2),facingYaw+0.3+wagOffset);
-      pushBox(list,tlBx2-rvx2*0.12*s,fl+0.86*s,tlBz2-rvz2*0.12*s,0.11*s,0.11*s,0.14*s,rpc('tail_2',tc2),facingYaw+0.5+wagOffset);
-      pushBox(list,tlBx2,fl+1.02*s,tlBz2,0.13*s,0.12*s,0.13*s,rpc('tail_3',tc2),facingYaw+0.7+wagOffset);
+      pushBox(list,tlBx2,fl+0.68*s,tlBz2,0.16*ts*s,0.16*ts*s,0.20*ts*s,rpc('tail_0',tc2),facingYaw+0.4+wagOffset);
+      pushBox(list,tlBx2+rvx2*0.12*ts*s,fl+0.86*s,tlBz2+rvz2*0.12*ts*s,0.11*ts*s,0.11*ts*s,0.14*ts*s,rpc('tail_1',tc2),facingYaw+0.3+wagOffset);
+      pushBox(list,tlBx2-rvx2*0.12*ts*s,fl+0.86*s,tlBz2-rvz2*0.12*ts*s,0.11*ts*s,0.11*ts*s,0.14*ts*s,rpc('tail_2',tc2),facingYaw+0.5+wagOffset);
+      pushBox(list,tlBx2,fl+1.02*s,tlBz2,0.13*ts*s,0.12*ts*s,0.13*ts*s,rpc('tail_3',tc2),facingYaw+0.7+wagOffset);
     } else {
-      pushBox(list,tlBx2,fl+0.70*s,tlBz2,0.10*s,0.10*s,0.16*s,rpc('tail_0',tc2),facingYaw+0.5+wagOffset);
-      const c2x=tlBx2-Math.sin(facingYaw)*0.09*s, c2z=tlBz2-Math.cos(facingYaw)*0.09*s;
-      pushBox(list,c2x,fl+0.92*s,c2z,0.09*s,0.09*s,0.13*s,rpc('tail_1',tc2),facingYaw+1.2+wagOffset);
-      const c3x=c2x-Math.sin(facingYaw)*0.05*s, c3z=c2z-Math.cos(facingYaw)*0.05*s;
-      pushBox(list,c3x,fl+1.10*s,c3z,0.07*s,0.07*s,0.11*s,rpc('tail_2',tc2),facingYaw+2.1+wagOffset);
-      const c4x=c3x+Math.sin(facingYaw)*0.08*s, c4z=c3z+Math.cos(facingYaw)*0.08*s;
-      pushBox(list,c4x,fl+1.22*s,c4z,0.06*s,0.06*s,0.09*s,rpc('tail_3',ovLighten(tc2,0.15)),facingYaw+2.9+wagOffset);
+      pushBox(list,tlBx2,fl+0.70*s,tlBz2,0.10*ts*s,0.10*ts*s,0.16*ts*s,rpc('tail_0',tc2),facingYaw+0.5+wagOffset);
+      const c2x=tlBx2-Math.sin(facingYaw)*0.09*ts*s, c2z=tlBz2-Math.cos(facingYaw)*0.09*ts*s;
+      pushBox(list,c2x,fl+0.92*s,c2z,0.09*ts*s,0.09*ts*s,0.13*ts*s,rpc('tail_1',tc2),facingYaw+1.2+wagOffset);
+      const c3x=c2x-Math.sin(facingYaw)*0.05*ts*s, c3z=c2z-Math.cos(facingYaw)*0.05*ts*s;
+      pushBox(list,c3x,fl+1.10*s,c3z,0.07*ts*s,0.07*ts*s,0.11*ts*s,rpc('tail_2',tc2),facingYaw+2.1+wagOffset);
+      const c4x=c3x+Math.sin(facingYaw)*0.08*ts*s, c4z=c3z+Math.cos(facingYaw)*0.08*ts*s;
+      pushBox(list,c4x,fl+1.22*s,c4z,0.06*ts*s,0.06*ts*s,0.09*ts*s,rpc('tail_3',ovLighten(tc2,0.15)),facingYaw+2.9+wagOffset);
     }
-    // Legs (animated trot — diagonal pairs swing opposite phases)
-    const rvx=Math.cos(facingYaw), rvz=-Math.sin(facingYaw);
-    const legH = (bodyIdx===3)?0.28:((bodyIdx===6)?0.26:0.20);
-    const swingAmt = 0.18 * s;
-    // [lat, lon, diagonalSign]: FR=+1, FL=-1, BR=-1, BL=+1
-    const legDefs = [[legLat*s,legLon*s,+1],[-legLat*s,legLon*s,-1],[legLat*s,-legLon*s,-1],[-legLat*s,-legLon*s,+1]];
-    const legPos = legDefs.map(([lat,lon,sign]) => {
-      const sw = Math.sin(walkT) * sign * swingAmt;
-      const lx = wx + rvx*lat + Math.sin(facingYaw)*(lon + sw);
-      const lz = wz + rvz*lat + Math.cos(facingYaw)*(lon + sw);
-      const lift = Math.max(0, Math.sin(walkT) * sign) * 0.08 * s;
-      return { lx, lz, lift };
-    });
-    legPos.forEach(({lx, lz, lift}) => {
-      pushBox(list, lx, fl+legH*s+lift, lz, 0.10*s, legH*s, 0.10*s, rpc('leg'), facingYaw);
-      pushBox(list, lx, fl+0.04*s+lift, lz, 0.13*s, 0.05*s, 0.13*s, rpc('paw', 0x2a1808), facingYaw);
+    // Legs — bone-based hip-pivot animation matching main game dogs
+    const swing = Math.sin(walkT) * 0.55;
+    // Diagonal gait: [lat, lon, legAngle] — FR/BL share one phase, FL/BR the opposite
+    const legPairs = [
+      [ legLat,  legLon,  swing],  // FR
+      [-legLat,  legLon, -swing],  // FL
+      [ legLat, -legLon, -swing],  // BR
+      [-legLat, -legLon,  swing],  // BL
+    ];
+    const legPawData = legPairs.map(([llat, llon, ang]) => {
+      const hipLocal = v3(llat*s, hipY*s, llon*s);
+      const hipWorld = add(rotY(hipLocal, facingYaw), v3(wx, fl, wz));
+      const legOff = rotY(rotX(v3(0, -legH*s, 0), ang), facingYaw);
+      const legCtr = add(hipWorld, legOff);
+      pushBox(list, legCtr.x, legCtr.y, legCtr.z, legW*s, legH*s, legW*s, rpc('leg'), facingYaw, ang);
+      const pawOff = rotY(rotX(v3(0, -(legH+0.02)*s, 0), ang), facingYaw);
+      const pawCtr = add(hipWorld, pawOff);
+      pushBox(list, pawCtr.x, pawCtr.y-0.04*s, pawCtr.z, pawW*s, 0.05*s, pawW*s, rpc('paw', 0x2a1808), facingYaw, ang);
+      return { lx: pawCtr.x, lz: pawCtr.z, ly: pawCtr.y-0.04*s, ang };
     });
     // Spot socks (different color on paws)
     if (spotPat==='socks' && spotHex) {
-      legPos.forEach(({lx, lz, lift}) => {
-        pushBox(list, lx, fl+0.06*s+lift, lz, 0.12*s, 0.07*s, 0.12*s, spotHex, facingYaw);
+      legPawData.forEach(({lx, lz, ly, ang}) => {
+        pushBox(list, lx, ly+0.04*s, lz, (pawW-0.01)*s, 0.07*s, (pawW-0.01)*s, spotHex, facingYaw, ang);
       });
     }
     // Spot back patches
@@ -20104,6 +20178,7 @@
     if (ods.y <= 0.21) { ods.y = 0.21; ods.velY = 0; ods.grounded = true; }
     // Walk animation
     if (moving && ods.grounded) ods.walkT += 0.22;
+    ods.wagT += 0.10; // always wag tail
 
     // C = toggle chat
     if (keysJustPressed.has('KeyC') && inOnlineVillage) {
@@ -20326,9 +20401,9 @@
     _pbXZ = prevXZ;
 
     // Camera: fixed position, dog rotates by changing its facingYaw
-    const camPos   = v3(0, 1.1, -2.6);
+    const camPos   = v3(0, 1.1, -2.6 / ovcZoom);
     const camPitch = 0.18;
-    const pF       = (PH * 0.5) / 0.40; // tight zoom to fill canvas
+    const pF       = (PH * 0.5) / 0.40 * ovcZoom;
 
     pctx.fillStyle = '#07111e';
     pctx.fillRect(0, 0, PW, PH);
@@ -20366,9 +20441,38 @@
 
   function ovOpenCustom() {
     ovCustomOpen = true;
+    // Restore indices from profile
+    const pr = onlineDogProfile || {};
+    ovcBodyIdx = pr.bodyIdx || 0;
+    ovcEarIdx  = pr.earIdx  || 0;
+    ovcNoseIdx = pr.noseIdx || 0;
+    ovcEyeIdx  = pr.eyeIdx  || 0;
+    ovcTailIdx = pr.tailIdx !== undefined ? pr.tailIdx : 2;
+    ovcEraserMode = false;
+    ovcPaintColor = ovcPaintColor || '#d4a848';
     const p = document.getElementById('ov-custom-panel');
     p.classList.remove('hidden');
-    // Build color palette in custom panel
+    // Build type-selector buttons
+    const buildCpBtns = (elId, labels, curIdx, onPick) => {
+      const el = document.getElementById(elId); if (!el) return;
+      el.innerHTML = '';
+      labels.forEach((lbl, i) => {
+        const b = document.createElement('button');
+        b.className = 'ov-opt-btn' + (i === curIdx ? ' ov-selected' : '');
+        b.textContent = lbl;
+        b.onclick = () => {
+          onPick(i);
+          el.querySelectorAll('.ov-opt-btn').forEach((x,j)=>x.classList.toggle('ov-selected',j===i));
+        };
+        el.appendChild(b);
+      });
+    };
+    buildCpBtns('cp-body-btns', OV_BODY_LABELS, ovcBodyIdx, i=>{ ovcBodyIdx=i; if(onlineDogProfile){onlineDogProfile.bodyIdx=i; ovSaveProfile();} });
+    buildCpBtns('cp-ear-btns',  OV_EAR_LABELS,  ovcEarIdx,  i=>{ ovcEarIdx=i;  if(onlineDogProfile){onlineDogProfile.earIdx=i; ovSaveProfile();} });
+    buildCpBtns('cp-nose-btns', OV_NOSE_LABELS, ovcNoseIdx, i=>{ ovcNoseIdx=i; if(onlineDogProfile){onlineDogProfile.noseIdx=i; ovSaveProfile();} });
+    buildCpBtns('cp-eye-btns',  OV_EYE_LABELS,  ovcEyeIdx,  i=>{ ovcEyeIdx=i;  if(onlineDogProfile){onlineDogProfile.eyeIdx=i; ovSaveProfile();} });
+    buildCpBtns('cp-tail-btns', OV_TAIL_LABELS, ovcTailIdx, i=>{ ovcTailIdx=i; if(onlineDogProfile){onlineDogProfile.tailIdx=i; ovSaveProfile();} });
+    // Build color palette
     const pg = document.getElementById('ov-cp-palette');
     if (pg) {
       pg.innerHTML = '';
@@ -20382,7 +20486,11 @@
     }
     const pc = document.getElementById('cp-preview');
     if (pc) {
-      pc.width = 300; pc.height = 220;
+      const sizeCanvas = () => { pc.width = pc.parentElement.clientWidth||520; pc.height = pc.parentElement.clientHeight||400; };
+      sizeCanvas();
+      if (pc._ovcResizeObs) pc._ovcResizeObs.disconnect();
+      pc._ovcResizeObs = new ResizeObserver(sizeCanvas);
+      pc._ovcResizeObs.observe(pc.parentElement);
       ovc3DBindDrag(pc);
       if (!pc._ovc3DClickBound) {
         pc._ovc3DClickBound = true;
@@ -20396,6 +20504,8 @@
     ovCustomOpen = false;
     document.getElementById('ov-custom-panel').classList.add('hidden');
     ovc3DStop();
+    const pc = document.getElementById('cp-preview');
+    if (pc && pc._ovcResizeObs) { pc._ovcResizeObs.disconnect(); pc._ovcResizeObs = null; }
     if (cpFromFactory) { cpFromFactory = false; ovConnectAndEnter(); }
   }
 
@@ -20503,6 +20613,10 @@
       <div id="ov-dc-center">
         <canvas id="ov-dc-canvas" style="cursor:crosshair"></canvas>
         <div id="ov-dc-part-label" style="opacity:0;transition:opacity 0.3s"></div>
+        <div style="position:absolute;bottom:8px;right:8px;display:flex;flex-direction:column;gap:4px;z-index:2">
+          <button onclick="ovcZoom=Math.min(ovcZoom*1.25,4)" title="Zoom in" style="width:28px;height:28px;border-radius:6px;border:1px solid #2a4060;background:rgba(10,20,40,0.85);color:#9acce8;font:16px Arial;cursor:pointer;line-height:1">+</button>
+          <button onclick="ovcZoom=Math.max(ovcZoom/1.25,0.4)" title="Zoom out" style="width:28px;height:28px;border-radius:6px;border:1px solid #2a4060;background:rgba(10,20,40,0.85);color:#9acce8;font:16px Arial;cursor:pointer;line-height:1">&minus;</button>
+        </div>
       </div>
       <!-- Right: color palette -->
       <div id="ov-dc-palette">
@@ -20537,15 +20651,51 @@
 
   <!-- Customization panel (edit dog while in village) -->
   <div id="ov-custom-panel" class="hidden">
-    <h3>✨ Customise Dog</h3>
-    <canvas id="cp-preview" width="300" height="220" style="cursor:crosshair"></canvas>
-    <div id="cp-part-label" style="font:bold 11px Arial;color:#7bf;text-align:center;height:16px;opacity:0;transition:opacity 0.3s;margin-top:2px"></div>
-    <div class="ov-pal-grid" id="ov-cp-palette" style="margin:8px 0"></div>
-    <div style="display:flex;gap:6px;margin-bottom:4px">
-      <button id="ov-pal-eraser" onclick="ovcSelectEraser()" style="flex:1">&#9998; Eraser</button>
-      <button onclick="ovcClearPaint()" style="flex:1">&#x2715; Reset</button>
+    <!-- Top: shape/type selectors -->
+    <div id="cp-topbar">
+      <span id="cp-topbar-title">✨ Customise Dog</span>
+      <div class="ov-shape-group">
+        <span class="ov-shape-label">Body:</span>
+        <div id="cp-body-btns" style="display:flex;flex-wrap:wrap;gap:4px"></div>
+      </div>
+      <div class="ov-shape-group">
+        <span class="ov-shape-label">Ears:</span>
+        <div id="cp-ear-btns" style="display:flex;flex-wrap:wrap;gap:4px"></div>
+      </div>
+      <div class="ov-shape-group">
+        <span class="ov-shape-label">Snout:</span>
+        <div id="cp-nose-btns" style="display:flex;flex-wrap:wrap;gap:4px"></div>
+      </div>
+      <div class="ov-shape-group">
+        <span class="ov-shape-label">Eyes:</span>
+        <div id="cp-eye-btns" style="display:flex;flex-wrap:wrap;gap:4px"></div>
+      </div>
+      <div class="ov-shape-group">
+        <span class="ov-shape-label">Tail:</span>
+        <div id="cp-tail-btns" style="display:flex;flex-wrap:wrap;gap:4px"></div>
+      </div>
     </div>
-    <button id="ov-custom-close" onclick="ovCloseCustom()" style="margin-top:6px;width:100%">✔ Done</button>
+    <!-- Main: canvas + palette -->
+    <div id="cp-main">
+      <div id="cp-center">
+        <canvas id="cp-preview" style="cursor:crosshair"></canvas>
+        <div id="cp-part-label" style="opacity:0;transition:opacity 0.3s"></div>
+        <div style="position:absolute;bottom:8px;right:8px;display:flex;flex-direction:column;gap:4px;z-index:2">
+          <button onclick="ovcZoom=Math.min(ovcZoom*1.25,4)" title="Zoom in" style="width:28px;height:28px;border-radius:6px;border:1px solid #2a4060;background:rgba(10,20,40,0.85);color:#9acce8;font:16px Arial;cursor:pointer;line-height:1">+</button>
+          <button onclick="ovcZoom=Math.max(ovcZoom/1.25,0.4)" title="Zoom out" style="width:28px;height:28px;border-radius:6px;border:1px solid #2a4060;background:rgba(10,20,40,0.85);color:#9acce8;font:16px Arial;cursor:pointer;line-height:1">&minus;</button>
+        </div>
+      </div>
+      <div id="ov-dc-palette" style="width:130px;flex-shrink:0;display:flex;flex-direction:column;gap:0;background:rgba(6,12,24,0.97);border-left:1px solid #1a3050;overflow-y:auto;padding:10px 8px 16px">
+        <div class="ov-pal-section-title">Colors</div>
+        <div class="ov-pal-grid" id="ov-cp-palette"></div>
+        <button id="ov-cp-eraser" onclick="ovcSelectEraser()" style="margin-top:6px;width:100%;padding:7px 0;border-radius:6px;border:1.5px solid #4a3020;background:rgba(30,16,8,0.85);color:#c08060;font:11px Arial;cursor:pointer">&#9998; Eraser</button>
+        <button onclick="ovcClearPaint()" style="margin-top:4px;width:100%;padding:6px 0;border-radius:6px;border:1.5px solid #3a1828;background:rgba(20,8,16,0.85);color:#804060;font:10px Arial;cursor:pointer">&#x2715; Reset</button>
+      </div>
+    </div>
+    <!-- Bottom: done -->
+    <div id="cp-bottombar">
+      <button id="ov-custom-close" onclick="ovCloseCustom()">✔ Done</button>
+    </div>
   </div>
 
   <!-- Trade offer panel -->
