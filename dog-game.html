@@ -19275,37 +19275,79 @@
     const rpc = (id, dflt) => ovResolvePartColor(id, partColors, dflt);
     const pbp = (l,cx,cy,cz,w,h,d,col,pt,yw=0,rx=0) => pushBoxPart(l,cx,cy,cz,w,h,d,col,pt,yw,rx,partColors);
     const fl=0.21;
+    // Body dims
     let bw=0.46,bh=0.28,bd=0.72,legLat=0.28,legLon=0.40,legH=0.20;
-    if(bodyIdx===1){bw=0.58;bh=0.34;}
-    if(bodyIdx===2){bw=0.36;bh=0.22;}
-    if(bodyIdx===3){bw=0.42;bh=0.22;legLon=0.50;legH=0.28;}
-    if(bodyIdx===4){bw=0.36;bh=0.20;bd=0.55;}
-    if(bodyIdx===5){bw=0.52;bh=0.32;bd=0.76;}
-    if(bodyIdx===6){bw=0.38;bh=0.24;bd=0.78;legLat=0.30;legH=0.26;}
+    // Head dims / position
+    let hW=0.34,hH=0.32,hD=0.32,headY=0.90,headFwd=0.78;
+    // Leg / paw dims
+    let legW=0.10,pawW=0.13;
+    // Haunch dims / position
+    let haunchW=0.20,haunchH=0.14,haunchD=0.24,haunchY=0.24;
+    // Tail scale & root offset
+    let tailSc=1.0,tailBkOff=0.65;
+
+    if(bodyIdx===1){// Chubby
+      bw=0.58;bh=0.34;
+      hW=0.42;hH=0.37;hD=0.37;headY=0.97;headFwd=0.84;
+      legW=0.13;pawW=0.16;legH=0.19;
+      haunchW=0.26;haunchH=0.17;haunchD=0.29;haunchY=0.26;
+      tailSc=1.3;tailBkOff=0.70;}
+    if(bodyIdx===2){// Slim
+      bw=0.36;bh=0.22;
+      hW=0.30;hH=0.27;hD=0.27;headY=0.83;headFwd=0.72;
+      legW=0.08;pawW=0.10;
+      haunchW=0.16;haunchH=0.12;haunchD=0.20;haunchY=0.22;
+      tailSc=0.8;tailBkOff=0.60;}
+    if(bodyIdx===3){// Tall
+      bw=0.42;bh=0.22;legLon=0.50;legH=0.28;
+      hW=0.34;hH=0.30;hD=0.30;headY=0.96;headFwd=0.78;
+      legW=0.09;pawW=0.11;
+      haunchW=0.18;haunchH=0.18;haunchD=0.26;haunchY=0.28;
+      tailSc=1.15;tailBkOff=0.65;}
+    if(bodyIdx===4){// Tiny
+      bw=0.36;bh=0.20;bd=0.55;
+      hW=0.28;hH=0.25;hD=0.25;headY=0.79;headFwd=0.64;
+      legW=0.08;pawW=0.10;legH=0.16;
+      haunchW=0.15;haunchH=0.11;haunchD=0.18;haunchY=0.20;
+      tailSc=0.72;tailBkOff=0.55;}
+    if(bodyIdx===5){// Fluffy
+      bw=0.52;bh=0.32;bd=0.76;
+      hW=0.44;hH=0.40;hD=0.40;headY=1.00;headFwd=0.86;
+      legW=0.14;pawW=0.17;legH=0.21;
+      haunchW=0.28;haunchH=0.19;haunchD=0.32;haunchY=0.27;
+      tailSc=1.45;tailBkOff=0.72;}
+    if(bodyIdx===6){// Athletic
+      bw=0.38;bh=0.24;bd=0.78;legLat=0.30;legH=0.26;
+      hW=0.33;hH=0.30;hD=0.30;headY=0.90;headFwd=0.76;
+      legW=0.11;pawW=0.12;
+      haunchW=0.22;haunchH=0.16;haunchD=0.26;haunchY=0.25;
+      tailSc=1.1;tailBkOff=0.66;}
     const rvx=Math.cos(facingYaw), rvz=-Math.sin(facingYaw);
 
     // ── Body ─────────────────────────────────────────────────────────────
     pbp(list, wx, fl+0.50*s, wz, bw*s,bh*s,bd*s, rpc('body'),'body',facingYaw);
 
     // ── Head ─────────────────────────────────────────────────────────────
-    const hx=wx+Math.sin(facingYaw)*0.78*s, hz=wz+Math.cos(facingYaw)*0.78*s;
-    const hW=(bodyIdx===1||bodyIdx===5)?0.38:0.34;
-    pbp(list, hx, fl+0.90*s, hz, hW*s,0.32*s,0.32*s, rpc('head'),'head',facingYaw);
+    const hx=wx+Math.sin(facingYaw)*headFwd*s, hz=wz+Math.cos(facingYaw)*headFwd*s;
+    pbp(list, hx, fl+headY*s, hz, hW*s,hH*s,hD*s, rpc('head'),'head',facingYaw);
 
     // ── Eyes ─────────────────────────────────────────────────────────────
     const eyeFx = hx+Math.sin(facingYaw)*(hW+0.02)*s;
     const eyeFz = hz+Math.cos(facingYaw)*(hW+0.02)*s;
-    pbp(list, eyeFx+rvx*0.13*s, fl+0.96*s, eyeFz+rvz*0.13*s, 0.04*s,0.065*s,0.03*s, rpc('eye_L',rpc('eye')),'eye_L',facingYaw);
-    pbp(list, eyeFx-rvx*0.13*s, fl+0.96*s, eyeFz-rvz*0.13*s, 0.04*s,0.065*s,0.03*s, rpc('eye_R',rpc('eye')),'eye_R',facingYaw);
+    const eyeY = fl+(headY+0.06)*s;
+    const eyeSpread = Math.max(0.09, hH*0.38);
+    pbp(list, eyeFx+rvx*eyeSpread*s, eyeY, eyeFz+rvz*eyeSpread*s, 0.04*s,0.065*s,0.03*s, rpc('eye_L',rpc('eye')),'eye_L',facingYaw);
+    pbp(list, eyeFx-rvx*eyeSpread*s, eyeY, eyeFz-rvz*eyeSpread*s, 0.04*s,0.065*s,0.03*s, rpc('eye_R',rpc('eye')),'eye_R',facingYaw);
 
     // ── Muzzle (noseIdx: 0=Normal,1=Big,2=Button,3=Long,4=Wide,5=Flat) ──
     const ni = noseIdx||0;
-    let mnW=0.15,mnH=0.10,mnD=0.14, noseFwd=1.14, noseY=0.78;
-    if(ni===1){mnW=0.20;mnH=0.14;mnD=0.18;noseFwd=1.16;noseY=0.76;}  // Big
-    if(ni===2){mnW=0.10;mnH=0.07;mnD=0.10;noseFwd=1.10;noseY=0.80;}  // Button
-    if(ni===3){mnW=0.14;mnH=0.09;mnD=0.22;noseFwd=1.20;noseY=0.78;}  // Long
-    if(ni===4){mnW=0.22;mnH=0.09;mnD=0.13;noseFwd=1.13;noseY=0.78;}  // Wide
-    if(ni===5){mnW=0.20;mnH=0.06;mnD=0.14;noseFwd=1.12;noseY=0.82;}  // Flat
+    const headYDelta = headY - 0.90; // shift muzzle Y with head
+    let mnW=0.15,mnH=0.10,mnD=0.14, noseFwd=1.14, noseY=0.78+headYDelta;
+    if(ni===1){mnW=0.20;mnH=0.14;mnD=0.18;noseFwd=1.16;noseY=0.76+headYDelta;}  // Big
+    if(ni===2){mnW=0.10;mnH=0.07;mnD=0.10;noseFwd=1.10;noseY=0.80+headYDelta;}  // Button
+    if(ni===3){mnW=0.14;mnH=0.09;mnD=0.22;noseFwd=1.20;noseY=0.78+headYDelta;}  // Long
+    if(ni===4){mnW=0.22;mnH=0.09;mnD=0.13;noseFwd=1.13;noseY=0.78+headYDelta;}  // Wide
+    if(ni===5){mnW=0.20;mnH=0.06;mnD=0.14;noseFwd=1.12;noseY=0.82+headYDelta;}  // Flat
     const snx=wx+Math.sin(facingYaw)*noseFwd*s, snz=wz+Math.cos(facingYaw)*noseFwd*s;
     pbp(list, snx,fl+noseY*s,snz, mnW*s,mnH*s,mnD*s, rpc('muzzle'),'muzzle',facingYaw);
     const noseTip = noseFwd + mnD*0.5 + 0.03;
@@ -19314,36 +19356,37 @@
     // ── Tail ─────────────────────────────────────────────────────────────
     const ti = (tailIdx!=null?tailIdx:2);
     const tc = rpc('tail');
-    const tlBx = wx-Math.sin(facingYaw)*0.65*s, tlBz = wz-Math.cos(facingYaw)*0.65*s;
+    const tlBx = wx-Math.sin(facingYaw)*tailBkOff*s, tlBz = wz-Math.cos(facingYaw)*tailBkOff*s;
+    const ts = tailSc; // shorthand
     if(ti===0){
-      pbp(list,tlBx,fl+0.72*s,tlBz,0.10*s,0.10*s,0.10*s,rpc('tail_0',tc),'tail_0',facingYaw+0.3);
+      pbp(list,tlBx,fl+0.72*s,tlBz,0.10*ts*s,0.10*ts*s,0.10*ts*s,rpc('tail_0',tc),'tail_0',facingYaw+0.3);
     } else if(ti===1){
-      pbp(list,tlBx,fl+0.68*s,tlBz,0.10*s,0.10*s,0.18*s,rpc('tail_0',tc),'tail_0',facingYaw+0.55);
+      pbp(list,tlBx,fl+0.68*s,tlBz,0.10*ts*s,0.10*ts*s,0.18*ts*s,rpc('tail_0',tc),'tail_0',facingYaw+0.55);
     } else if(ti===2){
-      pbp(list,tlBx,fl+0.68*s,tlBz,0.10*s,0.10*s,0.18*s,rpc('tail_0',tc),'tail_0',facingYaw+0.55);
-      const t2x=tlBx-Math.sin(facingYaw)*0.10*s, t2z=tlBz-Math.cos(facingYaw)*0.10*s;
-      pbp(list,t2x,fl+0.90*s,t2z,0.08*s,0.08*s,0.14*s,rpc('tail_1',tc),'tail_1',facingYaw+1.05);
+      pbp(list,tlBx,fl+0.68*s,tlBz,0.10*ts*s,0.10*ts*s,0.18*ts*s,rpc('tail_0',tc),'tail_0',facingYaw+0.55);
+      const t2x=tlBx-Math.sin(facingYaw)*0.10*ts*s, t2z=tlBz-Math.cos(facingYaw)*0.10*ts*s;
+      pbp(list,t2x,fl+0.90*s,t2z,0.08*ts*s,0.08*ts*s,0.14*ts*s,rpc('tail_1',tc),'tail_1',facingYaw+1.05);
     } else if(ti===3){
-      pbp(list,tlBx,fl+0.68*s,tlBz,0.10*s,0.10*s,0.18*s,rpc('tail_0',tc),'tail_0',facingYaw+0.5);
-      const t2x=tlBx-Math.sin(facingYaw)*0.11*s, t2z=tlBz-Math.cos(facingYaw)*0.11*s;
-      pbp(list,t2x,fl+0.90*s,t2z,0.08*s,0.08*s,0.16*s,rpc('tail_1',tc),'tail_1',facingYaw+1.05);
-      const t3x=t2x-Math.sin(facingYaw)*0.10*s, t3z=t2z-Math.cos(facingYaw)*0.10*s;
-      pbp(list,t3x,fl+1.10*s,t3z,0.06*s,0.06*s,0.14*s,rpc('tail_2',tc),'tail_2',facingYaw+1.55);
+      pbp(list,tlBx,fl+0.68*s,tlBz,0.10*ts*s,0.10*ts*s,0.18*ts*s,rpc('tail_0',tc),'tail_0',facingYaw+0.5);
+      const t2x=tlBx-Math.sin(facingYaw)*0.11*ts*s, t2z=tlBz-Math.cos(facingYaw)*0.11*ts*s;
+      pbp(list,t2x,fl+0.90*s,t2z,0.08*ts*s,0.08*ts*s,0.16*ts*s,rpc('tail_1',tc),'tail_1',facingYaw+1.05);
+      const t3x=t2x-Math.sin(facingYaw)*0.10*ts*s, t3z=t2z-Math.cos(facingYaw)*0.10*ts*s;
+      pbp(list,t3x,fl+1.10*s,t3z,0.06*ts*s,0.06*ts*s,0.14*ts*s,rpc('tail_2',tc),'tail_2',facingYaw+1.55);
     } else if(ti===4){
-      pbp(list,tlBx,fl+0.68*s,tlBz,0.16*s,0.16*s,0.20*s,rpc('tail_0',tc),'tail_0',facingYaw+0.4);
-      pbp(list,tlBx+rvx*0.12*s,fl+0.86*s,tlBz+rvz*0.12*s,0.11*s,0.11*s,0.14*s,rpc('tail_1',tc),'tail_1',facingYaw+0.3);
-      pbp(list,tlBx-rvx*0.12*s,fl+0.86*s,tlBz-rvz*0.12*s,0.11*s,0.11*s,0.14*s,rpc('tail_2',tc),'tail_2',facingYaw+0.5);
-      pbp(list,tlBx,fl+1.02*s,tlBz,0.13*s,0.12*s,0.13*s,rpc('tail_3',tc),'tail_3',facingYaw+0.7);
-      pbp(list,tlBx,fl+1.18*s,tlBz,0.09*s,0.08*s,0.09*s,rpc('tail_4',ovLighten(tc,0.25)),'tail_4',facingYaw+0.9);
+      pbp(list,tlBx,fl+0.68*s,tlBz,0.16*ts*s,0.16*ts*s,0.20*ts*s,rpc('tail_0',tc),'tail_0',facingYaw+0.4);
+      pbp(list,tlBx+rvx*0.12*ts*s,fl+0.86*s,tlBz+rvz*0.12*ts*s,0.11*ts*s,0.11*ts*s,0.14*ts*s,rpc('tail_1',tc),'tail_1',facingYaw+0.3);
+      pbp(list,tlBx-rvx*0.12*ts*s,fl+0.86*s,tlBz-rvz*0.12*ts*s,0.11*ts*s,0.11*ts*s,0.14*ts*s,rpc('tail_2',tc),'tail_2',facingYaw+0.5);
+      pbp(list,tlBx,fl+1.02*s,tlBz,0.13*ts*s,0.12*ts*s,0.13*ts*s,rpc('tail_3',tc),'tail_3',facingYaw+0.7);
+      pbp(list,tlBx,fl+1.18*s,tlBz,0.09*ts*s,0.08*ts*s,0.09*ts*s,rpc('tail_4',ovLighten(tc,0.25)),'tail_4',facingYaw+0.9);
     } else {
       // Curled
-      pbp(list,tlBx,fl+0.70*s,tlBz,0.10*s,0.10*s,0.16*s,rpc('tail_0',tc),'tail_0',facingYaw+0.5);
-      const c2x=tlBx-Math.sin(facingYaw)*0.09*s, c2z=tlBz-Math.cos(facingYaw)*0.09*s;
-      pbp(list,c2x,fl+0.92*s,c2z,0.09*s,0.09*s,0.13*s,rpc('tail_1',tc),'tail_1',facingYaw+1.2);
-      const c3x=c2x-Math.sin(facingYaw)*0.05*s, c3z=c2z-Math.cos(facingYaw)*0.05*s;
-      pbp(list,c3x,fl+1.10*s,c3z,0.07*s,0.07*s,0.11*s,rpc('tail_2',tc),'tail_2',facingYaw+2.1);
-      const c4x=c3x+Math.sin(facingYaw)*0.08*s, c4z=c3z+Math.cos(facingYaw)*0.08*s;
-      pbp(list,c4x,fl+1.22*s,c4z,0.06*s,0.06*s,0.09*s,rpc('tail_3',ovLighten(tc,0.15)),'tail_3',facingYaw+2.9);
+      pbp(list,tlBx,fl+0.70*s,tlBz,0.10*ts*s,0.10*ts*s,0.16*ts*s,rpc('tail_0',tc),'tail_0',facingYaw+0.5);
+      const c2x=tlBx-Math.sin(facingYaw)*0.09*ts*s, c2z=tlBz-Math.cos(facingYaw)*0.09*ts*s;
+      pbp(list,c2x,fl+0.92*s,c2z,0.09*ts*s,0.09*ts*s,0.13*ts*s,rpc('tail_1',tc),'tail_1',facingYaw+1.2);
+      const c3x=c2x-Math.sin(facingYaw)*0.05*ts*s, c3z=c2z-Math.cos(facingYaw)*0.05*ts*s;
+      pbp(list,c3x,fl+1.10*s,c3z,0.07*ts*s,0.07*ts*s,0.11*ts*s,rpc('tail_2',tc),'tail_2',facingYaw+2.1);
+      const c4x=c3x+Math.sin(facingYaw)*0.08*ts*s, c4z=c3z+Math.cos(facingYaw)*0.08*ts*s;
+      pbp(list,c4x,fl+1.22*s,c4z,0.06*ts*s,0.06*ts*s,0.09*ts*s,rpc('tail_3',ovLighten(tc,0.15)),'tail_3',facingYaw+2.9);
     }
 
     // ── Front legs ────────────────────────────────────────────────────────
@@ -19351,8 +19394,8 @@
     [[legLat,legLon],[-legLat,legLon]].forEach(([lat,lon],i)=>{
       const lx=wx+rvx*(lat*s)+Math.sin(facingYaw)*(lon*s);
       const lz=wz+rvz*(lat*s)+Math.cos(facingYaw)*(lon*s);
-      pbp(list,lx,fl+legH*s,lz,0.10*s,legH*s,0.10*s,rpc(legIds[i][0]),legIds[i][0],facingYaw);
-      pbp(list,lx,fl+0.04*s,lz,0.13*s,0.05*s,0.13*s,rpc(legIds[i][1]),legIds[i][1],facingYaw);
+      pbp(list,lx,fl+legH*s,lz,legW*s,legH*s,legW*s,rpc(legIds[i][0]),legIds[i][0],facingYaw);
+      pbp(list,lx,fl+0.04*s,lz,pawW*s,0.05*s,pawW*s,rpc(legIds[i][1]),legIds[i][1],facingYaw);
     });
 
     // ── Back haunches (sitting) ───────────────────────────────────────────
@@ -19360,37 +19403,40 @@
       const side = i===0?1:-1;
       const hx2=wx+rvx*(side*legLat*1.55*s)-Math.sin(facingYaw)*(legLon*0.28*s);
       const hz2=wz+rvz*(side*legLat*1.55*s)-Math.cos(facingYaw)*(legLon*0.28*s);
-      pbp(list,hx2,fl+0.24*s,hz2,0.20*s,0.14*s,0.24*s,rpc(hid),hid,facingYaw);
+      pbp(list,hx2,fl+haunchY*s,hz2,haunchW*s,haunchH*s,haunchD*s,rpc(hid),hid,facingYaw);
       const px=hx2-Math.sin(facingYaw)*0.12*s, pz=hz2-Math.cos(facingYaw)*0.12*s;
-      pbp(list,px,fl+0.04*s,pz,0.14*s,0.05*s,0.14*s,rpc(pid),pid,facingYaw);
+      pbp(list,px,fl+0.04*s,pz,pawW*s,0.05*s,pawW*s,rpc(pid),pid,facingYaw);
     });
 
     // ── Collar ────────────────────────────────────────────────────────────
-    pbp(list,hx,fl+0.72*s,hz,0.36*s,0.06*s,0.36*s,rpc('collar'),'collar',facingYaw);
+    const collarY = headY - 0.18;
+    pbp(list,hx,fl+collarY*s,hz,0.36*s,0.06*s,0.36*s,rpc('collar'),'collar',facingYaw);
 
     // ── Ears ──────────────────────────────────────────────────────────────
-    const ex=Math.cos(facingYaw)*0.30*s, ez=-Math.sin(facingYaw)*0.30*s;
+    const earSpread = Math.max(0.26, hH*0.9);
+    const ex=Math.cos(facingYaw)*earSpread*s, ez=-Math.sin(facingYaw)*earSpread*s;
+    const earTopY = headY + hH * 0.5; // base of ear starts at top of head
     const ec = rpc('ear');
     if(earType==='floppy'){
-      pbp(list,hx+ex,fl+0.80*s,hz+ez,0.06*s,0.22*s,0.10*s,rpc('ear_L',ec),'ear_L',facingYaw);
-      pbp(list,hx-ex,fl+0.80*s,hz-ez,0.06*s,0.22*s,0.10*s,rpc('ear_R',ec),'ear_R',facingYaw);
+      pbp(list,hx+ex,fl+(earTopY-0.18)*s,hz+ez,0.06*s,0.22*s,0.10*s,rpc('ear_L',ec),'ear_L',facingYaw);
+      pbp(list,hx-ex,fl+(earTopY-0.18)*s,hz-ez,0.06*s,0.22*s,0.10*s,rpc('ear_R',ec),'ear_R',facingYaw);
     } else if(earType==='rounded'){
-      pbp(list,hx+ex,fl+1.06*s,hz+ez,0.13*s,0.14*s,0.10*s,rpc('ear_L',ec),'ear_L',facingYaw);
-      pbp(list,hx-ex,fl+1.06*s,hz-ez,0.13*s,0.14*s,0.10*s,rpc('ear_R',ec),'ear_R',facingYaw);
+      pbp(list,hx+ex,fl+(earTopY+0.14)*s,hz+ez,0.13*s,0.14*s,0.10*s,rpc('ear_L',ec),'ear_L',facingYaw);
+      pbp(list,hx-ex,fl+(earTopY+0.14)*s,hz-ez,0.13*s,0.14*s,0.10*s,rpc('ear_R',ec),'ear_R',facingYaw);
     } else if(earType==='bat'){
-      pbp(list,hx+ex*1.4,fl+1.10*s,hz+ez*1.4,0.17*s,0.22*s,0.06*s,rpc('ear_L',ec),'ear_L',facingYaw);
-      pbp(list,hx-ex*1.4,fl+1.10*s,hz-ez*1.4,0.17*s,0.22*s,0.06*s,rpc('ear_R',ec),'ear_R',facingYaw);
+      pbp(list,hx+ex*1.4,fl+(earTopY+0.18)*s,hz+ez*1.4,0.17*s,0.22*s,0.06*s,rpc('ear_L',ec),'ear_L',facingYaw);
+      pbp(list,hx-ex*1.4,fl+(earTopY+0.18)*s,hz-ez*1.4,0.17*s,0.22*s,0.06*s,rpc('ear_R',ec),'ear_R',facingYaw);
     } else if(earType==='tufted'){
-      pbp(list,hx+ex,fl+1.08*s,hz+ez,0.09*s,0.24*s,0.07*s,rpc('ear_L',ec),'ear_L',facingYaw);
-      pbp(list,hx+ex,fl+1.34*s,hz+ez,0.07*s,0.06*s,0.07*s,ovLighten(rpc('ear_L',ec),0.3),'ear_L',facingYaw);
-      pbp(list,hx-ex,fl+1.08*s,hz-ez,0.09*s,0.24*s,0.07*s,rpc('ear_R',ec),'ear_R',facingYaw);
-      pbp(list,hx-ex,fl+1.34*s,hz-ez,0.07*s,0.06*s,0.07*s,ovLighten(rpc('ear_R',ec),0.3),'ear_R',facingYaw);
+      pbp(list,hx+ex,fl+(earTopY+0.16)*s,hz+ez,0.09*s,0.24*s,0.07*s,rpc('ear_L',ec),'ear_L',facingYaw);
+      pbp(list,hx+ex,fl+(earTopY+0.42)*s,hz+ez,0.07*s,0.06*s,0.07*s,ovLighten(rpc('ear_L',ec),0.3),'ear_L',facingYaw);
+      pbp(list,hx-ex,fl+(earTopY+0.16)*s,hz-ez,0.09*s,0.24*s,0.07*s,rpc('ear_R',ec),'ear_R',facingYaw);
+      pbp(list,hx-ex,fl+(earTopY+0.42)*s,hz-ez,0.07*s,0.06*s,0.07*s,ovLighten(rpc('ear_R',ec),0.3),'ear_R',facingYaw);
     } else if(earType==='perky'){
-      pbp(list,hx+ex*0.8,fl+1.05*s,hz+ez*0.8,0.07*s,0.17*s,0.06*s,rpc('ear_L',ec),'ear_L',facingYaw);
-      pbp(list,hx-ex*0.8,fl+1.05*s,hz-ez*0.8,0.07*s,0.17*s,0.06*s,rpc('ear_R',ec),'ear_R',facingYaw);
+      pbp(list,hx+ex*0.8,fl+(earTopY+0.13)*s,hz+ez*0.8,0.07*s,0.17*s,0.06*s,rpc('ear_L',ec),'ear_L',facingYaw);
+      pbp(list,hx-ex*0.8,fl+(earTopY+0.13)*s,hz-ez*0.8,0.07*s,0.17*s,0.06*s,rpc('ear_R',ec),'ear_R',facingYaw);
     } else {
-      pbp(list,hx+ex,fl+1.08*s,hz+ez,0.09*s,0.24*s,0.07*s,rpc('ear_L',ec),'ear_L',facingYaw);
-      pbp(list,hx-ex,fl+1.08*s,hz-ez,0.09*s,0.24*s,0.07*s,rpc('ear_R',ec),'ear_R',facingYaw);
+      pbp(list,hx+ex,fl+(earTopY+0.16)*s,hz+ez,0.09*s,0.24*s,0.07*s,rpc('ear_L',ec),'ear_L',facingYaw);
+      pbp(list,hx-ex,fl+(earTopY+0.16)*s,hz-ez,0.09*s,0.24*s,0.07*s,rpc('ear_R',ec),'ear_R',facingYaw);
     }
   }
 
@@ -19444,6 +19490,9 @@
     ctx2.beginPath(); ctx2.ellipse(PW/2, PH*0.86, PW*0.32, PH*0.045, 0, 0, Math.PI*2); ctx2.fill();
     const projected = ovc3DProject(quads, PW, PH);
     const sun = norm(v3(0.5, 1.0, -0.7));
+    const pColors = (onlineDogProfile && onlineDogProfile.partColors) || {};
+    const G = 4;
+    const cellHits = [];
     for (const { pts, color, normal, part } of projected) {
       const nw = norm(normal||v3(0,1,0));
       const diff = Math.max(0, nw.x*sun.x+nw.y*sun.y+nw.z*sun.z);
@@ -19457,6 +19506,38 @@
       ctx2.moveTo(pts[0].x, pts[0].y);
       for (let i=1; i<pts.length; i++) ctx2.lineTo(pts[i].x, pts[i].y);
       ctx2.closePath(); ctx2.fill();
+      // Per-cell paint + grid for paintable parts
+      if (part && part !== 'eye' && part !== 'nose') {
+        const bi = (s,t) => ({
+          x:(1-t)*((1-s)*pts[0].x+s*pts[1].x)+t*((1-s)*pts[3].x+s*pts[2].x),
+          y:(1-t)*((1-s)*pts[0].y+s*pts[1].y)+t*((1-s)*pts[3].y+s*pts[2].y),
+        });
+        const avgZ = pts.reduce((s,p)=>s+p.z,0)/pts.length;
+        for (let col=0; col<G; col++) {
+          for (let row=0; row<G; row++) {
+            const cellId = `${part}__g${col}_${row}`;
+            const cp = [bi(col/G,row/G), bi((col+1)/G,row/G), bi((col+1)/G,(row+1)/G), bi(col/G,(row+1)/G)];
+            cellHits.push({ pts: cp, part: cellId, avgZ: avgZ - 0.001 });
+            const oc = pColors[cellId];
+            if (oc) {
+              const cc = parseInt(oc.replace('#',''), 16);
+              const cr = Math.min(255, ((cc>>16)&0xff)*bright)|0;
+              const cg = Math.min(255, ((cc>>8 )&0xff)*bright)|0;
+              const cb = Math.min(255, ((cc    )&0xff)*bright)|0;
+              ctx2.fillStyle = `rgb(${cr},${cg},${cb})`;
+              ctx2.beginPath();
+              cp.forEach((p,i) => i ? ctx2.lineTo(p.x,p.y) : ctx2.moveTo(p.x,p.y));
+              ctx2.closePath(); ctx2.fill();
+            }
+          }
+        }
+        // Grid lines on top
+        ctx2.strokeStyle='rgba(255,255,255,0.22)'; ctx2.lineWidth=0.5;
+        ctx2.beginPath();
+        for(let i=1;i<G;i++){const a=bi(i/G,0),b=bi(i/G,1); ctx2.moveTo(a.x,a.y); ctx2.lineTo(b.x,b.y);}
+        for(let j=1;j<G;j++){const a=bi(0,j/G),b=bi(1,j/G); ctx2.moveTo(a.x,a.y); ctx2.lineTo(b.x,b.y);}
+        ctx2.stroke();
+      }
       // White border on every face
       if(part==='eye'||part==='nose'){
         ctx2.strokeStyle='rgba(255,255,255,0.95)'; ctx2.lineWidth=1.5;
@@ -19467,24 +19548,12 @@
       ctx2.moveTo(pts[0].x, pts[0].y);
       for (let i=1; i<pts.length; i++) ctx2.lineTo(pts[i].x, pts[i].y);
       ctx2.closePath(); ctx2.stroke();
-      // Interior grid (4×4) — gives paint-by-square feel
-      if(part!=='eye'&&part!=='nose'){
-        const G=4;
-        ctx2.strokeStyle='rgba(255,255,255,0.18)'; ctx2.lineWidth=0.5;
-        ctx2.beginPath();
-        const bi=(s,t)=>({
-          x:(1-t)*((1-s)*pts[0].x+s*pts[1].x)+t*((1-s)*pts[3].x+s*pts[2].x),
-          y:(1-t)*((1-s)*pts[0].y+s*pts[1].y)+t*((1-s)*pts[3].y+s*pts[2].y),
-        });
-        for(let i=1;i<G;i++){const a=bi(i/G,0),b=bi(i/G,1); ctx2.moveTo(a.x,a.y); ctx2.lineTo(b.x,b.y);}
-        for(let j=1;j<G;j++){const a=bi(0,j/G),b=bi(1,j/G); ctx2.moveTo(a.x,a.y); ctx2.lineTo(b.x,b.y);}
-        ctx2.stroke();
-      }
     }
     ctx2.save(); ctx2.font='bold 12px Arial'; ctx2.fillStyle='rgba(140,200,255,0.60)';
     ctx2.textAlign='center'; ctx2.textBaseline='bottom';
-    ctx2.fillText('Click a part to paint it  •  drag to spin', PW/2, PH-6); ctx2.restore();
-    return projected;
+    ctx2.fillText('Click a cell to paint  •  drag to spin', PW/2, PH-6); ctx2.restore();
+    // Append cellHits after projected so hit-test (iterating backwards) finds cells before broad parts
+    return [...projected, ...cellHits];
   }
 
   function ovc3DHitTest(canvasEl, clientX, clientY, projected) {
@@ -19570,7 +19639,7 @@
     else onlineDogProfile.partColors[part] = ovcPaintColor;
     ovSaveProfile();
     const lbl = document.getElementById('ov-dc-part-label') || document.getElementById('cp-part-label');
-    const partBase = part.replace(/_\d+$/, '');
+    const partBase = (part.includes('__g') ? part.split('__g')[0] : part).replace(/_\d+$/, '');
     if (lbl) { lbl.textContent=(ovcEraserMode?'Reset: ':'Painted: ')+(OVC_PART_LABELS[part]||OVC_PART_LABELS[partBase]||partBase); lbl.style.opacity='1'; clearTimeout(lbl._t); lbl._t=setTimeout(()=>{lbl.style.opacity='0';},1200); }
   }
 
