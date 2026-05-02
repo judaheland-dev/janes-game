@@ -16522,6 +16522,118 @@
   // Missions listed here have multiple stages with riddle-door guards.
   // All others are single-stage: walk to objective → press E to complete.
   const MISSION_STAGES = {
+    // Cedar-0 "Secure the Food Cache" — wolf_camp — collect_items: no patrols, grab 4 food crates
+    6: [
+      { type:'reach', label:'Locate the wolf supply depot', icon:'📦', x:0, z:-22 },
+      { type:'collect_items', label:'Grab all stolen food crates', icon:'🍖',
+        items:[
+          { x:-18, z:-45, icon:'🍖', label:'Crate 1' }, { x:14, z:-58, icon:'🥩', label:'Crate 2' },
+          { x:-8,  z:-72, icon:'🍖', label:'Crate 3' }, { x:20, z:-88, icon:'🥩', label:'Crate 4' },
+        ],
+      },
+      { type:'objective', label:'Return the crates to the collection point', icon:'✅', x:0, z:-108 },
+    ],
+    // Cedar-1 "Escort the Supply Convoy" — maze — sequence puzzle: activate beacons in order
+    7: [
+      { type:'reach', label:'Find the first junction checkpoint', icon:'🧱', x:0, z:-22 },
+      { type:'sequence_puzzle', label:'Activate the beacon relays in order', icon:'🔵',
+        plates:[
+          { x:-16, z:-30, icon:'🔵' }, { x:16, z:-50, icon:'🔵' },
+          { x:-12, z:-68, icon:'🔵' }, { x:8,  z:-88, icon:'🔵' },
+        ],
+      },
+      { type:'objective', label:'Lead the convoy through to the exit point', icon:'🚛', x:0, z:-108 },
+    ],
+    // Birch-1 "Rescue the Captured Medic" — cave — scent trail: follow bloodhound scent
+    4: [
+      { type:'reach', label:'Descend into the cave complex', icon:'🕳️', x:0, z:-25 },
+      { type:'scent_trail', label:'Follow the bloodhound scent trail', icon:'🟡',
+        dots:[
+          { x:0, z:-35, icon:'🟡' }, { x:-10, z:-48, icon:'🟡' },
+          { x:8,  z:-62, icon:'🟡' }, { x:-5,  z:-76, icon:'🟡' },
+          { x:4,  z:-90, icon:'🟡' },
+        ],
+      },
+      { type:'objective', label:'Reach Dr. Fernwhistle\'s holding cell', icon:'🏥', x:0, z:-108 },
+    ],
+    // Ash-0 "Defend the Village Gate" — village — collect_items: intercept wolf supply drops
+    9: [
+      { type:'reach', label:'Take up position at the southern gate', icon:'🏘️', x:0, z:-22 },
+      { type:'collect_items', label:'Intercept the wolf supply drops', icon:'📦',
+        items:[
+          { x:-20, z:-38, icon:'📦', label:'Drop 1' }, { x:16,  z:-52, icon:'📦', label:'Drop 2' },
+          { x:-12, z:-66, icon:'📦', label:'Drop 3' },
+        ],
+      },
+      { type:'riddle_door', label:'Intercept the wolf scout commander', icon:'🚪',
+        guardX:0.5, guardZ:-86, guardFacing:0, guardFur:0x504848, guardEars:'triangle',
+        guardName:'Scout Commander 🐺',
+        riddle:{ q:'I am sent ahead of every assault to find the weak points before the army arrives. Catch me and you catch the whole strategy. What am I?', hint:'The role of the wolf unit probing the southern gate each night.', a:'scout|spy|vanguard|advance scout|reconnaissance|forward unit' } },
+    ],
+    // Flint-1 "Investigate the Dog Neighborhood" — dog_neighborhood — scent trail: sniff out clues
+    13: [
+      { type:'scent_trail', label:'Follow the scent trail through the neighborhood', icon:'👃',
+        dots:[
+          { x:0, z:-15, icon:'👃' }, { x:14, z:-32, icon:'👃' },
+          { x:-10, z:-52, icon:'👃' }, { x:18, z:-70, icon:'👃' },
+        ],
+      },
+      { type:'riddle_door', label:'Get past the neighborhood watch captain', icon:'🚪',
+        guardX:0.5, guardZ:-86, guardFacing:0, guardFur:0x9a7050, guardEars:'floppy',
+        guardName:'Watch Captain 🐶',
+        riddle:{ q:'Every community has one — the one who knows every face and every schedule. They see all. What are they called?', hint:'The one who organises safety patrols in a neighbourhood.', a:'captain|warden|watch|guard|watchman|neighbourhood watch' } },
+      { type:'objective', label:'Reach the community hall and retrieve the dossier', icon:'🐾', x:0, z:-108 },
+    ],
+    // Ember-1 "Rescue from the Dog Pound" — dog_pound — collect_items: find keycard parts
+    19: [
+      { type:'collect_items', label:'Find the scattered keycard fragments', icon:'🗝️',
+        items:[
+          { x:-22, z:-30, icon:'🗝️', label:'Fragment 1' }, { x:20, z:-50, icon:'🗝️', label:'Fragment 2' },
+          { x:-14, z:-70, icon:'🗝️', label:'Fragment 3' },
+        ],
+      },
+      { type:'riddle_door', label:'Trick the control-room keeper', icon:'🚪',
+        guardX:0.5, guardZ:-86, guardFacing:0, guardFur:0x6080a0, guardEars:'floppy',
+        guardName:'Pound Keeper 👮',
+        riddle:{ q:'I am what every captive longs for and every jailer guards. Turn me and the cage swings open. What am I?', hint:'The tool that opens every lock in this facility.', a:'key|keycard|access key' } },
+      { type:'objective', label:'Open the back kennel gate and free the dogs', icon:'🔓', x:0, z:-116 },
+    ],
+    // Birch-2 "Poison the Wolf Water Supply" — nether — timed_catch: intercept water spirit bottles
+    5: [
+      { type:'reach', label:'Cross the first lava bridge safely', icon:'🌋', x:-16, z:-35 },
+      { type:'timed_catch', label:'Catch the floating water essence vials', icon:'🧪', timeSeconds:25,
+        items:[
+          { x:-12, z:-50, icon:'🧪' }, { x:10,  z:-62, icon:'🧪' },
+          { x:-6,  z:-75, icon:'🧪' }, { x:14,  z:-88, icon:'🧪' },
+        ],
+      },
+      { type:'objective', label:'Reach the nether stream and add the compound', icon:'⚗️', x:0, z:-108 },
+    ],
+    // Maple-1 "Steal the Battle Plans" — wolf_camp — sequence puzzle: disable signal totems in order
+    1: [
+      { type:'reach', label:'Get close enough to observe the camp', icon:'👣', x:0, z:-22 },
+      { type:'sequence_puzzle', label:'Disable the signal totems in the right order', icon:'🔴',
+        plates:[
+          { x:-14, z:-40, icon:'🔴' }, { x:12, z:-56, icon:'🔴' },
+          { x:-8,  z:-74, icon:'🔴' },
+        ],
+      },
+      { type:'objective', label:'Retrieve the battle plans from the camp tent', icon:'📋', x:0, z:-108 },
+    ],
+    // Flint-0 "Steal the Wolf DNA Database" — human_lab — scent trail: follow data-core trail
+    12: [
+      { type:'reach', label:'Enter the mobile lab compound', icon:'🔬', x:0, z:-20 },
+      { type:'scent_trail', label:'Follow the data-core signal trail', icon:'💡',
+        dots:[
+          { x:0, z:-32, icon:'💡' }, { x:-14, z:-50, icon:'💡' },
+          { x:12, z:-68, icon:'💡' }, { x:-8, z:-86, icon:'💡' },
+        ],
+      },
+      { type:'riddle_door', label:'Crack the server room security door', icon:'🚪',
+        guardX:0.5, guardZ:-100, guardFacing:0, guardFur:0x6080a0, guardEars:'floppy',
+        guardName:'Lab Technician 👮',
+        riddle:{ q:'I hold everything, weigh nothing, and can vanish in a moment. Every wolf secret lives inside me. What am I?', hint:'The digital records this whole mission is about stealing.', a:'database|data|records|files|dna' } },
+    ],
     // Maple-0 "Infiltrate Wolf Camp North" — wolf_camp
     0: [
       { type:'reach',       label:'Reach the patrol perimeter',              icon:'👣', x:0,    z:-22 },
@@ -16558,15 +16670,6 @@
         riddle:{ q:'Warriors raise me after every victory. I fly on a pole and say who won. I was yours — now take me back. What am I?', hint:'Hoisted to show who controls a territory or outpost.', a:'flag|banner|standard' } },
       { type:'objective',   label:'Clear the outpost and hoist the Warbark flag', icon:'📜', x:0,   z:-108 },
     ],
-    // Flint-0 "Steal the Wolf DNA Database" — human_lab
-    12: [
-      { type:'reach',       label:'Enter the mobile lab compound',            icon:'🔬', x:0,    z:-20 },
-      { type:'riddle_door', label:'Crack the security door',                  icon:'🚪',
-        guardX:0.5, guardZ:-53, guardFacing:0, guardFur:0x6080a0, guardEars:'floppy',
-        guardName:'Lab Technician 👮',
-        riddle:{ q:'I hold everything, weigh nothing, and can vanish in a moment. Every wolf secret lives inside me. What am I?', hint:'The digital records this whole mission is about stealing.', a:'database|data|records|files|dna' } },
-      { type:'objective',   label:'Extract the wolf DNA database',            icon:'💾', x:-22, z:-108 },
-    ],
     // Slate-0 "Infiltrate the Dog House" — human_house
     15: [
       { type:'reach',       label:'Sneak through the front rooms undetected', icon:'🏠', x:0,    z:-22 },
@@ -16575,15 +16678,6 @@
         guardName:'Hall Cat 🐱',
         riddle:{ q:'I look like one of them, yet I serve a different master. I walk with two names in shadow. What am I?', hint:'Someone secretly working for the other side while blending in.', a:'spy|agent|double agent|undercover|mole' } },
       { type:'objective',   label:'Open the rear gate and free the dogs',     icon:'🔑', x:-14, z:-109 },
-    ],
-    // Flint-1 "Investigate the Dog Neighborhood" — dog_neighborhood
-    13: [
-      { type:'reach',       label:'Blend into the neighborhood streets',       icon:'🏘️', x:0,    z:-22 },
-      { type:'riddle_door', label:'Get past the neighborhood watch captain',    icon:'🚪',
-        guardX:0.5, guardZ:-53, guardFacing:0, guardFur:0x9a7050, guardEars:'floppy',
-        guardName:'Watch Captain 🐶',
-        riddle:{ q:'Every community has one — the one who knows every face and every schedule. They see all. What are they called?', hint:'The one who organises safety patrols in a neighbourhood.', a:'captain|warden|watch|guard|watchman|neighbourhood watch' } },
-      { type:'objective',   label:'Reach the community hall and retrieve the dossier', icon:'🐾', x:0, z:-108 },
     ],
     // Slate-1 "Mansion Heist" — human_mansion
     16: [
@@ -16594,15 +16688,6 @@
         riddle:{ q:'I am always present in a mansion but never invited. I gather in corners and follow footsteps. The maids chase me away. What am I?', hint:'What accumulates in dusty corners and under beds.', a:'dust|dirt|dust bunny|cobweb' } },
       { type:'objective',   label:'Retrieve the stolen documents from the private wing', icon:'📄', x:14, z:-105 },
     ],
-    // Ember-1 "Rescue from the Dog Pound" — dog_pound
-    19: [
-      { type:'reach',       label:'Sneak through the reception area',              icon:'🏢', x:0,    z:-22 },
-      { type:'riddle_door', label:'Trick the control-room keeper',                 icon:'🚪',
-        guardX:0.5, guardZ:-74, guardFacing:0, guardFur:0x6080a0, guardEars:'floppy',
-        guardName:'Pound Keeper 👮',
-        riddle:{ q:'I am what every captive longs for and every jailer guards. Turn me and the cage swings open. What am I?', hint:'The tool that opens every lock in this facility.', a:'key|keycard|access key' } },
-      { type:'objective',   label:'Open the back kennel gate and free the dogs',   icon:'🔓', x:0, z:-116 },
-    ],
     // Ember-0 "Rescue the Hostage Pup" — nether
     18: [
       { type:'reach',       label:'Cross the first lava bridge',              icon:'🌋', x:-16, z:-35 },
@@ -16612,14 +16697,14 @@
         riddle:{ q:'I am the smallest and the most afraid, held in darkness, waiting for someone who may never come. Who am I?', hint:'The young dog taken captive — the whole reason for this mission.', a:'pup|puppy|hostage|cub|young dog' } },
       { type:'objective',   label:'Find and rescue the hostage pup',          icon:'🔮', x:0,    z:-108 },
     ],
-    // Flint-2 "Bring Down the Alpha" — wolf_camp
+    // Flint-2 "Bring Down the Alpha / Urban Strike Op" — city
     14: [
-      { type:'reach',       label:'Breach the alpha perimeter',                    icon:'🐺', x:0, z:-22 },
-      { type:'riddle_door', label:'Bluff past the alpha\'s honour guard',          icon:'🚪',
-        guardX:0.5, guardZ:-53, guardFacing:0, guardFur:0x281818, guardEars:'triangle',
-        guardName:'Honour Guard 🐺',
-        riddle:{ q:'The alpha sends me before every charge. I travel faster than any wolf and arrive before the battle begins. What am I?', hint:'What generals send before an army — the signal of intent.', a:'signal|howl|warning|order|message|call' } },
-      { type:'objective',   label:'Destroy the alpha\'s command post',             icon:'💥', x:0, z:-108 },
+      { type:'reach',       label:'Penetrate the city grid perimeter',              icon:'🏙️', x:0, z:-22 },
+      { type:'riddle_door', label:'Bluff past the district checkpoint guard',       icon:'🚪',
+        guardX:0.5, guardZ:-53, guardFacing:0, guardFur:0x6080a0, guardEars:'floppy',
+        guardName:'Checkpoint Guard 👮',
+        riddle:{ q:'I am carried by every operative who walks in the open. Without me you are a stranger. With me you belong. Cities run on me. What am I?', hint:'What every agent needs to move through a controlled district without being stopped.', a:'badge|pass|id|credentials|permit|clearance|identification' } },
+      { type:'objective',   label:'Reach the target building and extract the intel', icon:'🏙️', x:0, z:-108 },
     ],
     // Slate-2 "Escape the Vault" — maze
     17: [
@@ -16639,15 +16724,6 @@
         riddle:{ q:'She goes by two names, serves two masters, and trusts no one completely. What do we call someone like her?', hint:'A spy working both sides of a conflict simultaneously.', a:'double agent|mole|spy|undercover|infiltrator' } },
       { type:'objective',   label:'Escort the double agent to the extraction point', icon:'🐾', x:0, z:-108 },
     ],
-    // Maple-1 "Steal the Battle Plans" — wolf_camp
-    1: [
-      { type:'reach',       label:'Get close enough to observe the camp',           icon:'👣', x:0, z:-22 },
-      { type:'riddle_door', label:'Pass the document storage guard',                icon:'🚪',
-        guardX:0.5, guardZ:-53, guardFacing:0, guardFur:0x504848, guardEars:'triangle',
-        guardName:'Plan Keeper 🐺',
-        riddle:{ q:'Every general fears me more than an enemy charge. I reveal positions, strategies, and weakness — yet I fold neatly in one paw. What am I?', hint:'The documents every wolf commander guards most carefully.', a:'plans|battle plans|map|blueprint|orders|documents' } },
-      { type:'objective',   label:'Retrieve the battle plans from the camp tent',   icon:'📋', x:0, z:-108 },
-    ],
     // Maple-2 "Sabotage the Signal Tower" — wolf_camp
     2: [
       { type:'reach',       label:'Approach the signal tower perimeter',            icon:'📡', x:0, z:-22 },
@@ -16657,51 +16733,6 @@
         riddle:{ q:'I stand tall so I can speak to those too far away to hear. I carry no voice of my own — I carry everyone else\'s. What am I?', hint:'The structure the wolves use to relay their attack signals across the region.', a:'tower|signal tower|relay|transmitter|antenna|mast' } },
       { type:'objective',   label:'Destroy the relay crystal at the tower top',     icon:'💥', x:0, z:-108 },
     ],
-    // Birch-1 "Rescue the Captured Medic" — cave
-    4: [
-      { type:'reach',       label:'Descend into the cave complex',                  icon:'🕳️', x:0, z:-25 },
-      { type:'riddle_door', label:'Bypass the cave sentinel',                       icon:'🚪',
-        guardX:0.5, guardZ:-53, guardFacing:0, guardFur:0x1a1018, guardEars:'triangle',
-        guardName:'Cave Sentinel 🦇',
-        riddle:{ q:'I am the boundary between the world above and its hidden depths. Enter without permission and you may never find your way back. What am I?', hint:'The passage connecting the cave entrance to the inner chamber where the medic is held.', a:'tunnel|passage|cave|entrance|doorway|shaft' } },
-      { type:'objective',   label:'Reach Dr. Fernwhistle\'s holding cell',          icon:'🏥', x:0, z:-108 },
-    ],
-    // Birch-2 "Poison the Wolf Water Supply" — nether
-    5: [
-      { type:'reach',       label:'Cross the first lava bridge safely',             icon:'🌋', x:-16, z:-35 },
-      { type:'riddle_door', label:'Slip past the nether patrol',                    icon:'🚪',
-        guardX:-0.5, guardZ:-53, guardFacing:0, guardFur:0x2a1040, guardEars:'triangle',
-        guardName:'Nether Patrol 👁️',
-        riddle:{ q:'I flow endlessly, nourish all life, and yet can be turned against those who drink me. The wolves think theirs is pure. Prove them wrong. What am I?', hint:'The substance the wolves draw from the underground springs — their most critical resource.', a:'water|stream|river|supply|liquid' } },
-      { type:'objective',   label:'Reach the nether stream and add the compound',   icon:'⚗️', x:0, z:-108 },
-    ],
-    // Cedar-0 "Secure the Food Cache" — wolf_camp
-    6: [
-      { type:'reach',       label:'Locate the wolf supply depot',                   icon:'📦', x:0, z:-22 },
-      { type:'riddle_door', label:'Bluff past the supply keeper',                   icon:'🚪',
-        guardX:0.5, guardZ:-53, guardFacing:0, guardFur:0x504030, guardEars:'floppy',
-        guardName:'Supply Keeper 🐺',
-        riddle:{ q:'Without me no army moves, no campaign succeeds, and no soldier stands for long. I am the foundation of every war. What am I?', hint:'What every raiding party steals first and hoards most jealously.', a:'food|supplies|rations|provisions|sustenance' } },
-      { type:'objective',   label:'Recover the three stolen food crates',           icon:'🍖', x:0, z:-108 },
-    ],
-    // Cedar-1 "Escort the Supply Convoy" — maze
-    7: [
-      { type:'reach',       label:'Find the first junction checkpoint',             icon:'🧱', x:0, z:-22 },
-      { type:'riddle_door', label:'Bypass the maze guardian',                       icon:'🚪',
-        guardX:0.5, guardZ:-53, guardFacing:0, guardFur:0x484030, guardEars:'triangle',
-        guardName:'Maze Guardian 🏛️',
-        riddle:{ q:'Take the right wall and hold it. Every dead end teaches you. Every junction is a choice. What is the one thing you need most to navigate a labyrinth?', hint:'What navigators rely on — and what you must keep when every corridor looks the same.', a:'direction|sense of direction|bearing|orientation|path|way' } },
-      { type:'objective',   label:'Lead the convoy through to the exit point',      icon:'🚛', x:0, z:-108 },
-    ],
-    // Ash-0 "Defend the Village Gate" — village
-    9: [
-      { type:'reach',       label:'Take up position at the southern gate',          icon:'🏘️', x:0, z:-22 },
-      { type:'riddle_door', label:'Intercept the wolf scout commander',             icon:'🚪',
-        guardX:0.5, guardZ:-53, guardFacing:0, guardFur:0x504848, guardEars:'triangle',
-        guardName:'Scout Commander 🐺',
-        riddle:{ q:'I am sent ahead of every assault to find the weak points before the army arrives. Catch me and you catch the whole strategy. What am I?', hint:'The role of the wolf unit probing the southern gate each night.', a:'scout|spy|vanguard|advance scout|reconnaissance|forward unit' } },
-      { type:'objective',   label:'Repel all wolf scout waves from the gate',       icon:'🛡️', x:0, z:-108 },
-    ],
     // Ash-1 "Capture the Lieutenant" — nether
     10: [
       { type:'reach',       label:'Cross into nether territory',                    icon:'🌋', x:-16, z:-35 },
@@ -16710,15 +16741,6 @@
         guardName:'Wolf Bodyguard 🐺',
         riddle:{ q:'I sit above the soldiers but below the general. I carry out orders and give them in equal measure. I am the wolf officer you were sent to find. What is my rank?', hint:'The title of the wolf officer commanding this nether operation.', a:'lieutenant|officer|commander|corporal|captain|rank' } },
       { type:'objective',   label:'Reach and capture the wolf lieutenant',          icon:'⚔️', x:0, z:-108 },
-    ],
-    // Flint-2 "Urban Strike Op" — city
-    14: [
-      { type:'reach',       label:'Penetrate the city grid perimeter',              icon:'🏙️', x:0, z:-22 },
-      { type:'riddle_door', label:'Bluff past the district checkpoint guard',       icon:'🚪',
-        guardX:0.5, guardZ:-53, guardFacing:0, guardFur:0x6080a0, guardEars:'floppy',
-        guardName:'Checkpoint Guard 👮',
-        riddle:{ q:'I am carried by every operative who walks in the open. Without me you are a stranger. With me you belong. Cities run on me. What am I?', hint:'What every agent needs to move through a controlled district without being stopped.', a:'badge|pass|id|credentials|permit|clearance|identification' } },
-      { type:'objective',   label:'Reach the target building and extract the intel', icon:'🏙️', x:0, z:-108 },
     ],
   };
 
@@ -16758,7 +16780,7 @@
       _mfCatchNeeded = stage.items.length;
       _mfCatchTimer  = (stage.timeSeconds || 30) * 60;
       stage.items.forEach((it, i) => {
-        _mfCatchItems.push({ id:i, x:it.x, z:it.z, vx:(Math.random()-0.5)*0.08, vz:(Math.random()-0.5)*0.08, icon:it.icon || stage.icon, caught:false });
+        _mfCatchItems.push({ id:i, x:it.x, z:it.z, _ox:it.x, _oz:it.z, vx:(Math.random()-0.5)*0.08, vz:(Math.random()-0.5)*0.08, icon:it.icon || stage.icon, caught:false });
       });
       missionFieldItems.push({ id:0, x:stage.items[0].x, z:stage.items[0].z, type:'timed_catch_done', label:stage.label, icon:stage.icon, collected:false });
     } else if (stage.type === 'scent_trail') {
@@ -17169,7 +17191,7 @@
             _mfVarietyMsg = '⏰ Time\'s up! Try again!';
             _mfVarietyFlash = 120;
             // Reset items and timer
-            _mfCatchItems.forEach(c => { c.caught = false; c.x = c._ox || c.x; c.z = c._oz || c.z; });
+            _mfCatchItems.forEach(c => { c.caught = false; c.x = c._ox; c.z = c._oz; c.vx = (Math.random()-0.5)*0.08; c.vz = (Math.random()-0.5)*0.08; });
             const stages2 = MISSION_STAGES[activeMission.profIdx * 3 + activeMission.mIdx];
             _mfCatchTimer = ((stages2[missionFieldStage].timeSeconds) || 30) * 60;
             ds.x = 0; ds.z = 6;
@@ -19386,8 +19408,8 @@
   ];
   const OV_EAR_TYPES  = ['triangle','floppy','rounded','bat','tufted','perky'];
   const OV_EAR_LABELS = ['▲ Triangle','🐰 Floppy','⭕ Rounded','🦇 Bat','✨ Tufted','⬆ Perky'];
-  const OV_BODY_TYPES  = ['normal','chubby','slim','tall','tiny','fluffy','athletic'];
-  const OV_BODY_LABELS = ['Normal','Chubby','Slim','Tall','Tiny','Fluffy','Athletic'];
+  const OV_BODY_TYPES  = ['normal','chubby','slim','tall','tiny','fluffy','athletic','sausage'];
+  const OV_BODY_LABELS = ['Normal','Chubby','Slim','Tall','Tiny','Fluffy','Athletic','Sausage'];
   const OV_NOSE_TYPES  = ['normal','big','button','long','wide','flat'];
   const OV_NOSE_LABELS = ['Normal','Big','Button','Long','Wide','Flat'];
   const OV_SPOT_PATS   = ['none','spots','patches','stripe','socks'];
@@ -19594,6 +19616,13 @@
       haunchW=0.22;haunchH=0.16;haunchD=0.26;haunchY=0.25;
       tailSc=1.1;tailBkOff=0.66;
       muzzleSc=0.90;earSc=0.92;}
+    if(bodyIdx===7){// Sausage
+      bw=0.38;bh=0.22;bd=1.05;legLat=0.22;legH=0.13;
+      hW=0.30;hH=0.26;hD=0.26;headY=0.75;headFwd=1.02;
+      legW=0.08;pawW=0.10;
+      haunchW=0.18;haunchH=0.12;haunchD=0.28;haunchY=0.18;
+      tailSc=0.85;tailBkOff=0.88;
+      muzzleSc=0.88;earSc=0.90;}
     const rvx=Math.cos(facingYaw), rvz=-Math.sin(facingYaw);
 
     // ── Body ─────────────────────────────────────────────────────────────
@@ -19745,7 +19774,7 @@
       let ok = true;
       const pts = q.verts.map(pt => {
         let v = sub(pt, v3(OVC_CAM_POS.x, OVC_CAM_POS.y, camZ));
-        v = rotX(v, -OVC_CAM_PITCH);
+        v = rotX(v, -ovcPitch3D);
         if (v.z <= 0.05) { ok = false; return null; }
         return { x: PW/2 + (v.x/v.z)*pF, y: PH/2 - (v.y/v.z)*pF, z: v.z };
       });
@@ -19829,7 +19858,7 @@
     }
     ctx2.save(); ctx2.font='bold 12px Arial'; ctx2.fillStyle='rgba(140,200,255,0.60)';
     ctx2.textAlign='center'; ctx2.textBaseline='bottom';
-    ctx2.fillText('Click a cell to paint  •  drag to spin', PW/2, PH-6); ctx2.restore();
+    ctx2.fillText('Click to paint  •  drag to rotate in any direction', PW/2, PH-6); ctx2.restore();
     // Append cellHits after projected so hit-test (iterating backwards) finds cells before broad parts
     return [...projected, ...cellHits];
   }
@@ -19848,9 +19877,10 @@
   let ovcRaf3D = 0;
   let ovcActiveCanvas = null;
   let ovcYaw3D = Math.PI * 0.75;
+  let ovcPitch3D = 0.22;  // vertical tilt (radians, clamped)
   let ovcZoom = 1.0;
-  let ovcDrag3D = false, ovcDragX3D = 0;
-  let ovcAutoRot3D = true;
+  let ovcDrag3D = false, ovcDragX3D = 0, ovcDragY3D = 0;
+  let ovcAutoRot3D = false;  // no auto-rotate; only moves on drag
   let ovcAutoTimer3D = 0;
   let ovc3DLastProjected = [];
 
@@ -19888,7 +19918,7 @@
   }
 
   function ovc3DStart(which) {
-    ovcActiveCanvas = which; ovcAutoRot3D = true;
+    ovcActiveCanvas = which; ovcAutoRot3D = false;
     if (!ovcRaf3D) ovcRaf3D = requestAnimationFrame(ovc3DDrawFrame);
   }
   function ovc3DStop() {
@@ -19897,14 +19927,19 @@
   }
   function ovc3DBindDrag(canvasEl) {
     if (canvasEl._ovc3DBound) return; canvasEl._ovc3DBound = true;
-    const startDrag = x => { ovcDrag3D=true; ovcDragX3D=x; ovcAutoRot3D=false; clearTimeout(ovcAutoTimer3D); };
-    const moveDrag  = x => { if(!ovcDrag3D)return; ovcYaw3D+=(x-ovcDragX3D)*-0.013; ovcDragX3D=x; };
-    const endDrag   = ()=>{ ovcDrag3D=false; ovcAutoTimer3D=setTimeout(()=>{ovcAutoRot3D=true;},2000); };
-    canvasEl.addEventListener('mousedown', e=>startDrag(e.clientX));
-    window.addEventListener('mousemove', e=>moveDrag(e.clientX));
+    const startDrag = (x, y) => { ovcDrag3D=true; ovcDragX3D=x; ovcDragY3D=y; ovcAutoRot3D=false; clearTimeout(ovcAutoTimer3D); };
+    const moveDrag  = (x, y) => {
+      if (!ovcDrag3D) return;
+      ovcYaw3D   += (x - ovcDragX3D) * -0.013; ovcDragX3D = x;
+      ovcPitch3D += (y - ovcDragY3D) *  0.013; ovcDragY3D = y;
+      ovcPitch3D  = Math.max(-0.8, Math.min(1.2, ovcPitch3D)); // clamp tilt
+    };
+    const endDrag   = () => { ovcDrag3D = false; ovcAutoTimer3D = setTimeout(()=>{ ovcAutoRot3D = true; }, 3000); };
+    canvasEl.addEventListener('mousedown', e=>startDrag(e.clientX, e.clientY));
+    window.addEventListener('mousemove', e=>moveDrag(e.clientX, e.clientY));
     window.addEventListener('mouseup', endDrag);
-    canvasEl.addEventListener('touchstart',e=>{e.preventDefault();startDrag(e.touches[0].clientX);},{passive:false});
-    window.addEventListener('touchmove',e=>{if(ovcDrag3D)moveDrag(e.touches[0].clientX);});
+    canvasEl.addEventListener('touchstart',e=>{e.preventDefault();startDrag(e.touches[0].clientX,e.touches[0].clientY);},{passive:false});
+    window.addEventListener('touchmove',e=>{if(ovcDrag3D)moveDrag(e.touches[0].clientX,e.touches[0].clientY);});
     window.addEventListener('touchend', endDrag);
   }
   function ovc3DClickPaint(canvasEl, clientX, clientY) {
@@ -20344,6 +20379,7 @@
     if (bodyIdx===4) { bw=0.36; bh=0.20; bd=0.55; legH=0.13; legW=0.08; pawW=0.10; hipY=0.32; ts=0.70; }  // tiny
     if (bodyIdx===5) { bw=0.52; bh=0.32; bd=0.76; legH=0.18; legW=0.13; pawW=0.16; hipY=0.36; ts=1.35; }  // fluffy
     if (bodyIdx===6) { bw=0.38; bh=0.24; bd=0.78; legLat=0.30; legH=0.26; legW=0.09; pawW=0.12; hipY=0.42; ts=0.90; } // athletic
+    if (bodyIdx===7) { bw=0.38; bh=0.22; bd=1.05; legLat=0.22; legH=0.13; legW=0.08; pawW=0.10; hipY=0.28; ts=0.85; } // sausage
     // Body
     pushBox(list, wx, fl+0.54*s, wz, bw*s, bh*s, bd*s, rpc('body'), facingYaw);
     // Head
@@ -20519,7 +20555,7 @@
     if (ods.x >  35 && Math.abs(ods.z) < 4) ods.x = 35;
     if (ods.x < -35 && Math.abs(ods.z) < 4) ods.x = -35;
     // Jump
-    if (keys['Space'] && ods.grounded) { ods.velY = JUMP_VEL; ods.grounded = false; }
+    if ((keysJustPressed.has('Space') || keys['Space']) && ods.grounded) { ods.velY = JUMP_VEL; ods.grounded = false; keysJustPressed.delete('Space'); }
     ods.velY += GRAVITY;
     ods.y += ods.velY;
     if (ods.y <= 0.21) { ods.y = 0.21; ods.velY = 0; ods.grounded = true; }
@@ -20721,9 +20757,7 @@
 
   // ── Customisation (edit dog while in village) ────────────────────────────
   // ── Customization 3D preview ─────────────────────────────────────────────
-  let cpPrevYaw = Math.PI * 0.85;
-  let cpPrevDrag = false, cpPrevDragX = 0;
-  let cpPrevRaf = 0, cpPrevAutoTimer = 0, cpPrevAutoRot = true;
+  let cpPrevRaf = 0;
   let cpFromFactory = false;
 
   function ovTickPreview() {
@@ -20731,7 +20765,7 @@
     if (!pc || !ovCustomOpen) { cpPrevRaf = 0; return; }
     const pctx = pc.getContext('2d');
     const PW = pc.width, PH = pc.height;
-    if (cpPrevAutoRot) cpPrevYaw += 0.012;
+    if (ovcAutoRot3D) ovcYaw3D += 0.012;
 
     const quads = [];
     const p = onlineDogProfile || {};
@@ -20739,7 +20773,7 @@
     addOnlineCustomDog(quads, 0, 0,
       OV_SIZES[Math.min(p.sizeIdx||1, 2)],
       OV_FUR_COLORS[Math.min(p.furIdx||0, OV_FUR_COLORS.length-1)].hex,
-      cpPrevYaw,
+      ovcYaw3D,
       OV_EAR_TYPES[Math.min(p.earIdx||0, OV_EAR_TYPES.length-1)],
       OV_SPOT_PATS[Math.min(p.spotPatIdx||0, OV_SPOT_PATS.length-1)],
       (p.spotColIdx>0) ? OV_SPOT_COLORS[Math.min(p.spotColIdx||1, OV_SPOT_COLORS.length-1)].hex : null,
@@ -20747,9 +20781,9 @@
       Math.min(p.bodyIdx||0, OV_BODY_TYPES.length-1));
     _pbXZ = prevXZ;
 
-    // Camera: fixed position, dog rotates by changing its facingYaw
+    // Camera: uses shared ovcPitch3D so vertical drag works
     const camPos   = v3(0, 1.1, -2.6 / ovcZoom);
-    const camPitch = 0.18;
+    const camPitch = ovcPitch3D;
     const pF       = (PH * 0.5) / 0.40 * ovcZoom;
 
     pctx.fillStyle = '#07111e';
@@ -20783,6 +20817,9 @@
       pctx.fill();
       pctx.strokeStyle = 'rgba(0,0,0,0.22)'; pctx.lineWidth = 0.6; pctx.stroke();
     }
+    pctx.save(); pctx.font='bold 11px Arial'; pctx.fillStyle='rgba(140,200,255,0.55)';
+    pctx.textAlign='center'; pctx.textBaseline='bottom';
+    pctx.fillText('Drag to rotate in any direction', PW/2, PH-5); pctx.restore();
     cpPrevRaf = requestAnimationFrame(ovTickPreview);
   }
 
@@ -20797,6 +20834,7 @@
     ovcTailIdx = pr.tailIdx !== undefined ? pr.tailIdx : 2;
     ovcEraserMode = false;
     ovcPaintColor = ovcPaintColor || '#d4a848';
+    ovcYaw3D = Math.PI * 0.85; ovcPitch3D = 0.22; ovcAutoRot3D = true;
     const p = document.getElementById('ov-custom-panel');
     p.classList.remove('hidden');
     // Build type-selector buttons
